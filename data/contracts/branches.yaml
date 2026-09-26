@@ -1,0 +1,101 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: branches
+kind: dimension
+description: "Physical bank branches"
+source_system: "Internal"
+partitioning: full_snapshot
+expected_rows: 350
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: branch_id
+    type: VARCHAR(20)
+    description: "Unique branch ID"
+    nullable: false
+    primary_key: true
+  - name: branch_code
+    type: VARCHAR(10)
+    description: "Internal branch code"
+    nullable: false
+    unique: true
+  - name: branch_name
+    type: VARCHAR(100)
+    description: "Branch name"
+    nullable: false
+  - name: branch_type
+    type: VARCHAR(30)
+    description: "Type (Main, Express, Premium, Corporate)"
+    nullable: false
+  - name: address
+    type: VARCHAR(200)
+    description: "Full address (in Spanish)"
+    nullable: false
+  - name: city
+    type: VARCHAR(100)
+    description: "City"
+    nullable: false
+  - name: state
+    type: VARCHAR(100)
+    description: "State/Province"
+    nullable: false
+  - name: country
+    type: VARCHAR(50)
+    description: "Country"
+    nullable: false
+  - name: postal_code
+    type: VARCHAR(10)
+    description: "Postal code"
+    nullable: true
+  - name: geographic_zone
+    type: VARCHAR(50)
+    description: "Zone (Urban, Suburban, Rural)"
+    nullable: false
+  - name: phone
+    type: VARCHAR(20)
+    description: "Contact phone"
+    nullable: false
+  - name: email
+    type: VARCHAR(100)
+    description: "Branch email"
+    nullable: true
+  - name: opening_time
+    type: TIME
+    description: "Opening time"
+    nullable: false
+  - name: closing_time
+    type: TIME
+    description: "Closing time"
+    nullable: false
+  - name: has_atms
+    type: BOOLEAN
+    description: "Has ATMs"
+    nullable: false
+  - name: atm_count
+    type: INTEGER
+    description: "Number of ATMs"
+    nullable: true
+  - name: has_teller_windows
+    type: BOOLEAN
+    description: "Has teller windows"
+    nullable: false
+  - name: teller_window_count
+    type: INTEGER
+    description: "Number of teller windows"
+    nullable: true
+  - name: latitude
+    type: DECIMAL(10,7)
+    description: "Geographic latitude"
+    nullable: true
+  - name: longitude
+    type: DECIMAL(10,7)
+    description: "Geographic longitude"
+    nullable: true
+  - name: branch_opening_date
+    type: DATE
+    description: "Branch opening date"
+    nullable: false
+  - name: branch_status
+    type: VARCHAR(20)
+    description: "Status (Active, Temporarily Closed, Closed)"
+    nullable: false

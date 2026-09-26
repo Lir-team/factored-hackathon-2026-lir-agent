@@ -1,0 +1,42 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: daily_exchange_rates
+kind: reference
+description: "Daily exchange rates for currency conversion"
+source_system: "Reference"
+partitioning: daily
+expected_rows: 3000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: date
+    type: DATE
+    description: "Exchange rate date"
+    nullable: false
+    primary_key: true
+  - name: source_currency
+    type: VARCHAR(3)
+    description: "Source currency"
+    nullable: false
+    primary_key: true
+  - name: target_currency
+    type: VARCHAR(3)
+    description: "Target currency"
+    nullable: false
+    primary_key: true
+  - name: exchange_rate
+    type: DECIMAL(12,6)
+    description: "Exchange rate"
+    nullable: false
+  - name: buy_rate
+    type: DECIMAL(12,6)
+    description: "Bank buy rate"
+    nullable: true
+  - name: sell_rate
+    type: DECIMAL(12,6)
+    description: "Bank sell rate"
+    nullable: true
+  - name: source
+    type: VARCHAR(50)
+    description: "Exchange rate source"
+    nullable: true

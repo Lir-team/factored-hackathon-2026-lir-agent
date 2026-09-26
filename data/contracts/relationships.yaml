@@ -1,0 +1,28 @@
+# Relaciones FK según el diccionario de datos v1.0.0.
+# El dataset contiene un % pequeño de huérfanos a propósito: las validaciones
+# deben medir y reportar la tasa de huérfanos, no fallar ante el primero.
+relationships:
+  - {from: products.customer_id,                         to: customers.customer_id}
+  - {from: transactions.customer_id,                     to: customers.customer_id}
+  - {from: call_center_interactions.customer_id,         to: customers.customer_id}
+  - {from: call_transcripts.customer_id,                 to: customers.customer_id}
+  - {from: satisfaction_surveys.customer_id,             to: customers.customer_id}
+  - {from: digital_events.customer_id,                   to: customers.customer_id}
+  - {from: complaints.customer_id,                       to: customers.customer_id}
+  - {from: campaign_sends.customer_id,                   to: customers.customer_id}
+  - {from: customers.registration_branch_id,             to: branches.branch_id}
+  - {from: products.opening_branch_id,                   to: branches.branch_id}
+  - {from: service_agents.assigned_branch_id,            to: branches.branch_id}
+  - {from: transactions.branch_id,                       to: branches.branch_id}
+  - {from: complaints.related_branch_id,                 to: branches.branch_id}
+  - {from: call_center_interactions.agent_id,            to: service_agents.agent_id}
+  - {from: call_transcripts.agent_id,                    to: service_agents.agent_id}
+  - {from: satisfaction_surveys.agent_id,                to: service_agents.agent_id}
+  - {from: complaints.assigned_agent_id,                 to: service_agents.agent_id}
+  - {from: transactions.product_id,                      to: products.product_id}
+  - {from: digital_events.product_id,                    to: products.product_id}
+  - {from: complaints.affected_product_id,               to: products.product_id}
+  - {from: campaign_sends.campaign_id,                   to: marketing_campaigns.campaign_id}
+  - {from: call_transcripts.interaction_id,              to: call_center_interactions.interaction_id}
+  - {from: satisfaction_surveys.interaction_id,          to: call_center_interactions.interaction_id}
+  - {from: complaints.origin_interaction_id,             to: call_center_interactions.interaction_id}

@@ -1,0 +1,90 @@
+# Semántica compartida (principio 10) — fuente única de verdad para:
+#   1) mapeos de valores crudos -> códigos canónicos (los usa pipelines/staging.py)
+#   2) definiciones de negocio de métricas (las usan análisis, eval y el agente)
+#
+# Por qué existe: el diccionario v1.0.0 documenta valores en inglés, pero los
+# datos llegan en español y con variantes ("México" vs "Mexico"). Muchos
+# problemas de "calidad" son en realidad problemas de definición.
+# Códigos canónicos: snake_case en inglés, independientes del idioma del cliente
+# (el agente atiende en ES y PT).
+
+value_maps:
+  country:
+    applies_to: [customers.country, branches.country, service_agents.country_of_origin, transactions.transaction_country]
+    values: {"México": MX, "Mexico": MX, "Colombia": CO, "Argentina": AR, "Brazil": BR, "Spain": ES, "USA": US}
+
+  product_type:
+    applies_to: [products.product_type]
+    values:
+      "Cuenta Ahorro": savings_account
+      "Cuenta Corriente": checking_account
+      "Tarjeta Crédito": credit_card
+      "Tarjeta Débito": debit_card
+      "Préstamo Personal": personal_loan
+      "Préstamo Hipotecario": mortgage
+      "Inversión": investment
+      "Seguro": insurance
+
+  reason_category:
+    # "Retención" no está en el diccionario: valor no documentado (schema drift semántico).
+    applies_to: [call_center_interactions.reason_category, call_center_interactions.contact_reason, call_transcripts.main_topics]
+    values: {"Transaccional": transactional, "Producto": product, "Queja": complaint, "Técnico": technical, "Comercial": commercial, "Retención": retention}
+
+  sentiment:
+    # "Muy Positivo" no está documentado.
+    applies_to: [call_center_interactions.detected_sentiment]
+    values: {"Muy Positivo": very_positive, "Positivo": positive, "Neutral": neutral, "Negativo": negative, "Muy Negativo": very_negative}
+
+  comment_sentiment:
+    applies_to: [satisfaction_surveys.comment_sentiment]
+    values: {"Positive": positive, "Neutral": neutral, "Negative": negative}
+
+  document_type:
+    # El diccionario lista CURP; no aparece ninguno. "Pasaporte" viene en español.
+    applies_to: [customers.document_type]
+    values: {"DNI": dni, "CC": cc, "CE": ce, "Pasaporte": passport, "Passport": passport, "CURP": curp}
+
+  complaint_category:
+    applies_to: [complaints.category]
+    values: {"Transactions": transactions, "Fees": fees, "Technical": technical, "Branch": branch, "Service": service}
+
+  complaint_subcategory:
+    applies_to: [complaints.subcategory]
+    values:
+      "Cargo no reconocido": unrecognized_charge
+      "Cobro indebido": improper_fee
+      "Problema con app": app_issue
+      "Atención en sucursal": branch_service
+      "Calidad de servicio": service_quality
+
+  agent_specialty:
+    applies_to: [service_agents.specialty]
+    values:
+      "Fraudes": fraud
+      "Cobranza": collections
+      "Retención": retention
+      "Soporte Técnico": tech_support
+      "Créditos": credit
+      "Inversiones": investments
+      "Ventas": sales
+      "Quejas y Reclamos": complaints
+
+business_terms:
+  contact:
+    definition: "Una fila de call_center_interactions (llamada, chat, email o video) de un cliente."
+  fcr:
+    definition: "First Contact Resolution. Proporción de contactos con was_resolved = true."
+    caveat: "Es auto-reportado por el sistema origen. Se contrasta con repeat_contact_7d, que es observable."
+  repeat_contact_7d:
+    definition: "Un contacto es 'repetido' si el mismo customer_id vuelve a contactar dentro de 7 días con la misma reason_category."
+    rationale: "Proxy observable de no-resolución, independiente de la etiqueta was_resolved."
+  escalation:
+    definition: "was_escalated = true: el contacto se derivó a supervisor."
+  complaint_sla_breach:
+    definition: "sla_breached = true en complaints."
+  active_customer:
+    definition: "customers.customer_status = 'Active'."
+  amount_usd:
+    definition: "Monto en USD. Si la moneda es USD, es el monto. Si falta, se imputa con daily_exchange_rates del día de transaction_date (flag amount_usd_imputed)."
+  process_lag_days:
+    definition: "fecha(evento) - process_date. Mide oportunidad (timeliness) de la carga."

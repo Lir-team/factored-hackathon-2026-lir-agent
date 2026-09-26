@@ -1,0 +1,102 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: campaign_sends
+kind: fact
+description: "Individual marketing campaign sends"
+source_system: "Internal"
+partitioning: daily
+expected_rows: 2000000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: send_id
+    type: VARCHAR(30)
+    description: "Unique send ID"
+    nullable: false
+    primary_key: true
+  - name: send_date
+    type: TIMESTAMP
+    description: "Send date and time"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: campaign_id
+    type: VARCHAR(20)
+    description: "Campaign ID"
+    nullable: false
+    foreign_key: true
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Recipient customer ID"
+    nullable: false
+    foreign_key: true
+  - name: send_channel
+    type: VARCHAR(30)
+    description: "Channel (Email, SMS, Push, WhatsApp, Voice)"
+    nullable: false
+  - name: template_used
+    type: VARCHAR(100)
+    description: "Template used"
+    nullable: true
+  - name: subject
+    type: VARCHAR(200)
+    description: "Message subject"
+    nullable: true
+  - name: send_status
+    type: VARCHAR(20)
+    description: "Status (Sent, Failed, Bounced, Blocked)"
+    nullable: false
+  - name: was_delivered
+    type: BOOLEAN
+    description: "Was delivered successfully"
+    nullable: false
+  - name: was_opened
+    type: BOOLEAN
+    description: "Was opened/read"
+    nullable: true
+  - name: open_date
+    type: TIMESTAMP
+    description: "Open date"
+    nullable: true
+  - name: was_clicked
+    type: BOOLEAN
+    description: "Clicked on any link"
+    nullable: true
+  - name: click_date
+    type: TIMESTAMP
+    description: "First click date"
+    nullable: true
+  - name: click_count
+    type: INTEGER
+    description: "Total click count"
+    nullable: true
+  - name: had_conversion
+    type: BOOLEAN
+    description: "Converted (completed desired action)"
+    nullable: false
+  - name: conversion_date
+    type: TIMESTAMP
+    description: "Conversion date"
+    nullable: true
+  - name: conversion_value
+    type: DECIMAL(15,2)
+    description: "Conversion monetary value"
+    nullable: true
+  - name: open_device
+    type: VARCHAR(30)
+    description: "Device used to open"
+    nullable: true
+  - name: open_country
+    type: VARCHAR(50)
+    description: "Country where opened"
+    nullable: true
+  - name: failure_reason
+    type: VARCHAR(200)
+    description: "Failure reason (if applicable)"
+    nullable: true
+  - name: send_cost
+    type: DECIMAL(10,4)
+    description: "Individual send cost"
+    nullable: true

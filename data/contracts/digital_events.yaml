@@ -1,0 +1,118 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: digital_events
+kind: fact
+description: "Digital channel interaction events (mobile app, web)"
+source_system: "Digital Banking"
+partitioning: daily
+expected_rows: 10000000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: event_id
+    type: VARCHAR(30)
+    description: "Unique event ID"
+    nullable: false
+    primary_key: true
+  - name: event_date
+    type: TIMESTAMP
+    description: "Event date and time"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: true
+    foreign_key: true
+  - name: session_id
+    type: VARCHAR(50)
+    description: "User session ID"
+    nullable: false
+  - name: event_type
+    type: VARCHAR(50)
+    description: "Type (PageView, Click, FormSubmit, Login, Logout, Error, Purchase)"
+    nullable: false
+  - name: event_category
+    type: VARCHAR(50)
+    description: "Category (Navigation, Transaction, Authentication, Product)"
+    nullable: false
+  - name: channel
+    type: VARCHAR(30)
+    description: "Channel (Android App, iOS App, Desktop Web, Mobile Web)"
+    nullable: false
+  - name: platform
+    type: VARCHAR(30)
+    description: "Platform (Android, iOS, Windows, MacOS, Linux)"
+    nullable: true
+  - name: browser
+    type: VARCHAR(50)
+    description: "Browser used"
+    nullable: true
+  - name: app_version
+    type: VARCHAR(20)
+    description: "App version"
+    nullable: true
+  - name: page_url
+    type: VARCHAR(300)
+    description: "Page URL"
+    nullable: true
+  - name: page_title
+    type: VARCHAR(200)
+    description: "Page title"
+    nullable: true
+  - name: action
+    type: VARCHAR(100)
+    description: "Action performed"
+    nullable: true
+  - name: element_id
+    type: VARCHAR(100)
+    description: "Interacted element ID"
+    nullable: true
+  - name: product_id
+    type: VARCHAR(20)
+    description: "Related product ID"
+    nullable: true
+    foreign_key: true
+  - name: event_value
+    type: DECIMAL(15,2)
+    description: "Event monetary value (if applicable)"
+    nullable: true
+  - name: duration_seconds
+    type: INTEGER
+    description: "Event duration"
+    nullable: true
+  - name: ip_address
+    type: VARCHAR(45)
+    description: "User IP address"
+    nullable: true
+  - name: ip_country
+    type: VARCHAR(50)
+    description: "Country detected by IP"
+    nullable: true
+  - name: ip_city
+    type: VARCHAR(100)
+    description: "City detected by IP"
+    nullable: true
+  - name: is_mobile
+    type: BOOLEAN
+    description: "Event from mobile device"
+    nullable: false
+  - name: referrer
+    type: VARCHAR(300)
+    description: "Referrer URL"
+    nullable: true
+  - name: utm_source
+    type: VARCHAR(100)
+    description: "UTM source"
+    nullable: true
+  - name: utm_medium
+    type: VARCHAR(100)
+    description: "UTM medium"
+    nullable: true
+  - name: utm_campaign
+    type: VARCHAR(100)
+    description: "UTM campaign"
+    nullable: true

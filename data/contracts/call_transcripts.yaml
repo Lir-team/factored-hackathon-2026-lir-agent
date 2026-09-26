@@ -1,0 +1,87 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: call_transcripts
+kind: fact
+description: "Call center call transcripts"
+source_system: "Contact Center"
+partitioning: daily
+expected_rows: 200000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: transcript_id
+    type: VARCHAR(30)
+    description: "Unique transcript ID"
+    nullable: false
+    primary_key: true
+  - name: interaction_id
+    type: VARCHAR(30)
+    description: "Related interaction ID"
+    nullable: false
+    foreign_key: true
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: false
+    foreign_key: true
+  - name: agent_id
+    type: VARCHAR(20)
+    description: "Agent ID"
+    nullable: false
+    foreign_key: true
+  - name: full_text
+    type: TEXT
+    description: "Full call transcript (in Spanish)"
+    nullable: false
+  - name: customer_text
+    type: TEXT
+    description: "Only what customer said (in Spanish)"
+    nullable: true
+  - name: agent_text
+    type: TEXT
+    description: "Only what agent said (in Spanish)"
+    nullable: true
+  - name: detected_language
+    type: VARCHAR(10)
+    description: "Main language detected"
+    nullable: false
+  - name: detected_accent
+    type: VARCHAR(50)
+    description: "Detected accent"
+    nullable: true
+  - name: accent_confidence
+    type: DECIMAL(3,2)
+    description: "Accent detection confidence (0-1)"
+    nullable: true
+  - name: detected_keywords
+    type: VARCHAR(500)
+    description: "Identified keywords"
+    nullable: true
+  - name: mentioned_entities
+    type: TEXT
+    description: "Extracted entities (JSON)"
+    nullable: true
+  - name: detected_intents
+    type: VARCHAR(300)
+    description: "Identified intents"
+    nullable: true
+  - name: main_topics
+    type: VARCHAR(300)
+    description: "Main conversation topics"
+    nullable: true
+  - name: transcription_model
+    type: VARCHAR(50)
+    description: "Model used (Whisper, Google STT, etc.)"
+    nullable: false
+  - name: audio_quality
+    type: VARCHAR(20)
+    description: "Audio quality (High, Medium, Low)"
+    nullable: true
+  - name: duration_seconds
+    type: INTEGER
+    description: "Call duration"
+    nullable: false
