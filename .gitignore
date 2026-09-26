@@ -1,0 +1,17 @@
+# Global del monorepo. Cada dominio (data/, ...) tiene su propio .gitignore.
+
+# Documentos de organizadores (el diccionario contiene credenciales de S3)
+*.pdf
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
