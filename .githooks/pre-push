@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Blocks direct pushes to main. Open a pull request instead.
+# Enable once per clone: git config core.hooksPath .githooks
+protected="refs/heads/main"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "$protected" ]; then
+    echo "pre-push: direct push to main is blocked. Push a feature branch and open a PR." >&2
+    exit 1
+  fi
+done
+exit 0
