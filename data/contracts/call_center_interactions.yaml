@@ -1,0 +1,98 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: call_center_interactions
+kind: fact
+description: "Call center interactions with customers"
+source_system: "Contact Center"
+partitioning: daily
+expected_rows: 800000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: interaction_id
+    type: VARCHAR(30)
+    description: "Unique interaction ID"
+    nullable: false
+    primary_key: true
+  - name: interaction_date
+    type: TIMESTAMP
+    description: "Interaction date and time"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: false
+    foreign_key: true
+  - name: agent_id
+    type: VARCHAR(20)
+    description: "Agent ID who attended"
+    nullable: true
+    foreign_key: true
+  - name: interaction_type
+    type: VARCHAR(30)
+    description: "Type (Inbound Call, Outbound Call, Chat, Email, Video)"
+    nullable: false
+  - name: channel
+    type: VARCHAR(30)
+    description: "Channel (Phone, Web Chat, WhatsApp, Email, App)"
+    nullable: false
+  - name: contact_reason
+    type: VARCHAR(100)
+    description: "Main contact reason"
+    nullable: false
+  - name: reason_category
+    type: VARCHAR(50)
+    description: "Category (Transactional, Product, Technical, Commercial, Complaint)"
+    nullable: false
+  - name: duration_seconds
+    type: INTEGER
+    description: "Duration in seconds"
+    nullable: true
+  - name: wait_time_seconds
+    type: INTEGER
+    description: "Wait time before service"
+    nullable: true
+  - name: was_resolved
+    type: BOOLEAN
+    description: "Resolved on first call (FCR)"
+    nullable: true
+  - name: requires_followup
+    type: BOOLEAN
+    description: "Requires follow-up"
+    nullable: false
+  - name: detected_sentiment
+    type: VARCHAR(20)
+    description: "Sentiment (Positive, Neutral, Negative, Very Negative)"
+    nullable: true
+  - name: sentiment_score
+    type: DECIMAL(3,2)
+    description: "Sentiment score (-1 to 1)"
+    nullable: true
+  - name: customer_detected_accent
+    type: VARCHAR(50)
+    description: "Customer's detected accent"
+    nullable: true
+  - name: agent_used_accent
+    type: VARCHAR(50)
+    description: "Accent used by agent in response"
+    nullable: true
+  - name: was_escalated
+    type: BOOLEAN
+    description: "Was escalated to supervisor"
+    nullable: false
+  - name: mentioned_products
+    type: VARCHAR(200)
+    description: "Product IDs mentioned (comma-separated)"
+    nullable: true
+  - name: has_transcript
+    type: BOOLEAN
+    description: "Has transcript available"
+    nullable: false
+  - name: has_recording
+    type: BOOLEAN
+    description: "Has audio recording"
+    nullable: false

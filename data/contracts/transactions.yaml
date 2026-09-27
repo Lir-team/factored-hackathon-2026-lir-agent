@@ -1,0 +1,103 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: transactions
+kind: fact
+description: "Daily financial transactions"
+source_system: "Core Banking"
+partitioning: daily
+expected_rows: 5000000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: transaction_id
+    type: VARCHAR(30)
+    description: "Unique transaction ID"
+    nullable: false
+    primary_key: true
+  - name: transaction_date
+    type: TIMESTAMP
+    description: "Transaction date and time"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: product_id
+    type: VARCHAR(20)
+    description: "Product ID"
+    nullable: false
+    foreign_key: true
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: false
+    foreign_key: true
+  - name: transaction_type
+    type: VARCHAR(50)
+    description: "Type (Deposit, Withdrawal, Transfer, Payment, Purchase, Adjustment)"
+    nullable: false
+  - name: transaction_category
+    type: VARCHAR(50)
+    description: "Category (Food, Transport, Services, Entertainment, Health, Other)"
+    nullable: true
+  - name: amount
+    type: DECIMAL(15,2)
+    description: "Transaction amount"
+    nullable: false
+  - name: currency
+    type: VARCHAR(3)
+    description: "Currency"
+    nullable: false
+  - name: amount_usd
+    type: DECIMAL(15,2)
+    description: "Amount converted to USD"
+    nullable: true
+  - name: channel
+    type: VARCHAR(30)
+    description: "Channel (ATM, Branch, Web, App, POS, Transfer)"
+    nullable: false
+  - name: branch_id
+    type: VARCHAR(20)
+    description: "Branch ID (if applicable)"
+    nullable: true
+    foreign_key: true
+  - name: merchant_name
+    type: VARCHAR(150)
+    description: "Merchant name (for purchases)"
+    nullable: true
+  - name: merchant_category
+    type: VARCHAR(50)
+    description: "MCC merchant category"
+    nullable: true
+  - name: transaction_country
+    type: VARCHAR(50)
+    description: "Country where transaction occurred"
+    nullable: false
+  - name: transaction_city
+    type: VARCHAR(100)
+    description: "City where transaction occurred"
+    nullable: true
+  - name: transaction_status
+    type: VARCHAR(20)
+    description: "Status (Approved, Declined, Pending, Reversed)"
+    nullable: false
+  - name: response_code
+    type: VARCHAR(10)
+    description: "System response code"
+    nullable: true
+  - name: is_fraud
+    type: BOOLEAN
+    description: "Marked as fraud"
+    nullable: false
+  - name: fraud_score
+    type: DECIMAL(5,2)
+    description: "Fraud risk score (0-100)"
+    nullable: true
+  - name: latitude
+    type: DECIMAL(10,7)
+    description: "Transaction latitude"
+    nullable: true
+  - name: longitude
+    type: DECIMAL(10,7)
+    description: "Transaction longitude"
+    nullable: true

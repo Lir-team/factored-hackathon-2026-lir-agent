@@ -1,0 +1,83 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: products
+kind: dimension
+description: "Active financial products of customers"
+source_system: "Core Banking"
+partitioning: monthly_snapshot
+expected_rows: 400000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: product_id
+    type: VARCHAR(20)
+    description: "Unique product ID"
+    nullable: false
+    primary_key: true
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Owner customer ID"
+    nullable: false
+    foreign_key: true
+  - name: product_type
+    type: VARCHAR(50)
+    description: "Product type (Checking Account, Savings Account, Credit Card, Debit Card, Personal Loan, Mortgage, Investment, Insurance)"
+    nullable: false
+  - name: product_number
+    type: VARCHAR(30)
+    description: "Account/card/policy number"
+    nullable: false
+    unique: true
+  - name: currency
+    type: VARCHAR(3)
+    description: "Currency (MXN, COP, ARS, USD)"
+    nullable: false
+  - name: current_balance
+    type: DECIMAL(15,2)
+    description: "Current balance"
+    nullable: false
+  - name: credit_limit
+    type: DECIMAL(15,2)
+    description: "Credit limit (for credit products)"
+    nullable: true
+  - name: interest_rate
+    type: DECIMAL(5,2)
+    description: "Annual interest rate (%)"
+    nullable: true
+  - name: opening_date
+    type: DATE
+    description: "Product opening date"
+    nullable: false
+  - name: expiration_date
+    type: DATE
+    description: "Expiration date (for term products)"
+    nullable: true
+  - name: opening_branch_id
+    type: VARCHAR(20)
+    description: "Branch where opened"
+    nullable: false
+    foreign_key: true
+  - name: product_status
+    type: VARCHAR(20)
+    description: "Status (Active, Blocked, Closed, Suspended)"
+    nullable: false
+  - name: opening_channel
+    type: VARCHAR(30)
+    description: "Opening channel (Branch, Web, App, Call Center)"
+    nullable: false
+  - name: has_linked_app
+    type: BOOLEAN
+    description: "Product linked to mobile app"
+    nullable: false
+  - name: days_past_due
+    type: INTEGER
+    description: "Days past due (for credits)"
+    nullable: true
+  - name: last_transaction_date
+    type: TIMESTAMP
+    description: "Last transaction date"
+    nullable: true
+  - name: last_updated
+    type: TIMESTAMP
+    description: "Last record update"
+    nullable: false

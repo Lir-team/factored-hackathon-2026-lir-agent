@@ -1,0 +1,122 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: customers
+kind: dimension
+description: "Bank customer dimension table"
+source_system: "Core Banking"
+partitioning: monthly_snapshot
+expected_rows: 150000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Unique customer ID"
+    nullable: false
+    primary_key: true
+  - name: document_number
+    type: VARCHAR(20)
+    description: "Identity document number"
+    nullable: false
+    unique: true
+  - name: document_type
+    type: VARCHAR(10)
+    description: "Document type (DNI, CURP, CC, CE, Passport)"
+    nullable: false
+  - name: first_name
+    type: VARCHAR(100)
+    description: "Customer first name (in Spanish)"
+    nullable: false
+  - name: last_name
+    type: VARCHAR(100)
+    description: "Customer last name (in Spanish)"
+    nullable: false
+  - name: date_of_birth
+    type: DATE
+    description: "Date of birth"
+    nullable: false
+  - name: gender
+    type: VARCHAR(1)
+    description: "Gender (M, F, O)"
+    nullable: true
+  - name: email
+    type: VARCHAR(100)
+    description: "Email address"
+    nullable: true
+  - name: mobile_phone
+    type: VARCHAR(20)
+    description: "Mobile phone number"
+    nullable: true
+  - name: landline_phone
+    type: VARCHAR(20)
+    description: "Landline phone number"
+    nullable: true
+  - name: address
+    type: VARCHAR(200)
+    description: "Full address (in Spanish)"
+    nullable: true
+  - name: city
+    type: VARCHAR(100)
+    description: "City of residence"
+    nullable: false
+  - name: state
+    type: VARCHAR(100)
+    description: "State/Province"
+    nullable: false
+  - name: country
+    type: VARCHAR(50)
+    description: "Country (Mexico, Colombia, Argentina)"
+    nullable: false
+  - name: postal_code
+    type: VARCHAR(10)
+    description: "Postal code"
+    nullable: true
+  - name: detected_accent
+    type: VARCHAR(50)
+    description: "Spanish accent detected (mexican, colombian, argentine, neutral)"
+    nullable: true
+  - name: segment
+    type: VARCHAR(50)
+    description: "Customer segment (Premium, Plus, Basic, Student)"
+    nullable: false
+  - name: credit_score
+    type: INTEGER
+    description: "Credit score (300-850)"
+    nullable: true
+  - name: estimated_monthly_income
+    type: DECIMAL(12,2)
+    description: "Estimated monthly income in local currency"
+    nullable: true
+  - name: occupation
+    type: VARCHAR(100)
+    description: "Customer occupation"
+    nullable: true
+  - name: marital_status
+    type: VARCHAR(20)
+    description: "Marital status"
+    nullable: true
+  - name: education_level
+    type: VARCHAR(50)
+    description: "Education level"
+    nullable: true
+  - name: registration_date
+    type: TIMESTAMP
+    description: "Registration date as customer"
+    nullable: false
+  - name: registration_branch_id
+    type: VARCHAR(20)
+    description: "Branch ID where registered"
+    nullable: false
+    foreign_key: true
+  - name: customer_status
+    type: VARCHAR(20)
+    description: "Status (Active, Inactive, Suspended, Closed)"
+    nullable: false
+  - name: last_updated
+    type: TIMESTAMP
+    description: "Last record update"
+    nullable: false
+  - name: accepts_marketing
+    type: BOOLEAN
+    description: "Accepts marketing communications"
+    nullable: false

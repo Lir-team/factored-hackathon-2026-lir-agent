@@ -1,0 +1,125 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: complaints
+kind: fact
+description: "Complaints and claims system (PQR)"
+source_system: "PQR"
+partitioning: daily
+expected_rows: 80000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: complaint_id
+    type: VARCHAR(30)
+    description: "Unique complaint/claim ID"
+    nullable: false
+    primary_key: true
+  - name: creation_date
+    type: TIMESTAMP
+    description: "Complaint creation date"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: false
+    foreign_key: true
+  - name: case_type
+    type: VARCHAR(30)
+    description: "Type (Complaint, Claim, Request, Suggestion)"
+    nullable: false
+  - name: category
+    type: VARCHAR(100)
+    description: "Case category"
+    nullable: false
+  - name: subcategory
+    type: VARCHAR(100)
+    description: "Subcategory"
+    nullable: true
+  - name: reception_channel
+    type: VARCHAR(30)
+    description: "Channel (Call Center, Email, Web, App, Branch, Regulator)"
+    nullable: false
+  - name: affected_product_id
+    type: VARCHAR(20)
+    description: "Affected product ID"
+    nullable: true
+    foreign_key: true
+  - name: related_branch_id
+    type: VARCHAR(20)
+    description: "Related branch ID"
+    nullable: true
+    foreign_key: true
+  - name: origin_interaction_id
+    type: VARCHAR(30)
+    description: "Originating interaction ID"
+    nullable: true
+    foreign_key: true
+  - name: description
+    type: TEXT
+    description: "Case description (in Spanish)"
+    nullable: false
+  - name: claimed_amount
+    type: DECIMAL(15,2)
+    description: "Claimed amount (if applicable)"
+    nullable: true
+  - name: currency
+    type: VARCHAR(3)
+    description: "Claimed amount currency"
+    nullable: true
+  - name: priority
+    type: VARCHAR(20)
+    description: "Priority (Low, Medium, High, Critical)"
+    nullable: false
+  - name: status
+    type: VARCHAR(30)
+    description: "Status (Open, In Process, Escalated, Resolved, Closed, Rejected)"
+    nullable: false
+  - name: assigned_agent_id
+    type: VARCHAR(20)
+    description: "Assigned agent ID"
+    nullable: true
+    foreign_key: true
+  - name: assignment_date
+    type: TIMESTAMP
+    description: "Assignment date"
+    nullable: true
+  - name: first_response_date
+    type: TIMESTAMP
+    description: "First response date"
+    nullable: true
+  - name: resolution_date
+    type: TIMESTAMP
+    description: "Resolution date"
+    nullable: true
+  - name: closing_date
+    type: TIMESTAMP
+    description: "Closing date"
+    nullable: true
+  - name: sla_breached
+    type: BOOLEAN
+    description: "SLA breached"
+    nullable: false
+  - name: resolution_days
+    type: INTEGER
+    description: "Days to resolution"
+    nullable: true
+  - name: resolution
+    type: TEXT
+    description: "Resolution description (in Spanish)"
+    nullable: true
+  - name: compensation_granted
+    type: DECIMAL(15,2)
+    description: "Compensation amount granted"
+    nullable: true
+  - name: resolution_satisfaction
+    type: INTEGER
+    description: "Resolution satisfaction score (1-5)"
+    nullable: true
+  - name: is_repeat_complainer
+    type: BOOLEAN
+    description: "Customer with previous complaints in last 90 days"
+    nullable: false

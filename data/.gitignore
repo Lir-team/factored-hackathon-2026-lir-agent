@@ -1,0 +1,7 @@
+# Solo se versionan código, contratos, manifiestos, KB, eval y fixtures.
+raw/*
+staging/*
+curated/*
+samples/*
+manifests/ingest/_etags.json
+!**/.gitkeep

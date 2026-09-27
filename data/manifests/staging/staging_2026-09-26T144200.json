@@ -1,0 +1,105 @@
+{
+  "run_at": "2026-09-26T14:42:00+00:00",
+  "tables": {
+    "daily_exchange_rates": {
+      "rows_raw": 13164,
+      "rows_staged": 13164,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/daily_exchange_rates.parquet"
+    },
+    "branches": {
+      "rows_raw": 350,
+      "rows_staged": 350,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/branches.parquet"
+    },
+    "service_agents": {
+      "rows_raw": 1200,
+      "rows_staged": 1200,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/service_agents.parquet"
+    },
+    "customers": {
+      "rows_raw": 150000,
+      "rows_staged": 150000,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/customers.parquet"
+    },
+    "products": {
+      "rows_raw": 400000,
+      "rows_staged": 400000,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/products.parquet"
+    },
+    "call_center_interactions": {
+      "rows_raw": 686296,
+      "rows_staged": 686296,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/call_center_interactions.parquet"
+    },
+    "call_transcripts": {
+      "rows_raw": 171321,
+      "rows_staged": 171321,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/call_transcripts.parquet"
+    },
+    "satisfaction_surveys": {
+      "rows_raw": 212759,
+      "rows_staged": 212759,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/satisfaction_surveys.parquet"
+    },
+    "complaints": {
+      "rows_raw": 67095,
+      "rows_staged": 67095,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/complaints.parquet"
+    },
+    "transactions": {
+      "rows_raw": 4425008,
+      "rows_staged": 4425008,
+      "pk_duplicates_dropped": 0,
+      "missing_columns": [],
+      "cast_failures": {},
+      "unmapped_values": {},
+      "contract_version": "1.0.0",
+      "output": "staging/transactions.parquet"
+    }
+  }
+}

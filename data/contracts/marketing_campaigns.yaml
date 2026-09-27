@@ -1,0 +1,64 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: marketing_campaigns
+kind: dimension
+description: "Bank marketing campaigns"
+source_system: "Internal"
+partitioning: full_snapshot
+expected_rows: 200
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: campaign_id
+    type: VARCHAR(20)
+    description: "Unique campaign ID"
+    nullable: false
+    primary_key: true
+  - name: campaign_name
+    type: VARCHAR(150)
+    description: "Campaign name"
+    nullable: false
+  - name: description
+    type: TEXT
+    description: "Campaign description"
+    nullable: true
+  - name: campaign_type
+    type: VARCHAR(50)
+    description: "Type (Email, SMS, Push, WhatsApp, Voice, Mix)"
+    nullable: false
+  - name: campaign_objective
+    type: VARCHAR(100)
+    description: "Objective (Acquisition, Retention, Cross-sell, Up-sell, Reactivation)"
+    nullable: false
+  - name: promoted_product
+    type: VARCHAR(50)
+    description: "Promoted product"
+    nullable: true
+  - name: target_segment
+    type: VARCHAR(50)
+    description: "Target segment"
+    nullable: true
+  - name: target_country
+    type: VARCHAR(50)
+    description: "Target country"
+    nullable: true
+  - name: start_date
+    type: DATE
+    description: "Start date"
+    nullable: false
+  - name: end_date
+    type: DATE
+    description: "End date"
+    nullable: false
+  - name: budget
+    type: DECIMAL(12,2)
+    description: "Assigned budget"
+    nullable: true
+  - name: campaign_status
+    type: VARCHAR(20)
+    description: "Status (Planned, Active, Paused, Completed)"
+    nullable: false
+  - name: expected_conversion_rate
+    type: DECIMAL(5,2)
+    description: "Expected conversion rate (%)"
+    nullable: true

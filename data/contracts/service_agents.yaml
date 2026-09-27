@@ -1,0 +1,86 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: service_agents
+kind: dimension
+description: "Customer service agents"
+source_system: "Internal"
+partitioning: monthly_snapshot
+expected_rows: 1200
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: agent_id
+    type: VARCHAR(20)
+    description: "Unique agent ID"
+    nullable: false
+    primary_key: true
+  - name: employee_code
+    type: VARCHAR(15)
+    description: "Employee code"
+    nullable: false
+    unique: true
+  - name: first_name
+    type: VARCHAR(100)
+    description: "Agent first name (in Spanish)"
+    nullable: false
+  - name: last_name
+    type: VARCHAR(100)
+    description: "Agent last name (in Spanish)"
+    nullable: false
+  - name: email
+    type: VARCHAR(100)
+    description: "Corporate email"
+    nullable: false
+  - name: phone
+    type: VARCHAR(20)
+    description: "Contact phone"
+    nullable: true
+  - name: native_accent
+    type: VARCHAR(50)
+    description: "Native Spanish accent (mexican, colombian, argentine)"
+    nullable: false
+  - name: country_of_origin
+    type: VARCHAR(50)
+    description: "Country of origin"
+    nullable: false
+  - name: assigned_branch_id
+    type: VARCHAR(20)
+    description: "Assigned branch"
+    nullable: true
+    foreign_key: true
+  - name: agent_type
+    type: VARCHAR(30)
+    description: "Type (Phone, In-Person, Digital, Hybrid)"
+    nullable: false
+  - name: experience_level
+    type: VARCHAR(20)
+    description: "Level (Junior, Mid-Senior, Senior, Specialist)"
+    nullable: false
+  - name: languages
+    type: VARCHAR(100)
+    description: "Languages spoken"
+    nullable: false
+  - name: specialty
+    type: VARCHAR(100)
+    description: "Specialty"
+    nullable: true
+  - name: hire_date
+    type: DATE
+    description: "Hire date"
+    nullable: false
+  - name: avg_csat
+    type: DECIMAL(3,2)
+    description: "Average CSAT score (1-5)"
+    nullable: true
+  - name: total_monthly_interactions
+    type: INTEGER
+    description: "Total interactions in last month"
+    nullable: true
+  - name: agent_status
+    type: VARCHAR(20)
+    description: "Status (Active, Vacation, Leave, Inactive)"
+    nullable: false
+  - name: work_shift
+    type: VARCHAR(20)
+    description: "Shift (Morning, Afternoon, Night, Rotating)"
+    nullable: false

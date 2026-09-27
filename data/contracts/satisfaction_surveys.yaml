@@ -1,0 +1,95 @@
+# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+table: satisfaction_surveys
+kind: fact
+description: "Post-interaction satisfaction surveys (CSAT, NPS)"
+source_system: "Contact Center"
+partitioning: daily
+expected_rows: 250000
+data_origin: synthetic  # provisto por organizadores
+contract_version: 1.0.0
+columns:
+  - name: survey_id
+    type: VARCHAR(30)
+    description: "Unique survey ID"
+    nullable: false
+    primary_key: true
+  - name: survey_date
+    type: TIMESTAMP
+    description: "Response date and time"
+    nullable: false
+  - name: process_date
+    type: DATE
+    description: "Process date (partition key)"
+    nullable: false
+  - name: interaction_id
+    type: VARCHAR(30)
+    description: "Evaluated interaction ID"
+    nullable: true
+    foreign_key: true
+  - name: customer_id
+    type: VARCHAR(20)
+    description: "Customer ID"
+    nullable: false
+    foreign_key: true
+  - name: agent_id
+    type: VARCHAR(20)
+    description: "Evaluated agent ID"
+    nullable: true
+    foreign_key: true
+  - name: survey_type
+    type: VARCHAR(20)
+    description: "Type (CSAT, NPS, CES)"
+    nullable: false
+  - name: send_channel
+    type: VARCHAR(30)
+    description: "Send channel (Email, SMS, IVR, App, Web)"
+    nullable: false
+  - name: main_score
+    type: INTEGER
+    description: "Main score (1-5 for CSAT, 0-10 for NPS)"
+    nullable: false
+  - name: nps_category
+    type: VARCHAR(20)
+    description: "NPS category (Promoter, Passive, Detractor)"
+    nullable: true
+  - name: question_1_text
+    type: TEXT
+    description: "Question 1 text"
+    nullable: true
+  - name: question_1_response
+    type: INTEGER
+    description: "Question 1 response (1-5)"
+    nullable: true
+  - name: question_2_text
+    type: TEXT
+    description: "Question 2 text"
+    nullable: true
+  - name: question_2_response
+    type: INTEGER
+    description: "Question 2 response (1-5)"
+    nullable: true
+  - name: question_3_text
+    type: TEXT
+    description: "Question 3 text"
+    nullable: true
+  - name: question_3_response
+    type: INTEGER
+    description: "Question 3 response (1-5)"
+    nullable: true
+  - name: open_comments
+    type: TEXT
+    description: "Customer comments (in Spanish)"
+    nullable: true
+  - name: comment_sentiment
+    type: VARCHAR(20)
+    description: "Comment sentiment"
+    nullable: true
+  - name: response_time_hours
+    type: DECIMAL(8,2)
+    description: "Hours between interaction and response"
+    nullable: true
+  - name: campaign_response_rate
+    type: DECIMAL(5,2)
+    description: "Campaign response rate (%)"
+    nullable: true
