@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+# Blocks commits that contain secrets (API keys, tokens, private keys).
+# Enable once per clone: git config core.hooksPath .githooks
+# Requires gitleaks on PATH: https://github.com/gitleaks/gitleaks#installing
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed; commit blocked." >&2
+  echo "Install it (brew install gitleaks | apt install gitleaks) and retry." >&2
+  exit 1
+fi
+
+# gitleaks >= 8.19 scans staged changes with 'git --staged';
+# older builds (e.g. Ubuntu's 8.16) use 'protect --staged'.
+if gitleaks git --help >/dev/null 2>&1; then
+  gitleaks git --staged --no-banner --redact
+else
+  gitleaks protect --staged --no-banner --redact
+fi
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "pre-commit: possible secret detected; commit blocked." >&2
+  echo "Remove the secret or, for a confirmed false positive, allowlist it in .gitleaks.toml." >&2
+  exit 1
+fi
+exit 0
