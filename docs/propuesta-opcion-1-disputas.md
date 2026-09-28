@@ -8,6 +8,25 @@
 
 ## 1. Resumen
 
+### La idea en una frase
+
+> Cuando un cliente dice "no reconozco este cargo", el agente **encuentra el cargo, lo aclara con evidencia
+> y solo abre una disputa cuando corresponde**. Tres piezas se reparten el trabajo:
+> **el LLM conversa, Jev decide rápido y con probabilidad, y el código autoriza.**
+
+| Pieza | Qué hace | Qué **no** hace |
+|---|---|---|
+| **LLM** (conversación) | Entiende al cliente en ES/PT, extrae monto, fecha y comercio, pide aclaraciones y redacta la respuesta citando la evidencia | No decide el ruteo, no autoriza, no inventa reglas |
+| **Jev** (decisiones tipadas, [§5](#5-jev-la-capa-de-decisiones-rápidas)) | En cada turno responde preguntas cerradas con probabilidad calibrada: intención, ¿pide humano?, ¿sospecha de robo?, ¿qué comercio describe? | No mira montos ni fechas, no filtra ataques, no decide la elegibilidad |
+| **Código** (herramientas + política) | Autentica, limita cada consulta al cliente de la sesión, filtra por monto y fecha, calcula la evidencia y aplica la política de disputa versionada | No conversa |
+
+La apuesta técnica: separar **decidir** de **conversar** hace que cada decisión del agente sea medible
+(probabilidad, umbral, exactitud), barata (~100 ms, US$0.042 por millón de tokens) y auditable,
+en lugar de quedar enterrada en la prosa del LLM. Esto responde directamente a
+[Bases]: "Make explicit trade-offs across autonomy, accuracy, latency, cost, and human oversight".
+
+### El flujo
+
 Un agente que atiende en ES y PT el caso **"no reconozco un cargo"**. Primero identifica la transacción
 concreta a partir de la descripción vaga del cliente. Después reúne evidencia verificable (duplicados,
 comercio habitual, país/ciudad, sesión digital, estado de la transacción) y aplica una **política
@@ -95,11 +114,15 @@ Cliente (ES/PT)
 [Sesión autenticada de prueba] ──► customer_id de la SESIÓN (nunca el del texto)
    │
    ▼
-[LLM conversacional] ── entiende, pide aclaración y redacta. NO decide ni autoriza.
+[LLM conversacional] ── entiende, extrae monto/fecha/comercio, pide aclaración y redacta. NO decide ni autoriza.
+   │                        ▲
+   │                        │ decisiones tipadas con probabilidad (en paralelo, ~100 ms)
+   │                  [Jev] ── intención · ¿pide humano? · ¿sospecha de robo? · ¿qué comercio?
+   │                        │   confianza < umbral → aclarar o derivar
    │   tool calls
    ▼
 [Capa de herramientas con permisos por sesión]
-   ├─ find_candidate_transactions(desc) → ranking   ◄── componente aprendido
+   ├─ find_candidate_transactions(slots) → candidatos por monto/fecha (código) + comercio (Jev)
    ├─ get_evidence(txn_id)              → hechos verificables
    ├─ policy.evaluate(evidence)         → EXPLICAR | DISPUTAR | DERIVAR   (determinístico, versionado)
    ├─ open_dispute(txn_id, confirm=True)→ id + estado verificado (mock documentado)
@@ -116,7 +139,9 @@ Cliente (ES/PT)
 | Pieza | Enfoque | Por qué |
 |---|---|---|
 | Entender la descripción del cliente, pedir aclaración, redactar en ES/PT | LLM | Lenguaje libre, multilingüe y ambiguo |
-| Encontrar la transacción que el cliente describe | **Aprendido: ranking/recuperación** | Coincidencia difusa ("como 50 lucas", "el martes", "en el súper"). Se compara contra un baseline de filtros |
+| Extraer monto y fecha ("como 50 lucas", "el martes") | LLM → validado por código | Jev no es confiable con números ni fechas; el código normaliza y valida |
+| Intención, ¿pide humano?, ¿sospecha de robo?, ¿qué comercio describe? | **Jev** (pretrained, evaluado) | Decisiones cerradas con probabilidad calibrada, rápidas y baratas: permiten umbrales explícitos |
+| Filtrar transacciones por monto y fecha | Código | Aritmética exacta, sin modelo |
 | Autenticación, alcance por cliente, permisos | Código | [Bases]: "Enforce access … in the service or tool layer" |
 | Elegibilidad de la disputa, umbrales de derivación | Reglas versionadas (política sintética declarada) | Auditable y no negociable por conversación |
 | Señales de evidencia (duplicado, país, sesión, estado) | Consultas SQL/código | Son hechos, no juicios |
@@ -148,23 +173,100 @@ de-identified, synthetic, or team-generated".
 | No soportado | "Quiero un aumento de cupo" | Declarar el alcance y derivar al canal correcto |
 | Humano | Cargo alto en otro país, `fraud_score` alto, sin sesión del cliente | No se promete nada; se deriva a fraude con expediente |
 
-## 5. Componente aprendido y rigor de ML
+## 5. Jev: la capa de decisiones rápidas
+
+### 5.1 Qué es y por qué lo usamos
+
+[Jev](https://en.wikipedia.org/wiki/Jev_%28AI_model%29) es un modelo de TypeSafe AI, en acceso anticipado desde
+el 15-sep-2026. **No genera texto:** recibe un *estado* (texto o pares nombre-valor) y preguntas tipadas, y
+devuelve respuestas con probabilidad ([docs de Cloudflare](https://developers.cloudflare.com/ai/models/typesafe/jev/)):
+
+| Tipo de pregunta | Devuelve | Uso en este flujo |
+|---|---|---|
+| `noul` (sí/no) | probabilidad 0–1 | ¿pide un humano?, ¿expresa sospecha de robo?, ¿confirma lo que le mostramos? |
+| `choice` | distribución sobre opciones | intención; qué comercio candidato describe |
+| `score` | valor sobre una escala descrita | (no se usa en el MVP) |
+
+Por qué encaja con [Bases]:
+
+- **Umbrales explícitos y justificables.** [Bases §4] pide "justify … thresholds". Con una probabilidad por
+  decisión, el umbral se elige en validación y se reporta la curva cobertura/exactitud, en vez de confiar en
+  una respuesta en prosa.
+- **Latencia y costo.** Se reportan 70–500 ms por llamada, preguntas evaluadas en paralelo y US$0.042 por millón
+  de tokens de entrada (salida gratis). [Bases, *Evaluation*] pide costo por caso y p50/p95.
+- **Separa decidir de conversar.** Cada decisión queda en la traza como `(pregunta, respuesta, probabilidad,
+  umbral, versión)`. Eso es el registro de ejecución que [Bases §6] acepta como auditoría, a diferencia del
+  "hidden model chain-of-thought".
+
+### 5.2 Las decisiones que toma Jev en cada turno
+
+Todas se hacen **sobre el texto del cliente** (y, en D4, los nombres de comercio candidatos), en una sola
+llamada paralela:
+
+| # | Pregunta | Tipo | Si la confianza es baja |
+|---|---|---|---|
+| D1 | Intención: `cargo_no_reconocido` · `cobro_indebido` · `consulta_movimiento` · `otra_queja` · `fuera_de_alcance` | choice | Pedir aclaración; si persiste, derivar |
+| D2 | ¿El cliente pide explícitamente hablar con una persona? | noul | Ante la duda, ofrecer la derivación |
+| D3 | ¿El cliente expresa que le robaron la tarjeta o los datos? | noul | Ante la duda, tratar como posible fraude (derivar) |
+| D4 | ¿Cuál de estos comercios candidatos describe el cliente? (`merchant_name` + `merchant_category`, **sin montos ni fechas**) | choice | Mostrar los candidatos y preguntar |
+
+Umbrales **asimétricos** según el costo del error: en D2 y D3 un falso negativo (no derivar a quien lo necesita)
+es peor que un falso positivo, así que el umbral para derivar es bajo.
+
+### 5.3 Lo que Jev **no** hace, y por qué
+
+La propia documentación declara que Jev "no es bueno con números, fechas ni 'contenido adversarial'"
+([Simon Willison, 21-sep-2026](https://simonwillison.net/2026/Sep/21/jev/)). Por eso:
+
+- **Montos y fechas:** los extrae el LLM y los valida y filtra el código. Jev nunca compara montos.
+- **Inyección de prompt:** la defensa es estructural. Los permisos están en la capa de herramientas, el texto de
+  los datos se trata como datos y las acciones requieren confirmación. No dependemos de un clasificador.
+- **Elegibilidad de la disputa:** es política determinística. Jev solo enruta.
+
+### 5.4 Datos que salen del perímetro
+
+Jev es una API externa. [Bases, *Data boundaries*]: "Do not include private customer records … in external model
+requests". Regla 3 de `data/AGENTS.md`: no enviar filas crudas.
+
+- **Se envía:** el mensaje del cliente y, para D4, solo nombre y categoría de los comercios candidatos.
+- **No se envía:** IDs, documento, saldos, montos ni fechas de la cuenta.
+- El proveedor declara "zero data retention" vía Cloudflare. Lo documentamos como afirmación del proveedor, no
+  como algo verificado por nosotros.
+
+### 5.5 Evaluación: el componente aprendido de la entrega
 
 [Bases §4]: "Evaluate at least one learned component against an appropriate baseline. Use valid labels
 or relevance judgments, prevent leakage, and justify representations, metrics, thresholds, and evaluation splits."
+[Bases, *Architecture freedom*]: para soluciones con modelos preentrenados, el rigor se demuestra con
+"component selection, relevance or intent labels, representations, leakage prevention, held-out evaluation, and error analysis".
 
-- **Tarea:** dado (descripción del cliente, historial del cliente), ordenar sus transacciones candidatas.
-- **Baseline:** filtros determinísticos de monto ± tolerancia y fecha ± ventana, ordenados por cercanía.
-- **Propuesto:** extracción estructurada con LLM (monto, fecha relativa, tipo de comercio) + scoring híbrido
-  (léxico/embeddings sobre `merchant_name`/`merchant_category` + cercanía numérica y temporal), con un
-  umbral de confianza calibrado para **pedir aclaración** en lugar de adivinar.
-- **Etiquetas:** juicios de relevancia generados por el equipo. Se elige una transacción real del sample como
-  objetivo y se escriben descripciones ES/PT de distinta vaguedad. Los textos del dataset no sirven
-  (`insights.md` §5: `detected_intents` constante y descripciones de plantilla).
-- **Fuga:** split por **cliente**, no por frase. Las paráfrasis de una misma transacción objetivo quedan en el
-  mismo lado. `eval/` es held-out y no se usa para ajustar prompts (`data/AGENTS.md` regla 5).
-- **Métricas:** Recall@1/@3, MRR y tasa de aclaración. Precisión cuando el agente no pide aclaración.
-- **Análisis de errores** por idioma, vaguedad y tamaño del historial del cliente.
+Se evalúa **D1 (intención)** como componente principal, y D4 (comercio) como secundario, con tres candidatos
+sobre el mismo set held-out:
+
+| Candidato | Qué es |
+|---|---|
+| **Baseline** | Reglas por palabras clave ES/PT |
+| **Jev** | Preguntas `choice`/`noul`, con umbral elegido en validación |
+| **LLM** | El mismo LLM del agente, con salida estructurada |
+
+- **Métricas:** macro-F1 por clase, **calibración** (ECE, diagrama de confiabilidad), curva cobertura/exactitud
+  (cuánto automatizamos con cada umbral), p50/p95 y costo por 1.000 decisiones. Varias corridas del LLM para
+  reportar variabilidad (Jev y las reglas son deterministas o casi).
+- **Etiquetas:** set generado y etiquetado por el equipo en ES y PT, incluyendo portuñol, jerga regional
+  (MX/CO/AR) y casos fuera de alcance. Los textos del dataset no sirven (`insights.md` §5). Doble etiquetado de
+  una muestra para medir el acuerdo entre anotadores.
+- **Fuga:** split por **plantilla semilla**: todas las paráfrasis de una misma semilla quedan del mismo lado.
+  El umbral se fija en validación y se reporta **una sola vez** en test. `eval/` no se usa para ajustar
+  (`data/AGENTS.md` regla 5).
+- **Análisis de errores** por idioma, país/jerga y clase. [Bases] pide investigar disparidades por idioma.
+  El soporte de portugués de Jev no está documentado, así que **se mide**, no se asume.
+
+### 5.6 Si Jev no está disponible
+
+Está en acceso anticipado. Las decisiones D1–D4 viven detrás de una interfaz `DecisionModel` con la misma firma
+(pregunta tipada → respuesta + probabilidad). Si no conseguimos acceso, si falla o si supera el tiempo límite,
+se usa el LLM con salida estructurada. Si también falla, el agente deriva al humano (safe fallback, [Bases §6]).
+La comparación de §5.5 funciona igual con cualquiera de los tres.
 
 ## 6. Evaluación de extremo a extremo
 
@@ -209,6 +311,7 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 4. **Calidad de `customers`:** `cus_document_type_matches_country` falla en 49.9%. No usamos el documento como
    prueba de identidad (la sesión de prueba es la identidad), en línea con [Bases].
 5. **`was_resolved` es dudoso** como etiqueta (`insights.md` §1). El baseline humano se reporta con esa salvedad.
+6. **Jev es nuevo y externo:** acceso anticipado, cifras de rendimiento publicadas por el fabricante y soporte de PT sin documentar. Mitigación: interfaz intercambiable (§5.6) y medición propia (§5.5).
 
 ## 9. Decisiones que necesitamos del equipo
 
@@ -216,4 +319,5 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 - [ ] ¿Qué política de disputa sintética usamos (plazo, montos, estados elegibles), y quién la redacta?
 - [ ] ¿Tamaño del set etiquetado ES/PT y quién etiqueta? (propuesta inicial: ≥300 descripciones, ≥30% PT)
 - [ ] ¿Qué LLM y qué presupuesto de costo por caso?
+- [ ] ¿Pedimos acceso anticipado a Jev ya? (bloquea §5; mientras tanto se avanza con el fallback LLM)
 - [ ] ¿Consultamos a los organizadores si `complaints.origin_interaction_id` vacío es intencional?
