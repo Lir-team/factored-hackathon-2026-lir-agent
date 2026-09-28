@@ -248,7 +248,7 @@ sobre el mismo set held-out:
 | **Baseline** | Reglas por palabras clave ES/PT |
 | **Jev** | Preguntas `choice`/`noul`, con umbral elegido en validación |
 | **LLM** | El mismo LLM del agente, con salida estructurada |
-| **Local abierto** (opcional, §5.7) | Encoder multilingüe preentrenado con cabezas tipadas (noul/choice), ajustado con nuestras etiquetas y calibrado. Corre en nuestra máquina |
+| **Laya** (opcional, §5.7) | Modelo abierto de decisiones tipadas (checkpoint multilingüe), ajustado con nuestras etiquetas y calibrado. Corre en nuestro hardware |
 
 - **Métricas:** macro-F1 por clase, **calibración** (ECE, diagrama de confiabilidad), curva cobertura/exactitud
   (cuánto automatizamos con cada umbral), p50/p95 y costo por 1.000 decisiones. Varias corridas del LLM para
@@ -269,33 +269,44 @@ Las decisiones D1–D4 viven detrás de una interfaz `DecisionModel` con la mism
 (es un servicio en acceso anticipado, sin SLA publicado), se usa el LLM con salida estructurada. Si también falla, el agente deriva al humano (safe fallback, [Bases §6]).
 La comparación de §5.5 funciona igual con cualquiera de los tres.
 
-### 5.7 Opción abierta: OpenJev y una alternativa local
+### 5.7 Opción abierta: Laya
 
-Jev es propietario: no publica pesos ni permite correrlo en nuestra máquina. Lo abierto son sus SDK de cliente
-([Failproof AI](https://befailproof.ai/jev/is-jev-open-source/)). Existe
-[**OpenJev**](https://github.com/kyegomez/open-jev), una reconstrucción comunitaria de la idea en PyTorch con
-licencia Apache 2.0. Tiene el mismo contrato de salida (`noul`, `choice` y `score` con probabilidad), pero:
+Jev es propietario: no publica pesos ni permite correrlo en nuestra máquina
+([Failproof AI](https://befailproof.ai/jev/is-jev-open-source/)). La alternativa abierta es
+**Laya**, de Convai Innovations, publicada el 18-sep-2026. Hace el mismo trabajo (preguntas `choice`, `score`
+y sí/no con probabilidad, sin generar texto), con **pesos abiertos bajo Apache 2.0**, y corre en nuestro
+hardware. La versión en inglés es un encoder ModernBERT-large de 421M parámetros, y hay un checkpoint
+multilingüe basado en mmBERT
+([Flowtivity](https://flowtivity.ai/blog/laya-open-source-jev-alternative/)).
 
-| | OpenJev | Lectura para nosotros |
-|---|---|---|
-| Pesos | "random weights": hay que **entrenarlo desde cero** | Con unos cientos de ejemplos etiquetados no va a aprender lenguaje ES/PT en 10 días |
-| Madurez | 6 commits; calibración y robustez ante cambios de distribución pendientes en su TODO | Proyecto de investigación, no un componente listo |
-| Benchmarks | Ninguno publicado | Todo tendríamos que medirlo nosotros |
-| Privacidad | Corre local: **ningún dato sale del perímetro** | Su mayor ventaja frente a Jev (§5.4) |
+Lo que dicen las evaluaciones independientes, y lo que implica para nosotros:
 
-**Propuesta:** tomar de OpenJev **la interfaz** (preguntas tipadas → probabilidad) y no su modelo sin entrenar.
-Como cuarto candidato opcional usamos un **encoder multilingüe preentrenado** (familia XLM-R o mDeBERTa) con
-cabezas `noul`/`choice`, ajustado con nuestro set ES/PT y calibrado con *temperature scaling* en validación.
-Así:
+| Hallazgo publicado | Implicancia |
+|---|---|
+| **Sin ajuste no sirve:** 0.362 de exactitud en el benchmark de decisiones tipadas, por debajo de la clase mayoritaria (0.461); ajustado llega a 0.766 ([BestHub](https://www.besthub.dev/articles/open-source-decision-model-laya-vs-jev-speed-wins-zero-shot-fails-befced0a2228)) | Hay que **ajustarlo con nuestras etiquetas**. Su notebook usa ~30k preguntas y 4–5 h en dos T4 gratuitas de Kaggle; nosotros tendremos cientos. Es el principal riesgo |
+| **Calibración:** ECE de 0.466 sin ajustar, 0.081 tras reajustar la temperatura; en el checkpoint multilingüe "cannot be trusted until calibrated" | La calibración es trabajo nuestro (temperature scaling en validación) y se reporta |
+| **Idiomas:** checkpoint multilingüe de más de 100 idiomas; 45 de 51 evaluados superan 3× el azar. No se detalla ES/PT | Usamos el multilingüe y **medimos** ES vs PT |
+| **Muchas opciones:** cae con más de 20 opciones (Banking77: 0.425 vs 0.870 de Jev) | Nuestras decisiones tienen 2 a 5 opciones: dentro de su zona buena |
+| **Hardware:** necesita GPU; en CPU se reporta una mediana de 49.4 s por predicción | Evaluación en GPU (Kaggle/Colab). En CPU no sirve para el camino en vivo |
+| **Contexto:** 1024 tokens en el multilingüe | Alcanza para un mensaje del cliente, no para toda la conversación |
 
-- se implementa detrás del mismo `DecisionModel` (§5.6), sin cambiar el agente;
-- sirve de **fallback local** que no depende de un servicio externo ni de su cuota;
-- aporta el pipeline de entrenamiento propio que las bases mencionan como una forma de mostrar rigor
-  ("A model-training pipeline is one way to provide that evidence");
-- permite un trade-off honesto en el informe: **Jev** (sin entrenamiento, externo) vs **local** (entrenado por
-  nosotros, privado) vs **LLM** (flexible, más lento y caro).
+**Por qué igual vale la pena como candidato:**
 
-Es opcional: solo entra si el MVP con Jev y el LLM está listo antes del día 6.
+- **Privacidad:** corre local, así que **ningún dato sale del perímetro** (§5.4). Es el argumento más fuerte ante
+  [Bases, *Data boundaries*].
+- **Muestra rigor de ML propio:** ajuste, calibración y control de fuga los hacemos nosotros. Las bases lo
+  reconocen: "A model-training pipeline is one way to provide that evidence".
+- **Fallback sin dependencias externas:** implementa el mismo `DecisionModel` (§5.6), sin cuota ni SLA de terceros.
+- **Deja un trade-off claro en el informe:** Jev (listo sin ajuste, externo) vs Laya (ajustado por nosotros,
+  privado, gratis) vs LLM (flexible, más lento y caro) vs reglas (baseline).
+
+**Riesgo de fuga específico:** si ampliamos el set de entrenamiento con paráfrasis generadas, estas se
+generan **solo desde semillas del split de entrenamiento**. Validación y test no se tocan.
+
+*Descartado:* [OpenJev](https://github.com/kyegomez/open-jev) (Apache 2.0) reconstruye la arquitectura, pero
+viene con pesos aleatorios ("random weights"), tiene 6 commits y no publica benchmarks.
+
+Es opcional: entra si el MVP con Jev y el LLM está listo antes del día 6.
 
 ## 6. Evaluación de extremo a extremo
 
@@ -350,5 +361,5 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 - [ ] ¿Qué LLM y qué presupuesto de costo por caso?
 - [x] Acceso a Jev: el equipo ya lo tiene.
 - [ ] ¿Límites de cuota/rate de nuestra cuenta de Jev? (define el tamaño de las corridas de evaluación)
-- [ ] ¿Incluimos el candidato local abierto (§5.7)? Requiere GPU o paciencia en CPU para el ajuste
+- [ ] ¿Incluimos Laya (§5.7)? Requiere GPU (Kaggle/Colab) para ajustar y evaluar
 - [ ] ¿Consultamos a los organizadores si `complaints.origin_interaction_id` vacío es intencional?
