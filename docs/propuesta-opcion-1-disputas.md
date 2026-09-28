@@ -178,7 +178,7 @@ de-identified, synthetic, or team-generated".
 ### 5.1 Qué es y por qué lo usamos
 
 [Jev](https://en.wikipedia.org/wiki/Jev_%28AI_model%29) es un modelo de TypeSafe AI, en acceso anticipado desde
-el 15-sep-2026. **No genera texto:** recibe un *estado* (texto o pares nombre-valor) y preguntas tipadas, y
+el 15-sep-2026. **El equipo ya tiene acceso.** **No genera texto:** recibe un *estado* (texto o pares nombre-valor) y preguntas tipadas, y
 devuelve respuestas con probabilidad ([docs de Cloudflare](https://developers.cloudflare.com/ai/models/typesafe/jev/)):
 
 | Tipo de pregunta | Devuelve | Uso en este flujo |
@@ -261,11 +261,11 @@ sobre el mismo set held-out:
 - **Análisis de errores** por idioma, país/jerga y clase. [Bases] pide investigar disparidades por idioma.
   El soporte de portugués de Jev no está documentado, así que **se mide**, no se asume.
 
-### 5.6 Si Jev no está disponible
+### 5.6 Si Jev falla
 
-Está en acceso anticipado. Las decisiones D1–D4 viven detrás de una interfaz `DecisionModel` con la misma firma
-(pregunta tipada → respuesta + probabilidad). Si no conseguimos acceso, si falla o si supera el tiempo límite,
-se usa el LLM con salida estructurada. Si también falla, el agente deriva al humano (safe fallback, [Bases §6]).
+Las decisiones D1–D4 viven detrás de una interfaz `DecisionModel` con la misma firma
+(pregunta tipada → respuesta + probabilidad). Si Jev falla, supera el tiempo límite o se agota la cuota
+(es un servicio en acceso anticipado, sin SLA publicado), se usa el LLM con salida estructurada. Si también falla, el agente deriva al humano (safe fallback, [Bases §6]).
 La comparación de §5.5 funciona igual con cualquiera de los tres.
 
 ## 6. Evaluación de extremo a extremo
@@ -311,7 +311,7 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 4. **Calidad de `customers`:** `cus_document_type_matches_country` falla en 49.9%. No usamos el documento como
    prueba de identidad (la sesión de prueba es la identidad), en línea con [Bases].
 5. **`was_resolved` es dudoso** como etiqueta (`insights.md` §1). El baseline humano se reporta con esa salvedad.
-6. **Jev es nuevo y externo:** acceso anticipado, cifras de rendimiento publicadas por el fabricante y soporte de PT sin documentar. Mitigación: interfaz intercambiable (§5.6) y medición propia (§5.5).
+6. **Jev es nuevo y externo:** servicio en acceso anticipado sin SLA publicado, cifras de rendimiento publicadas por el fabricante y soporte de PT sin documentar. Mitigación: interfaz intercambiable (§5.6) y medición propia (§5.5).
 
 ## 9. Decisiones que necesitamos del equipo
 
@@ -319,5 +319,6 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 - [ ] ¿Qué política de disputa sintética usamos (plazo, montos, estados elegibles), y quién la redacta?
 - [ ] ¿Tamaño del set etiquetado ES/PT y quién etiqueta? (propuesta inicial: ≥300 descripciones, ≥30% PT)
 - [ ] ¿Qué LLM y qué presupuesto de costo por caso?
-- [ ] ¿Pedimos acceso anticipado a Jev ya? (bloquea §5; mientras tanto se avanza con el fallback LLM)
+- [x] Acceso a Jev: el equipo ya lo tiene.
+- [ ] ¿Límites de cuota/rate de nuestra cuenta de Jev? (define el tamaño de las corridas de evaluación)
 - [ ] ¿Consultamos a los organizadores si `complaints.origin_interaction_id` vacío es intencional?
