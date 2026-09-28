@@ -248,6 +248,7 @@ sobre el mismo set held-out:
 | **Baseline** | Reglas por palabras clave ES/PT |
 | **Jev** | Preguntas `choice`/`noul`, con umbral elegido en validación |
 | **LLM** | El mismo LLM del agente, con salida estructurada |
+| **Local abierto** (opcional, §5.7) | Encoder multilingüe preentrenado con cabezas tipadas (noul/choice), ajustado con nuestras etiquetas y calibrado. Corre en nuestra máquina |
 
 - **Métricas:** macro-F1 por clase, **calibración** (ECE, diagrama de confiabilidad), curva cobertura/exactitud
   (cuánto automatizamos con cada umbral), p50/p95 y costo por 1.000 decisiones. Varias corridas del LLM para
@@ -267,6 +268,34 @@ Las decisiones D1–D4 viven detrás de una interfaz `DecisionModel` con la mism
 (pregunta tipada → respuesta + probabilidad). Si Jev falla, supera el tiempo límite o se agota la cuota
 (es un servicio en acceso anticipado, sin SLA publicado), se usa el LLM con salida estructurada. Si también falla, el agente deriva al humano (safe fallback, [Bases §6]).
 La comparación de §5.5 funciona igual con cualquiera de los tres.
+
+### 5.7 Opción abierta: OpenJev y una alternativa local
+
+Jev es propietario: no publica pesos ni permite correrlo en nuestra máquina. Lo abierto son sus SDK de cliente
+([Failproof AI](https://befailproof.ai/jev/is-jev-open-source/)). Existe
+[**OpenJev**](https://github.com/kyegomez/open-jev), una reconstrucción comunitaria de la idea en PyTorch con
+licencia Apache 2.0. Tiene el mismo contrato de salida (`noul`, `choice` y `score` con probabilidad), pero:
+
+| | OpenJev | Lectura para nosotros |
+|---|---|---|
+| Pesos | "random weights": hay que **entrenarlo desde cero** | Con unos cientos de ejemplos etiquetados no va a aprender lenguaje ES/PT en 10 días |
+| Madurez | 6 commits; calibración y robustez ante cambios de distribución pendientes en su TODO | Proyecto de investigación, no un componente listo |
+| Benchmarks | Ninguno publicado | Todo tendríamos que medirlo nosotros |
+| Privacidad | Corre local: **ningún dato sale del perímetro** | Su mayor ventaja frente a Jev (§5.4) |
+
+**Propuesta:** tomar de OpenJev **la interfaz** (preguntas tipadas → probabilidad) y no su modelo sin entrenar.
+Como cuarto candidato opcional usamos un **encoder multilingüe preentrenado** (familia XLM-R o mDeBERTa) con
+cabezas `noul`/`choice`, ajustado con nuestro set ES/PT y calibrado con *temperature scaling* en validación.
+Así:
+
+- se implementa detrás del mismo `DecisionModel` (§5.6), sin cambiar el agente;
+- sirve de **fallback local** que no depende de un servicio externo ni de su cuota;
+- aporta el pipeline de entrenamiento propio que las bases mencionan como una forma de mostrar rigor
+  ("A model-training pipeline is one way to provide that evidence");
+- permite un trade-off honesto en el informe: **Jev** (sin entrenamiento, externo) vs **local** (entrenado por
+  nosotros, privado) vs **LLM** (flexible, más lento y caro).
+
+Es opcional: solo entra si el MVP con Jev y el LLM está listo antes del día 6.
 
 ## 6. Evaluación de extremo a extremo
 
@@ -321,4 +350,5 @@ limits, monitoring, access controls, data retention, and the remaining deploymen
 - [ ] ¿Qué LLM y qué presupuesto de costo por caso?
 - [x] Acceso a Jev: el equipo ya lo tiene.
 - [ ] ¿Límites de cuota/rate de nuestra cuenta de Jev? (define el tamaño de las corridas de evaluación)
+- [ ] ¿Incluimos el candidato local abierto (§5.7)? Requiere GPU o paciencia en CPU para el ajuste
 - [ ] ¿Consultamos a los organizadores si `complaints.origin_interaction_id` vacío es intencional?
