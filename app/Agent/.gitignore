@@ -19,3 +19,6 @@ htmlcov/
 .env
 .env.*
 !.env.example
+
+# ADK dev UI local sessions (may contain user messages)
+.adk/
