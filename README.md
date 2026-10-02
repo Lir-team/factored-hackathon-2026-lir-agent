@@ -14,13 +14,47 @@ proposal is still marked "to be decided by the team"; the agent app currently
 implements only the first building blocks (authenticated session and a
 customer-profile tool).
 
+## Architecture
+
+![Lir serverless architecture on Google Cloud](docs/architecture/architecture-lir-agent.gif)
+
+Target architecture: a serverless agent on Google Cloud, triggered by events
+rather than a chat front end. Services inside the blue box run on Google Cloud;
+everything outside is an external system or provider.
+
+| Zone | Services | Role |
+|---|---|---|
+| Security edge | Identity Platform, API Gateway | Validates the JWT issued after the bank's biometric check (mocked), rate limits, verifies channel webhook signatures |
+| Ingestion | Cloud Storage (`cases-inbox`), Pub/Sub, dead-letter topic | Stores each incoming case, triggers the agent, buffers spikes and retries failures |
+| Agent runtime | Cloud Run `lir-agent` (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) | One service with three routes: `/v1/cases`, `/pubsub/push`, `/channels` |
+| Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-curated`), Firestore | Curated parquet read by the tools; cases and handoffs written and read back |
+| Audit, observability & analytics | BigQuery (`lir_audit`), Looker Studio, Cloud Logging, Trace, Monitoring | Audit receipt for every step, dashboards and alerts |
+| Platform security & delivery | Secret Manager, Cloud IAM, Cloud Build, Artifact Registry, billing budgets | Keys, least-privilege service accounts, build and deploy, spend alerts |
+
+How a case flows:
+
+1. The bank's chatbot verifies the customer (biometric KYC, mocked) and calls
+   `POST /v1/cases` with a JWT through API Gateway.
+2. `lir-agent` stores the case in Cloud Storage and returns `202`; the storage
+   notification publishes to Pub/Sub, which pushes the case back to the agent.
+3. The agent talks to the customer over WhatsApp (mocked) or Telegram in
+   Spanish or Portuguese. Jev returns typed decisions with calibrated
+   probabilities, and a versioned policy in code assigns the lane:
+   auto-resolve (explain the charge or open a verified dispute, never a
+   refund), propose, or escalate.
+4. Proposals and escalations reach a bank officer in Slack with the case file.
+   Every step is written to the audit log in BigQuery.
+
+The LLM (OpenAI through LiteLLM, swappable by configuration) only receives
+minimized data: opaque transaction references and an allowlist of fields.
+
 ## Repository structure
 
 ```
 .
 ├── app/Agent/    # Python agent (Google ADK + LiteLLM), managed with uv
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
-├── docs/         # Product proposal (propuesta-opcion-1-disputas.md)
+├── docs/         # Product proposal and architecture diagram (docs/architecture/)
 └── .githooks/    # Git hooks: secret scan on commit, no direct push to main
 ```
 
