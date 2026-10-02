@@ -39,3 +39,37 @@ def test_no_signal_gives_uniform_low_confidence(model):
 def test_unknown_question_is_an_error(model):
     with pytest.raises(DecisionError):
         model.decide("hola", {"otra": Noul("¿?", true="sí", false="no")})
+
+
+CONFIRMA = {"confirma": Noul("Does the customer agree?", true="Yes", false="No")}
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Sí, por favor.", "si", "Sim, pode ser", "Claro", "ok, gracias", "Sí, confirmo", "dale",
+        "Sí, por favor. Quiero disputar uno de los dos cargos.",
+        "Quero contestar essa cobrança",
+    ],
+)
+def test_a_short_plain_yes_confirms(model, reply):
+    assert model.decide(reply, CONFIRMA).answers["confirma"].value is True
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Sí, pero espera",
+        "No sé si quiero",
+        "si quieres revisalo",
+        "Déjame pensarlo, todavía no hagas nada",
+        "no",
+        "Sim, mas ainda não",
+        "Sí, ¿y cuánto tarda?",
+        "No quiero disputar nada",
+        "Quiero disputarlo, pero espera a mañana",
+        "Confirmo que no quiero abrir la disputa",
+    ],
+)
+def test_a_yes_with_anything_else_does_not_confirm(model, reply):
+    assert model.decide(reply, CONFIRMA).answers["confirma"].value is False
