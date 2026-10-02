@@ -1,0 +1,144 @@
+# SYNTHETIC team policy for the "unrecognized charge" flow. It is NOT a real bank policy.
+# Thresholds are team assumptions to be reviewed and reported as such
+# (Bases: "Use approved rules or a clearly labeled synthetic policy service").
+#
+# Rules are evaluated top to bottom; the first rule whose `when` matches wins.
+# `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
+# Operators: eq, ne, gt, gte, lt, lte, in.
+version: 0.1.0-synthetic
+
+# Maps policy fact names to the question keys used by agent/decisions/questions.py.
+decision_keys:
+  intent: intencion
+  wants_human: pide_humano
+  theft_suspected: sospecha_robo
+  confirms: confirma
+  merchant: comercio
+
+# Turn-level routing, from the typed decisions on the customer's message (before any lookup).
+# Asymmetric thresholds: failing to route someone who needs a human is worse than routing too often.
+turn_rules:
+  - id: T0_decisions_unavailable
+    lane: escalate
+    reason: No decision model could classify the message (safe fallback)
+    when: {decisions_available: {eq: false}}
+  - id: T1_wants_human
+    lane: escalate
+    reason: Customer explicitly asks for a person
+    when: {wants_human_p: {gte: 0.50}}
+  - id: T2_confirmation_received
+    lane: proceed
+    reason: Customer confirmed the pending dispute
+    when: {confirmed_now: {eq: true}}
+  - id: T3_theft_suspected
+    lane: escalate
+    reason: Possible card theft or cloning, handled by the fraud team
+    when: {theft_suspected_p: {gte: 0.30}}
+  - id: T3b_awaiting_confirmation
+    lane: confirm
+    reason: A dispute is pending the customer's explicit confirmation
+    when: {awaiting_confirmation: {eq: true}}
+  - id: T4_uncertain_intent
+    lane: clarify
+    reason: The customer's need is unclear
+    when: {intent_p: {lt: 0.50}}
+  - id: T5_out_of_scope
+    lane: out_of_scope
+    reason: Request not supported by this agent
+    when: {intent: {eq: fuera_de_alcance}}
+  - id: T6_other_complaint
+    lane: escalate
+    reason: Complaint outside the charge flow, intake by a human
+    when: {intent: {eq: otra_queja}}
+  - id: T9_in_scope
+    lane: proceed
+    reason: Charge or transaction inquiry, investigate
+    when: {}
+
+# Case-level decision, from the evidence of one concrete transaction.
+case_rules:
+  - id: C1_high_fraud_score
+    lane: escalate
+    reason: Needs review by a specialist
+    when: {fraud_score: {gte: 70}}
+  - id: C2_foreign_relevant_amount
+    lane: escalate
+    reason: Relevant amount outside the customer's country
+    when: {foreign: {eq: true}, amount_usd: {gte: 300}}
+  - id: C3_pending
+    lane: explain
+    reason: Pending authorization, not a final charge yet
+    when: {status: {eq: Pending}}
+  - id: C4_reversed
+    lane: explain
+    reason: The charge was already reversed
+    when: {status: {eq: Reversed}}
+  - id: C5_declined
+    lane: explain
+    reason: The transaction was declined, nothing was charged
+    when: {status: {eq: Declined}}
+  - id: C6_duplicate_high_amount
+    lane: escalate
+    reason: Possible duplicate with a high amount
+    when: {has_duplicate: {eq: true}, amount_usd: {gte: 1000}}
+  - id: C7_duplicate
+    lane: dispute
+    reason: Same merchant and amount within the duplicate window
+    when: {has_duplicate: {eq: true}}
+  - id: C8_high_amount
+    lane: escalate
+    reason: Amount above the automation limit
+    when: {amount_usd: {gte: 1000}}
+  - id: C9_habitual_merchant
+    lane: explain
+    reason: The customer has paid this merchant before
+    when: {merchant_prior_count: {gte: 2}}
+  - id: C10_no_conclusive_rule
+    lane: propose
+    reason: No conclusive rule, a human approves the drafted answer
+    when: {}
+
+# Which tools each turn lane may call. Enforced in before_tool_callback, not in the prompt.
+tools_by_turn_lane:
+  proceed: [get_my_customer_profile, find_candidate_transactions, get_transaction_evidence, open_dispute,
+            request_human_handoff]
+  clarify: [get_my_customer_profile, find_candidate_transactions, request_human_handoff]
+  confirm: [get_my_customer_profile, get_transaction_evidence, request_human_handoff]
+  escalate: [request_human_handoff]
+  out_of_scope: [get_my_customer_profile, request_human_handoff]
+
+evidence:
+  duplicate_window_hours: 24
+
+search:
+  amount_tolerance_pct: 2.0
+  max_candidates: 5
+  merchant_min_probability: 0.50
+
+confirmation:
+  min_probability: 0.80
+
+# Data minimization for external model requests (Bases, data boundaries; data/AGENTS.md rule 3).
+# Tool results sent to the LLM include only these fields. Internal ids, risk scores and country
+# signals stay in code: the LLM sees session-scoped references (T1, T2, ...) and the policy lane.
+llm_exposure:
+  # Identity documents, contact data, address, demographics, financials and the customer id are absent.
+  customer_fields: [first_name, segment, customer_status, registration_date, country, accepts_marketing]
+  candidate_fields: [transaction_date, amount, currency, merchant_name, merchant_category, transaction_status]
+  evidence_fields: [date, amount, currency, merchant_name, merchant_category, status,
+                    merchant_prior_count, merchant_last_seen, has_duplicate]
+  # Rule ids stay in state and audit; they can reveal risk signals (e.g. a high fraud score).
+  outcome_fields: [lane, reason]
+
+# Deterministic output guard: replies matching any pattern are replaced by `fallback_message`.
+output_guard:
+  forbidden_patterns:
+    - '(?i)\b(te|le)\s+(vamos\s+a\s+)?(devolver|reembolsar|reintegrar)'
+    - '(?i)\breembols\w*\s+(aprobad|confirmad|garantizad)'
+    - '(?i)\b(vamos|iremos)\s+(devolver|reembolsar|estornar)'
+    - '(?i)\bestorno\s+(aprovad|confirmad|garantid)'
+    - '(?i)\b(cvv|cvc|clave|contraseña|senha|pin)\b.*\?'
+  fallback_message: >-
+    Tu caso quedó registrado y un especialista lo revisará. No podemos confirmar devoluciones
+    por este canal. / Seu caso foi registrado e um especialista vai analisá-lo. Não podemos
+    confirmar estornos por este canal.

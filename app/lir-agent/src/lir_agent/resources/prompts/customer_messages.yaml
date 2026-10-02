@@ -1,0 +1,7 @@
+# Fixed replies sent to the customer without calling the model (Spanish / Portuguese).
+session_not_authenticated: >-
+  Necesitas iniciar sesión en la app del banco para que pueda ayudarte. /
+  Você precisa entrar no app do banco para que eu possa ajudar.
+session_expired: >-
+  Tu sesión expiró. Vuelve a iniciar sesión en la app del banco. /
+  Sua sessão expirou. Entre novamente no app do banco.

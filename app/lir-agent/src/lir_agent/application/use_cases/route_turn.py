@@ -1,0 +1,105 @@
+"""Use case: classify a new customer message and route the turn through the policy engine."""
+
+import time
+
+from decision_layer import DecisionError, DecisionModel
+from decision_layer.questions import TURN_QUESTIONS
+
+from lir_agent.application.ports import AuditSink
+from lir_agent.application.questions import CONFIRMATION
+from lir_agent.application.use_cases.request_handoff import RequestHandoff
+from lir_agent.domain.models import Lane, Outcome
+from lir_agent.domain.policy import PolicyEngine
+from lir_agent.domain.session import SessionState
+
+
+class RouteTurn:
+    """Use case: classify a new message and route the turn through the policy."""
+
+    def __init__(
+        self,
+        decisions: DecisionModel,
+        policy: PolicyEngine,
+        handoff: RequestHandoff,
+        audit: AuditSink,
+    ) -> None:
+        """Keep the decision model, policy, handoff use case and audit sink."""
+        self._decisions = decisions
+        self._policy = policy
+        self._handoff = handoff
+        self._audit = audit
+        self._confirms_key = policy.config.decision_keys["confirms"]
+        self._confirm_min = policy.config.confirmation["min_probability"]
+
+    def execute(
+        self, session: SessionState, text: str, session_id: str | None = None
+    ) -> Outcome:
+        """Decide the turn lane for a new customer message and record why."""
+        session.last_user_text = text
+        pending = session.pending_confirmation
+        questions = dict(TURN_QUESTIONS)
+        if pending:
+            questions[self._confirms_key] = CONFIRMATION
+        decisions = self._classify(text, questions, session_id)
+
+        confirmed_now = self._resolve_confirmation(session, pending, decisions)
+        facts = {
+            **self._policy.turn_facts(decisions),
+            "confirmed_now": confirmed_now,
+            "awaiting_confirmation": bool(pending) and not confirmed_now,
+        }
+        outcome = self._policy.route_turn(facts)
+        session.decisions = decisions
+        session.turn_outcome = outcome
+        self._audit.record(
+            "turn_routed",
+            session_id,
+            outcome=outcome.model_dump(mode="json"),
+            decisions=decisions,
+            confirmed_now=confirmed_now,
+        )
+        if outcome.lane == Lane.ESCALATE and not session.handoff_id:
+            result = self._handoff.execute(session)
+            self._audit.record(
+                "handoff_created", session_id, trigger=outcome.rule_id, **result
+            )
+        return outcome
+
+    def _resolve_confirmation(
+        self, session: SessionState, pending: str | None, decisions: dict | None
+    ) -> bool:
+        if not (pending and decisions):
+            return False
+        confirmed = (
+            decisions.get(self._confirms_key, {}).get("probability", 0.0)
+            >= self._confirm_min
+        )
+        session.confirmed_transaction = pending if confirmed else None
+        if (
+            confirmed
+        ):  # an unclear answer keeps the request pending; the agent asks again
+            session.pending_confirmation = None
+        return confirmed
+
+    def _classify(
+        self, text: str, questions: dict, session_id: str | None
+    ) -> dict | None:
+        """Serialized typed decisions, or None when no model could decide (the policy escalates)."""
+        started = time.perf_counter()
+        try:
+            result = self._decisions.decide(text, questions)
+        except DecisionError as error:
+            self._audit.record("decision_failed", session_id, error=str(error))
+            return None
+        self._audit.record(
+            "decision",
+            session_id,
+            model=result.model,
+            latency_ms=result.latency_ms,
+            input_tokens=result.input_tokens,
+            wall_ms=round((time.perf_counter() - started) * 1000, 1),
+        )
+        return {
+            key: {"value": a.value, "probability": a.probability}
+            for key, a in result.answers.items()
+        }

@@ -1,0 +1,27 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual environments
+.venv/
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local secrets. .env.example is committed; .env never is.
+.env
+.env.*
+!.env.example
+
+# ADK dev UI local sessions (may contain user messages)
+.adk/
+
+# Local audit log (contains conversation metadata)
+.audit/
