@@ -51,9 +51,8 @@ def test_root_agent_passes_api_base_to_litellm(
     assert agent.model._additional_args["api_base"] == "http://ollama.internal:11434"
 
 
-def test_root_agent_exposes_the_add_tool() -> None:
-    from Agent.agent.agent import add
+def test_root_agent_exposes_the_customer_lookup_tool() -> None:
+    from Agent.agent.tools.customers import get_customer_by_id
 
     agent = build_root_agent()
-    assert add in agent.tools
-    assert add(2, 3) == 5
+    assert get_customer_by_id in agent.tools

@@ -8,6 +8,7 @@ agent at a different backend.
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
+from Agent.agent.tools.customers import get_customer_by_id
 from Agent.config import get_settings
 
 ROOT_AGENT_NAME = "clir_agent"
@@ -24,24 +25,6 @@ def build_model() -> LiteLlm:
     return LiteLlm(model=settings.llm_model, api_base=settings.llm_api_base)
 
 
-def add(a: int, b: int) -> int:
-    """Add two integers.
-
-    ADK turns this function into a tool: the name, the type hints and this
-    docstring are what the model sees, so they must describe the behavior
-    precisely.
-
-    Args:
-        a: First addend.
-        b: Second addend.
-
-    Returns:
-        The sum of `a` and `b`.
-    """
-    print("entre en la suma")
-    return a + b
-
-
 def build_root_agent() -> LlmAgent:
     """Create the root agent from the current settings.
 
@@ -53,7 +36,7 @@ def build_root_agent() -> LlmAgent:
         model=build_model(),
         description="Root agent for the CLIR hackathon project.",
         instruction=ROOT_AGENT_INSTRUCTION,
-        tools=[add],
+        tools=[get_customer_by_id],
     )
 
 
