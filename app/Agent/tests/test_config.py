@@ -1,0 +1,69 @@
+"""Tests for settings loading."""
+
+import pathlib
+
+import pytest
+from pydantic import ValidationError
+
+from Agent.config import Settings, get_settings
+
+
+@pytest.fixture(autouse=True)
+def _isolated_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Give each test an empty environment and a directory with no `.env`."""
+    monkeypatch.chdir(tmp_path)
+    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE"):
+        monkeypatch.delenv(key, raising=False)
+    get_settings.cache_clear()
+
+
+def test_defaults_apply_when_nothing_is_set() -> None:
+    assert Settings().environment == "local"
+
+
+def test_process_environment_overrides_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    assert Settings().environment == "production"
+
+
+def test_dotenv_file_is_read(tmp_path: pathlib.Path) -> None:
+    (tmp_path / ".env").write_text("ENVIRONMENT=staging\n")
+    assert Settings().environment == "staging"
+
+
+def test_process_environment_wins_over_dotenv(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    (tmp_path / ".env").write_text("ENVIRONMENT=staging\n")
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    assert Settings().environment == "production"
+
+
+def test_invalid_value_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "not-a-real-environment")
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_settings_accessor_is_cached() -> None:
+    assert get_settings() is get_settings()
+
+
+def test_llm_defaults_point_at_local_ollama() -> None:
+    settings = Settings()
+    assert settings.llm_model == "ollama_chat/llama3.1"
+    assert settings.llm_api_base == "http://localhost:11434"
+
+
+def test_llm_settings_read_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MODEL", "ollama_chat/qwen3:8b")
+    monkeypatch.setenv("LLM_API_BASE", "http://10.0.0.5:11434")
+    settings = Settings()
+    assert settings.llm_model == "ollama_chat/qwen3:8b"
+    assert settings.llm_api_base == "http://10.0.0.5:11434"
