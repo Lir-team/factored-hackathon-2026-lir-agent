@@ -8,7 +8,7 @@ import duckdb
 import pytest
 from google.adk.tools import FunctionTool, ToolContext
 
-from Agent.agent.hardening.guardrails.authentication import (
+from Agent.agent.auth.session import (
     CUSTOMER_ID_STATE_KEY,
     UnauthenticatedSessionError,
 )

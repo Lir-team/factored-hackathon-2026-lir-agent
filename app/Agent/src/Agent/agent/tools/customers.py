@@ -13,7 +13,7 @@ from typing import Any
 
 from google.adk.tools import ToolContext
 
-from Agent.agent.hardening.guardrails.authentication import require_customer_id
+from Agent.agent.auth.session import require_customer_id
 from Agent.config import get_settings
 from Agent.infrastructure.customers import CustomerRepository
 
