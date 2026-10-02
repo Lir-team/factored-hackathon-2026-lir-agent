@@ -7,6 +7,9 @@ from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from Agent.agent.agent import build_root_agent
+from Agent.agent.hardening.guardrails.authentication import (
+    require_authenticated_customer,
+)
 from Agent.config import get_settings
 
 
@@ -51,11 +54,22 @@ def test_root_agent_passes_api_base_to_litellm(
     assert agent.model._additional_args["api_base"] == "http://ollama.internal:11434"
 
 
-def test_root_agent_exposes_the_customer_lookup_tool() -> None:
-    from Agent.agent.tools.customers import get_customer_by_id
+def test_root_agent_exposes_the_customer_profile_tool() -> None:
+    from Agent.agent.tools.customers import get_my_customer_profile
 
     agent = build_root_agent()
-    assert get_customer_by_id in agent.tools
+    assert get_my_customer_profile in agent.tools
+
+
+def test_root_agent_registers_the_authentication_guardrail() -> None:
+    agent = build_root_agent()
+    assert agent.before_agent_callback is require_authenticated_customer
+
+
+def test_root_agent_instruction_forbids_asking_for_a_customer_id() -> None:
+    instruction = build_root_agent().instruction
+    assert isinstance(instruction, str)
+    assert "never ask" in instruction.lower()
 
 
 def test_root_agent_omits_api_base_for_hosted_providers(

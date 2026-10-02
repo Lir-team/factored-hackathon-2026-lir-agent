@@ -2,11 +2,17 @@
 
 import logging
 import pathlib
+import types
 
 import duckdb
 import pytest
+from google.adk.tools import FunctionTool, ToolContext
 
-from Agent.agent.tools.customers import get_customer_by_id
+from Agent.agent.hardening.guardrails.authentication import (
+    CUSTOMER_ID_STATE_KEY,
+    UnauthenticatedSessionError,
+)
+from Agent.agent.tools.customers import get_my_customer_profile
 from Agent.config import get_settings
 from Agent.infrastructure.customers import CustomerRepository
 
@@ -48,34 +54,46 @@ def test_repository_is_safe_against_injection(data_dir: pathlib.Path) -> None:
     assert CustomerRepository(data_dir).get_by_id("' OR 1=1 --") is None
 
 
-def test_tool_returns_customer() -> None:
-    result = get_customer_by_id("CLI-1")
+def session(customer_id: object) -> ToolContext:
+    """Fake tool context whose session state holds the authenticated ID."""
+    return types.SimpleNamespace(state={CUSTOMER_ID_STATE_KEY: customer_id})  # type: ignore[return-value]
+
+
+def test_tool_returns_the_session_customer() -> None:
+    result = get_my_customer_profile(session("CLI-1"))
     assert result["found"] is True
     assert result["customer"]["email"] == "ana@example.com"
     assert result["customer"]["date_of_birth"] == "1990-01-02"
 
 
-def test_tool_reports_missing_customer() -> None:
-    result = get_customer_by_id("CLI-404")
-    assert result == {"found": False, "customer_id": "CLI-404"}
+def test_tool_does_not_return_the_customer_id() -> None:
+    result = get_my_customer_profile(session("CLI-1"))
+    assert "customer_id" not in result["customer"]
+    assert "CLI-1" not in str(result)
 
 
-def test_tool_normalizes_the_id() -> None:
-    assert get_customer_by_id("  cli-1 ")["found"] is True
+def test_tool_reports_unknown_customer_without_echoing_the_id() -> None:
+    result = get_my_customer_profile(session("CLI-404"))
+    assert result == {"found": False}
 
 
-@pytest.mark.parametrize("missing", ["", "   "])
-def test_tool_rejects_a_missing_id(missing: str) -> None:
-    result = get_customer_by_id(missing)
-    assert result["found"] is False
-    assert "customer_id is required" in result["error"]
+@pytest.mark.parametrize("bad_id", [None, "", "   "])
+def test_tool_without_authenticated_customer_raises(bad_id: str | None) -> None:
+    with pytest.raises(UnauthenticatedSessionError):
+        get_my_customer_profile(session(bad_id))
+
+
+def test_tool_without_state_key_raises() -> None:
+    context = types.SimpleNamespace(state={})
+    with pytest.raises(UnauthenticatedSessionError):
+        get_my_customer_profile(context)  # type: ignore[arg-type]
 
 
 def test_tool_logs_found_lookup_without_customer_data(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="Agent"):
-        get_customer_by_id("CLI-1")
+        get_my_customer_profile(session("CLI-1"))
 
     assert "CLI-1" in caplog.text
     # Customer records are PII and must never reach the logs.
@@ -85,18 +103,18 @@ def test_tool_logs_found_lookup_without_customer_data(
 
 def test_tool_logs_missing_customer_at_info(caplog: pytest.LogCaptureFixture) -> None:
     with caplog.at_level(logging.DEBUG, logger="Agent.agent.tools.customers"):
-        get_customer_by_id("CLI-404")
+        get_my_customer_profile(session("CLI-404"))
 
     assert [(r.levelno, r.customer_id) for r in caplog.records] == [  # type: ignore[attr-defined]
         (logging.INFO, "CLI-404")
     ]
 
 
-def test_tool_warns_when_the_id_is_missing(caplog: pytest.LogCaptureFixture) -> None:
-    with caplog.at_level(logging.WARNING, logger="Agent.agent.tools.customers"):
-        get_customer_by_id("")
-
-    assert [r.levelno for r in caplog.records] == [logging.WARNING]
+def test_model_facing_declaration_has_no_parameters() -> None:
+    # The model must not be able to supply or change the customer ID.
+    declaration = FunctionTool(get_my_customer_profile)._get_declaration()
+    assert declaration is not None
+    assert declaration.parameters is None
 
 
 def test_repository_logs_query_timing_at_debug(

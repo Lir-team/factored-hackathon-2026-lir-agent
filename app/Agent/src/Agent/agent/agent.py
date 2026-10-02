@@ -10,7 +10,10 @@ from typing import Any
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
-from Agent.agent.tools.customers import get_customer_by_id
+from Agent.agent.hardening.guardrails.authentication import (
+    require_authenticated_customer,
+)
+from Agent.agent.tools.customers import get_my_customer_profile
 from Agent.config import get_settings
 
 ROOT_AGENT_NAME = "clir_agent"
@@ -18,6 +21,8 @@ ROOT_AGENT_NAME = "clir_agent"
 ROOT_AGENT_INSTRUCTION = """\
 You are the CLIR assistant. Answer concisely and accurately.
 If you do not know something, say so instead of guessing.
+You serve the customer signed in to this session. Your tools already know who
+they are, so never ask for or reveal a customer ID.
 """
 
 
@@ -54,7 +59,8 @@ def build_root_agent() -> LlmAgent:
         model=build_model(),
         description="Root agent for the CLIR hackathon project.",
         instruction=ROOT_AGENT_INSTRUCTION,
-        tools=[get_customer_by_id],
+        tools=[get_my_customer_profile],
+        before_agent_callback=require_authenticated_customer,
     )
 
 
