@@ -130,15 +130,23 @@ llm_exposure:
   # Rule ids stay in state and audit; they can reveal risk signals (e.g. a high fraud score).
   outcome_fields: [lane, reason]
 
-# Deterministic output guard: replies matching any pattern are replaced by `fallback_message`.
+# Deterministic output guard: a reply matching a pattern is replaced by `fallback_message`
+# in the customer's language (detected in code from their message).
 output_guard:
+  # Always blocked, even inside a negation: asking for credentials.
   forbidden_patterns:
+    - '(?i)\b(cvv|cvc|clave|contraseña|senha|pin)\b.*\?'
+  # Refund promises. Blocked unless a negation precedes them in the same clause, so
+  # "no puedo prometer que te vamos a devolver" passes and "te vamos a devolver" does not.
+  forbidden_unless_negated:
     - '(?i)\b(te|le)\s+(vamos\s+a\s+)?(devolver|reembolsar|reintegrar)'
     - '(?i)\breembols\w*\s+(aprobad|confirmad|garantizad)'
     - '(?i)\b(vamos|iremos)\s+(devolver|reembolsar|estornar)'
     - '(?i)\bestorno\s+(aprovad|confirmad|garantid)'
-    - '(?i)\b(cvv|cvc|clave|contraseña|senha|pin)\b.*\?'
-  fallback_message: >-
-    Tu caso quedó registrado y un especialista lo revisará. No podemos confirmar devoluciones
-    por este canal. / Seu caso foi registrado e um especialista vai analisá-lo. Não podemos
-    confirmar estornos por este canal.
+  fallback_message:
+    es: >-
+      Tu caso quedó registrado y un especialista lo revisará. No podemos confirmar
+      devoluciones por este canal.
+    pt: >-
+      Seu caso foi registrado e um especialista vai analisá-lo. Não podemos confirmar
+      estornos por este canal.

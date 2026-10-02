@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from lir_agent.application.use_cases import SearchCriteria
@@ -94,3 +96,50 @@ def test_handoff_packet_uses_verified_facts(harness, session):
     assert result["status"] == "submitted"
     assert packet.verified_evidence[0].transaction_id == "TXN-D1-008"
     assert packet.model_summary == "summary"
+
+
+def test_confirming_a_duplicate_covers_both_charges_of_the_pair(harness, session):
+    # The agent looks at both duplicates; the last lookup is the pending confirmation,
+    # but the customer confirmed "the duplicate charge", so either charge may be disputed.
+    gather(harness, session, "TXN-D1-006")
+    gather(harness, session, "TXN-D1-005")
+    session.confirmed_transaction = session.pending_confirmation
+    guard = harness.container.dispute_guard
+    assert guard.check(session, "TXN-D1-006") is None
+    assert guard.check(session, "TXN-D1-005") is None
+
+
+def test_confirmation_does_not_cover_an_unrelated_charge(harness, session):
+    gather(harness, session, "TXN-D1-004")
+    gather(harness, session, "TXN-D1-006")
+    session.confirmed_transaction = session.pending_confirmation
+    assert harness.container.dispute_guard.check(session, "TXN-D1-004") is not None
+
+
+def test_exact_amount_matches_hide_near_ones(make_harness, settings, tmp_path, context):
+    txn = {
+        "customer_id": "CLI-DEMO-001", "transaction_date": "2026-06-05T10:00:00",
+        "currency": "MXN", "merchant_category": "Retail", "transaction_status": "Approved",
+    }
+    world = {
+        "customers": [{"customer_id": "CLI-DEMO-001", "country": "Mexico"}],
+        "transactions": [
+            {**txn, "transaction_id": "T-EXACT-1", "amount": 250.0, "merchant_name": "CINE"},
+            {**txn, "transaction_id": "T-EXACT-2", "amount": 250.0, "merchant_name": "FARMACIA"},
+            {**txn, "transaction_id": "T-NEAR", "amount": 245.5, "merchant_name": "OXXO"},
+        ],
+    }
+    (tmp_path / "world.json").write_text(json.dumps(world), encoding="utf-8")
+    settings.fixture_path = tmp_path / "world.json"
+    session = SessionState(context.state)
+    find = make_harness().container.find_candidates
+
+    exact = find.execute(session, SearchCriteria(amount=250))
+    assert {session.resolve_ref(c["transaction_ref"]) for c in exact["candidates"]} == {
+        "T-EXACT-1",
+        "T-EXACT-2",
+    }
+    near = find.execute(session, SearchCriteria(amount=244))  # no exact match: tolerance
+    assert [session.resolve_ref(c["transaction_ref"]) for c in near["candidates"]] == [
+        "T-NEAR"
+    ]

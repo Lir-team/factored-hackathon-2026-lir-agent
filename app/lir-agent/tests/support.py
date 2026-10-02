@@ -74,18 +74,27 @@ class Harness:
             dispute_guard=container.dispute_guard,
             guidance=TurnGuidance(loader.load_mapping(settings.turn_guidance_path)),
             messages=CustomerMessages(
-                loader.load_mapping(settings.customer_messages_path)
+                loader.load_localized_mapping(settings.customer_messages_path)
             ),
             audit=audit,
         )
 
 
-def make_context(authenticated: bool = True, ttl_minutes: int = 15) -> SimpleNamespace:
-    """Stand-in for ADK's CallbackContext / ToolContext: a state mapping and a session id."""
+def make_context(
+    authenticated: bool = True, ttl_minutes: int = 15, user_text: str | None = None
+) -> SimpleNamespace:
+    """Stand-in for ADK's CallbackContext / ToolContext: state, session id, user message."""
     state: dict = {}
     if authenticated:
         SessionState(state).start(CUSTOMER, timedelta(minutes=ttl_minutes), "unit_test")
-    return SimpleNamespace(state=state, session=SimpleNamespace(id="test-session"))
+    content = (
+        types.Content(role="user", parts=[types.Part(text=user_text)])
+        if user_text
+        else None
+    )
+    return SimpleNamespace(
+        state=state, session=SimpleNamespace(id="test-session"), user_content=content
+    )
 
 
 def user_request(text: str) -> LlmRequest:

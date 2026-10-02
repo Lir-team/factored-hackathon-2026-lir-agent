@@ -21,6 +21,24 @@ class DisputeGuard:
             return DisputeBlock.POLICY_DOES_NOT_ALLOW
         if case_outcome.lane != Lane.DISPUTE:
             return DisputeBlock.POLICY_DOES_NOT_ALLOW
-        if session.confirmed_transaction != transaction_id:
+        if transaction_id not in self._confirmed_charge(session):
             return DisputeBlock.CONFIRMATION_REQUIRED
         return None
+
+    @staticmethod
+    def _confirmed_charge(session: SessionState) -> set[str]:
+        """The confirmed transaction plus its duplicates: one charge, billed twice.
+
+        The customer confirms disputing "the duplicate charge"; which of the twin records
+        the agent looked at last must not decide whether the dispute can be opened.
+        """
+        confirmed = session.confirmed_transaction
+        if confirmed is None:
+            return set()
+        twins = {
+            twin
+            for evidence in session.evidence
+            if evidence.transaction_id == confirmed
+            for twin in evidence.duplicate_of
+        }
+        return {confirmed, *twins}

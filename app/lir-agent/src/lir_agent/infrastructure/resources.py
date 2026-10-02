@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 
 from lir_agent.domain.evidence import CountryResolver
+from lir_agent.domain.language import DEFAULT_LANGUAGE
 from lir_agent.domain.policy import PolicyConfig, PolicyEngine
 
 
@@ -27,6 +28,16 @@ class ResourceLoader:
     def load_mapping(self, path: Path) -> dict[str, str]:
         """Read a flat YAML mapping of text templates."""
         return _read_yaml(path)
+
+    def load_localized_mapping(self, path: Path) -> dict[str, dict[str, str]]:
+        """Read texts keyed by situation, then language; every entry needs the default."""
+        mapping = _read_yaml(path)
+        for key, by_language in mapping.items():
+            if not isinstance(by_language, dict) or DEFAULT_LANGUAGE not in by_language:
+                raise ValueError(
+                    f"{path.name}: '{key}' needs a '{DEFAULT_LANGUAGE}' text per language"
+                )
+        return mapping
 
     def load_text(self, path: Path) -> str:
         """Read a text resource such as the agent instruction."""
