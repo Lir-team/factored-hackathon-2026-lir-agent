@@ -1,8 +1,10 @@
 """Customer tools.
 
-Customer records are PII, so tools return only the fields the model needs.
+Customer records are PII. Logs carry the customer ID for traceability and
+never the record itself.
 """
 
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from functools import lru_cache
@@ -10,6 +12,8 @@ from typing import Any
 
 from Agent.config import get_settings
 from Agent.infrastructure.customers import CustomerRepository
+
+logger = logging.getLogger(__name__)
 
 # Internal columns the model has no use for.
 _HIDDEN_COLUMNS = {"_source_file"}
@@ -47,16 +51,21 @@ def get_customer_by_id(customer_id: str) -> dict[str, Any]:
     # with a correction it can act on instead of raising.
     normalized = (customer_id or "").strip().upper()
     if not normalized:
+        logger.warning("get_customer_by_id called without a customer_id")
         return {
             "found": False,
             "error": "customer_id is required; ask the user for the customer ID.",
         }
     row = _repository().get_by_id(normalized)
     if row is None:
+        logger.info(
+            "Customer %s not found", normalized, extra={"customer_id": normalized}
+        )
         return {"found": False, "customer_id": normalized}
     customer = {
         key: _to_json_value(value)
         for key, value in row.items()
         if key not in _HIDDEN_COLUMNS
     }
+    logger.debug("Customer %s found", normalized, extra={"customer_id": normalized})
     return {"found": True, "customer": customer}

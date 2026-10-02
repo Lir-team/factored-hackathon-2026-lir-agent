@@ -1,6 +1,12 @@
 """Tests for the in-memory terminal chat loop."""
 
-from Agent.chat import EXIT_PHRASE, chat_loop
+import logging
+
+import pytest
+from google.adk.events import Event
+from google.genai import types
+
+from Agent.chat import EXIT_PHRASE, build_ask, chat_loop
 
 
 def make_reader(lines: list[str]):
@@ -67,3 +73,51 @@ def test_end_of_input_ends_the_loop() -> None:
         raise EOFError
 
     chat_loop(ask=lambda m: "x", read=read, write=lambda _: None)
+
+
+class FakeRunner:
+    """Stands in for InMemoryRunner, replaying a fixed list of ADK events."""
+
+    def __init__(self, events: list[Event]) -> None:
+        self.events = events
+
+    def run(self, **_: object) -> list[Event]:
+        return self.events
+
+
+def text_event(text: str) -> Event:
+    return Event(author="agent", content=types.Content(parts=[types.Part(text=text)]))
+
+
+def tool_call_event(name: str) -> Event:
+    call = types.FunctionCall(name=name, args={"customer_id": "42"})
+    return Event(
+        author="agent", content=types.Content(parts=[types.Part(function_call=call)])
+    )
+
+
+def test_ask_returns_final_reply_text() -> None:
+    ask = build_ask(FakeRunner([text_event("hi there")]), "s1")  # type: ignore[arg-type]
+
+    assert ask("hello") == "hi there"
+
+
+def test_ask_logs_tool_calls(caplog: pytest.LogCaptureFixture) -> None:
+    runner = FakeRunner([tool_call_event("get_customer"), text_event("done")])
+
+    with caplog.at_level(logging.DEBUG, logger="Agent.chat"):
+        build_ask(runner, "s1")("who is 42?")  # type: ignore[arg-type]
+
+    assert "get_customer" in caplog.text
+
+
+def test_ask_warns_when_agent_returns_no_text(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    runner = FakeRunner([tool_call_event("get_customer")])
+
+    with caplog.at_level(logging.WARNING, logger="Agent.chat"):
+        reply = build_ask(runner, "s1")("who is 42?")  # type: ignore[arg-type]
+
+    assert reply == ""
+    assert any(r.levelno == logging.WARNING for r in caplog.records)

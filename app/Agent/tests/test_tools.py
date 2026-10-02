@@ -1,5 +1,6 @@
 """Tests for the agent tools backed by DuckDB over parquet."""
 
+import logging
 import pathlib
 
 import duckdb
@@ -68,3 +69,43 @@ def test_tool_rejects_a_missing_id(missing: str) -> None:
     result = get_customer_by_id(missing)
     assert result["found"] is False
     assert "customer_id is required" in result["error"]
+
+
+def test_tool_logs_found_lookup_without_customer_data(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.DEBUG, logger="Agent"):
+        get_customer_by_id("CLI-1")
+
+    assert "CLI-1" in caplog.text
+    # Customer records are PII and must never reach the logs.
+    assert "ana@example.com" not in caplog.text
+    assert "Ana" not in caplog.text
+
+
+def test_tool_logs_missing_customer_at_info(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.DEBUG, logger="Agent.agent.tools.customers"):
+        get_customer_by_id("CLI-404")
+
+    assert [(r.levelno, r.customer_id) for r in caplog.records] == [  # type: ignore[attr-defined]
+        (logging.INFO, "CLI-404")
+    ]
+
+
+def test_tool_warns_when_the_id_is_missing(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING, logger="Agent.agent.tools.customers"):
+        get_customer_by_id("")
+
+    assert [r.levelno for r in caplog.records] == [logging.WARNING]
+
+
+def test_repository_logs_query_timing_at_debug(
+    data_dir: pathlib.Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    repo = CustomerRepository(data_dir)
+
+    with caplog.at_level(logging.DEBUG, logger="Agent.infrastructure.customers"):
+        repo.get_by_id("CLI-1")
+
+    assert [r.levelno for r in caplog.records] == [logging.DEBUG]
+    assert "ms" in caplog.text
