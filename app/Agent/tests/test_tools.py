@@ -12,7 +12,7 @@ from Agent.agent.hardening.guardrails.authentication import (
     CUSTOMER_ID_STATE_KEY,
     UnauthenticatedSessionError,
 )
-from Agent.agent.tools.customers import get_my_customer_profile
+from Agent.agent.tools.customers import MODEL_VISIBLE_FIELDS, get_my_customer_profile
 from Agent.config import get_settings
 from Agent.infrastructure.customers import CustomerRepository
 
@@ -24,9 +24,12 @@ def data_dir(tmp_path: pathlib.Path) -> pathlib.Path:
     duckdb.sql(
         """
         SELECT * FROM (VALUES
-            ('CLI-1', 'Ana', 'Perez', 'ana@example.com', 'active', 'CO', DATE '1990-01-02'),
-            ('CLI-2', 'Luis', 'Gomez', 'luis@example.com', 'inactive', 'MX', DATE '1985-05-06')
-        ) t(customer_id, first_name, last_name, email, customer_status, country, date_of_birth)
+            ('CLI-1', 'Ana', 'Perez', 'ana@example.com', 'active', 'CO', DATE '1990-01-02',
+             'premium', TIMESTAMP '2020-03-04 05:06:07', true),
+            ('CLI-2', 'Luis', 'Gomez', 'luis@example.com', 'inactive', 'MX', DATE '1985-05-06',
+             'mass', TIMESTAMP '2021-01-01 00:00:00', false)
+        ) t(customer_id, first_name, last_name, email, customer_status, country, date_of_birth,
+            segment, registration_date, accepts_marketing)
         """
     ).write_parquet(str(staging / "customers.parquet"))
     return tmp_path
@@ -61,9 +64,25 @@ def session(customer_id: object) -> ToolContext:
 
 def test_tool_returns_the_session_customer() -> None:
     result = get_my_customer_profile(session("CLI-1"))
-    assert result["found"] is True
-    assert result["customer"]["email"] == "ana@example.com"
-    assert result["customer"]["date_of_birth"] == "1990-01-02"
+    assert result == {
+        "found": True,
+        "customer": {
+            "first_name": "Ana",
+            "segment": "premium",
+            "customer_status": "active",
+            "registration_date": "2020-03-04T05:06:07",
+            "country": "CO",
+            "accepts_marketing": True,
+        },
+    }
+
+
+def test_tool_never_returns_fields_outside_the_allowlist() -> None:
+    result = get_my_customer_profile(session("CLI-1"))
+    assert set(result["customer"]) <= set(MODEL_VISIBLE_FIELDS)
+    # PII present in the source row must not reach the model.
+    for pii in ("Perez", "ana@example.com", "1990-01-02"):
+        assert pii not in str(result)
 
 
 def test_tool_does_not_return_the_customer_id() -> None:
