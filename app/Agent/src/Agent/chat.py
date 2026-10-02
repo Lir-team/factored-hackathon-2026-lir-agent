@@ -18,7 +18,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 from .agent.agent import build_root_agent
-from .agent.hardening.guardrails.authentication import CUSTOMER_ID_STATE_KEY
+from .agent.auth.session import CUSTOMER_ID_STATE_KEY
 from .logging_config import configure_logging
 
 EXIT_PHRASE = "chao pescao"

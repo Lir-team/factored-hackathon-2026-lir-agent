@@ -11,12 +11,14 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types as genai_types
 
 from Agent.agent.agent import build_root_agent
-from Agent.agent.hardening.guardrails.authentication import (
+from Agent.agent.auth.session import (
     CUSTOMER_ID_STATE_KEY,
-    UNAUTHENTICATED_REPLY,
     UnauthenticatedSessionError,
-    require_authenticated_customer,
     require_customer_id,
+)
+from Agent.agent.hardening.guardrails.authentication import (
+    UNAUTHENTICATED_REPLY,
+    require_authenticated_customer,
 )
 from Agent.config import get_settings
 

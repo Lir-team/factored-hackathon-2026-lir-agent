@@ -10,7 +10,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 from Agent.agent.agent import build_root_agent
-from Agent.agent.hardening.guardrails.authentication import CUSTOMER_ID_STATE_KEY
+from Agent.agent.auth.session import CUSTOMER_ID_STATE_KEY
 from Agent.chat import (
     APP_NAME,
     EXIT_PHRASE,
