@@ -5,6 +5,8 @@ detail: changing `LLM_MODEL` and `LLM_API_BASE` is enough to point the same
 agent at a different backend.
 """
 
+from typing import Any
+
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
@@ -20,9 +22,25 @@ If you do not know something, say so instead of guessing.
 
 
 def build_model() -> LiteLlm:
-    """Create the LiteLLM-backed model from the current settings."""
+    """Create the LiteLLM-backed model from the current settings.
+
+    Switching provider is a `.env` change, never a code change:
+
+    - Ollama:  LLM_MODEL=ollama_chat/<model>  LLM_API_BASE=http://localhost:11434
+    - OpenAI:  LLM_MODEL=openai/<model>       LLM_API_KEY=sk-...  LLM_API_BASE=
+
+    The key is passed explicitly because `Settings` reads `.env` without
+    exporting it to `os.environ`, where LiteLLM would otherwise look for it.
+    """
     settings = get_settings()
-    return LiteLlm(model=settings.llm_model, api_base=settings.llm_api_base)
+    kwargs: dict[str, Any] = {}
+    if settings.llm_api_base:
+        kwargs["api_base"] = settings.llm_api_base
+
+    if settings.llm_api_key:
+        kwargs["api_key"] = settings.llm_api_key.get_secret_value()
+
+    return LiteLlm(model=settings.llm_model, **kwargs)
 
 
 def build_root_agent() -> LlmAgent:

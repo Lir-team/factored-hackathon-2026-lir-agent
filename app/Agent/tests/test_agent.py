@@ -15,7 +15,7 @@ def _isolated_environment(
     monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE"):
+    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE", "LLM_API_KEY"):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()
 
@@ -56,3 +56,36 @@ def test_root_agent_exposes_the_customer_lookup_tool() -> None:
 
     agent = build_root_agent()
     assert get_customer_by_id in agent.tools
+
+
+def test_root_agent_omits_api_base_for_hosted_providers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    monkeypatch.setenv("LLM_API_BASE", "")
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert "api_base" not in agent.model._additional_args
+
+
+def test_root_agent_passes_api_key_to_litellm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert agent.model._additional_args["api_key"] == "sk-test"
+
+
+def test_root_agent_omits_api_key_when_unset() -> None:
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert "api_key" not in agent.model._additional_args
+
+
+def test_api_key_is_hidden_from_settings_repr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+    assert "sk-test" not in repr(get_settings())
