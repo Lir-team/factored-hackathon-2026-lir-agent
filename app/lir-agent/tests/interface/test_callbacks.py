@@ -1,3 +1,5 @@
+from datetime import date
+
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
@@ -94,6 +96,18 @@ def test_lane_guidance_is_appended(harness, context):
     request = user_request("no reconozco un cargo")
     harness.callbacks.before_model(context, request)
     assert "Turn lane: proceed" in str(request.config.system_instruction)
+
+
+def test_reference_date_is_appended(make_harness, settings, context):
+    settings.reference_date = date(2026, 6, 17)
+    request = user_request("no reconozco un cargo del 11 de junio")
+    make_harness().callbacks.before_model(context, request)
+    assert "Today is 2026-06-17" in str(request.config.system_instruction)
+
+
+def test_reference_date_defaults_to_current_date(settings):
+    assert settings.reference_date is None
+    assert settings.today() == date.today()
 
 
 def test_output_guard_replaces_refund_promise(harness, context):

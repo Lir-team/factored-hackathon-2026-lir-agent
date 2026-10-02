@@ -121,7 +121,12 @@ class AgentCallbacks:
         text = _latest_user_text(llm_request)
         if text is not None:
             self._route_turn.execute(session, text, _session_id(callback_context))
-        llm_request.append_instructions([self._guidance.for_turn(session)])
+        llm_request.append_instructions(
+            [
+                self._guidance.date_context(self._settings.today()),
+                self._guidance.for_turn(session),
+            ]
+        )
         return None
 
     def after_model(

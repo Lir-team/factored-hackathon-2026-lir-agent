@@ -1,5 +1,8 @@
 # Per-turn guidance appended to the model request by before_model_callback.
-# Placeholders: {rule_id}, {reason}, {handoff_id}. Tool permissions are enforced separately in code.
+# Placeholders: {rule_id}, {reason}, {handoff_id}, {today}. Tool permissions are enforced separately in code.
+date_context: >-
+  Today is {today}. Resolve dates the customer mentions against today: a day or month without a
+  year means its most recent occurrence on or before today. Pass full YYYY-MM-DD dates to tools.
 proceed: >-
   Turn lane: proceed ({rule_id}: {reason}). Identify the charge with find_candidate_transactions,
   then call get_transaction_evidence and follow the `outcome.lane` it returns.

@@ -1,5 +1,7 @@
 """Texts attached to a turn: guidance for the model and fixed replies for the customer."""
 
+from datetime import date
+
 from lir_agent.domain.errors import AuthError
 from lir_agent.domain.session import SessionState
 
@@ -14,6 +16,10 @@ class TurnGuidance:
     def for_auth_error(self, error: AuthError) -> str:
         """Guidance for the model when the session is not usable."""
         return self._templates[error.value]
+
+    def date_context(self, today: date) -> str:
+        """Today's date, so the model resolves relative or yearless dates correctly."""
+        return self._templates["date_context"].format(today=today.isoformat())
 
     def for_turn(self, session: SessionState) -> str:
         """Guidance for the current turn lane, with the rule that produced it."""

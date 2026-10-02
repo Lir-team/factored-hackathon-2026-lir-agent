@@ -6,6 +6,7 @@ working directory (run commands from `app/lir-agent/`). A missing or malformed
 value raises on first access instead of failing mid-conversation.
 """
 
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -56,6 +57,13 @@ class Settings(BaseSettings):
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
 
     session_ttl_minutes: int = Field(default=15, gt=0)
+    reference_date: date | None = Field(
+        default=None,
+        description=(
+            "Date the agent treats as today, so 'June 11' or 'last week' resolve to a full "
+            "date. Empty means the current date; set it to replay a static data snapshot."
+        ),
+    )
     dev_customer_id: str | None = Field(
         default=None,
         description=(
@@ -63,6 +71,10 @@ class Settings(BaseSettings):
             "Never set in production."
         ),
     )
+
+    def today(self) -> date:
+        """The agent's 'today': `reference_date` when set, otherwise the current date."""
+        return self.reference_date or date.today()
 
     @property
     def staging_dir(self) -> Path:
