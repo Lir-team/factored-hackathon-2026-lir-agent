@@ -1,11 +1,14 @@
 import json
 
 import pytest
+from decision_layer import ChainDecisionModel, DecisionError
 
 from lir_agent.application.use_cases import SearchCriteria
+from lir_agent.container import build_container
 from lir_agent.domain.errors import InvalidSearchCriteriaError, TransactionNotFoundError
 from lir_agent.domain.session import SessionState
-from tests.support import OTHER_CUSTOMER_TXN
+from lir_agent.infrastructure.audit import InMemoryAuditSink
+from tests.support import IN_SCOPE, OTHER_CUSTOMER_TXN, ScriptedDecisions
 
 
 @pytest.fixture
@@ -143,3 +146,19 @@ def test_exact_amount_matches_hide_near_ones(make_harness, settings, tmp_path, c
     assert [session.resolve_ref(c["transaction_ref"]) for c in near["candidates"]] == [
         "T-NEAR"
     ]
+
+
+def test_a_fallback_in_the_decision_chain_is_audited(settings, context):
+    # A model that always fails must not go unnoticed behind the baseline.
+    class Broken:
+        name = "broken"
+
+        def decide(self, state, questions):
+            raise DecisionError("provider rejected the request")
+
+    audit = InMemoryAuditSink()
+    chain = ChainDecisionModel([Broken(), ScriptedDecisions(IN_SCOPE)])
+    container = build_container(settings, audit=audit, decisions=chain)
+    container.route_turn.execute(SessionState(context.state), "No reconozco un cargo", "s1")
+    fallback = [e for e in audit.entries if e["event"] == "decision_fallback"]
+    assert fallback[0]["failures"] == [["broken", "provider rejected the request"]]

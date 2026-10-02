@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     # Provider API key (OpenAI, Anthropic...). SecretStr keeps it out of reprs and logs.
     llm_api_key: SecretStr | None = None
 
+    # Typed decisions: "default" = Jev when JEV_ENABLED=1, else the keyword baseline;
+    # "llm" = an LLM with structured output, falling back to the keyword baseline.
+    decisions: Literal["default", "llm"] = "default"
+    # LiteLLM model for "llm" decisions; empty reuses LLM_MODEL (same key and base URL).
+    decision_llm_model: str | None = None
+    # Optional LiteLLM reasoning_effort for "llm" decisions ("none" cut gpt-6-luna's p50 from
+    # ~2.5 s to ~1.9 s with the same answers on a 5-message check). Empty: provider default.
+    decision_llm_reasoning_effort: str | None = None
+
     # Root of the data lake (staging/, curated/ ...).
     data_dir: Path = REPO_ROOT / "data"
     store: Literal["auto", "duckdb", "fixture"] = Field(

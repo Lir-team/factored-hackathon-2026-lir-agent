@@ -3,10 +3,17 @@
 Tests pass overrides instead of patching globals.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
-from decision_layer import DecisionModel, build_default
+from decision_layer import (
+    ChainDecisionModel,
+    DecisionModel,
+    KeywordDecisionModel,
+    build_default,
+)
 
 from lir_agent.application.ports import AuditSink, CaseRepository, TransactionRepository
 from lir_agent.application.presenter import LlmPresenter
@@ -24,6 +31,7 @@ from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.infrastructure.audit import JsonlAuditSink
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
+from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
     DuckDbTransactionRepository,
     FixtureTransactionRepository,
@@ -67,6 +75,26 @@ def build_repository(settings: Settings) -> TransactionRepository:
     return FixtureTransactionRepository(settings.fixture_path)
 
 
+def build_decisions(
+    settings: Settings, completion: Callable[..., Any] | None = None
+) -> DecisionModel:
+    """The typed decision chain chosen by `DECISIONS`; the keyword baseline is always last.
+
+    `completion` replaces LiteLLM's for the LLM model (tests, or metering in the evals).
+    """
+    if settings.decisions == "llm":
+        api_key = settings.llm_api_key.get_secret_value() if settings.llm_api_key else None
+        llm = LlmDecisionModel(
+            settings.decision_llm_model or settings.llm_model,
+            api_key=api_key,
+            api_base=settings.llm_api_base or None,
+            reasoning_effort=settings.decision_llm_reasoning_effort,
+            completion=completion,
+        )
+        return ChainDecisionModel([llm, KeywordDecisionModel()])
+    return build_default()
+
+
 def build_container(
     settings: Settings,
     *,
@@ -81,7 +109,7 @@ def build_container(
     repository = repository or build_repository(settings)
     cases = cases or InMemoryCaseRepository()
     audit = audit or JsonlAuditSink(settings.audit_path)
-    decisions = decisions or build_default()
+    decisions = decisions or build_decisions(settings)
     presenter = LlmPresenter(policy.config.llm_exposure)
     evidence_builder = EvidenceBuilder(
         resources.load_country_resolver(settings.reference_path),

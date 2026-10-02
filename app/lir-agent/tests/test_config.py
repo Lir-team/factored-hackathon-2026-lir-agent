@@ -85,3 +85,19 @@ def test_empty_reference_date_means_today(tmp_path: pathlib.Path) -> None:
     # `.env.example` documents `REFERENCE_DATE=` (empty) as "use the current date".
     (tmp_path / ".env").write_text("REFERENCE_DATE=\n")
     assert Settings().reference_date is None
+
+
+def test_llm_decisions_chain_falls_back_to_the_baseline(monkeypatch: pytest.MonkeyPatch) -> None:
+    from lir_agent.container import build_decisions
+
+    monkeypatch.setenv("DECISIONS", "llm")
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-6-luna")
+    chain = build_decisions(Settings())
+    assert chain.name == "llm:openai/gpt-6-luna > keywords-v1"
+
+
+def test_default_decisions_keep_the_baseline(monkeypatch: pytest.MonkeyPatch) -> None:
+    from lir_agent.container import build_decisions
+
+    monkeypatch.delenv("JEV_ENABLED", raising=False)
+    assert build_decisions(Settings()).name == "keywords-v1"
