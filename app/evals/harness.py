@@ -55,7 +55,12 @@ class RecordingCaseRepository(InMemoryCaseRepository):
     def __init__(self) -> None:
         super().__init__()
         self.disputes: list[DisputeCase] = []
-        self.handoffs: list[HandoffPacket] = []
+        self._handoffs_by_id: dict[str, HandoffPacket] = {}
+
+    @property
+    def handoffs(self) -> list[HandoffPacket]:
+        """The latest version of each handoff (a packet can be updated with new evidence)."""
+        return list(self._handoffs_by_id.values())
 
     def open_dispute(
         self, customer_id: str, transaction_id: str, reason: str
@@ -65,7 +70,7 @@ class RecordingCaseRepository(InMemoryCaseRepository):
         return case
 
     def submit_handoff(self, packet: HandoffPacket) -> str:
-        self.handoffs.append(packet)
+        self._handoffs_by_id[packet.handoff_id] = packet
         return super().submit_handoff(packet)
 
 

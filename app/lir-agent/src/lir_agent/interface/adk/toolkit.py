@@ -106,12 +106,14 @@ class ChargeInvestigationToolkit:
         Args:
             transaction_ref: Reference returned by find_candidate_transactions (e.g. "T1").
         """
+        session = SessionState(tool_context.state)
         try:
-            return self._gather_evidence.execute(
-                SessionState(tool_context.state), transaction_ref
-            )
+            result = self._gather_evidence.execute(session, transaction_ref)
         except TransactionNotFoundError:
             return {"status": "not_found"}
+        if session.handoff_id:  # the case is already with a human: send them the charge too
+            self._request_handoff.attach_evidence(session)
+        return result
 
     def open_dispute(
         self, tool_context: ToolContext, transaction_ref: str, reason: str

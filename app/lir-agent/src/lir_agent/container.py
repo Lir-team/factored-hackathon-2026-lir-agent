@@ -90,7 +90,7 @@ def build_container(
         ),
     )
     dispute_guard = DisputeGuard()
-    request_handoff = RequestHandoff(cases)
+    request_handoff = RequestHandoff(cases, policy.config)
     return Container(
         settings=settings,
         resources=resources,

@@ -1,4 +1,5 @@
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from lir_agent.domain.models import Lane
@@ -85,3 +86,10 @@ def test_fallback_message_follows_the_customer_language(policy):
     assert "especialista" in guard.fallback("es")
     assert "sessão" not in guard.fallback("es") and "/" not in guard.fallback("es")
     assert "especialista vai" in guard.fallback("pt")
+
+
+def test_open_questions_must_name_existing_rules(settings):
+    raw = yaml.safe_load(settings.policy_path.read_text(encoding="utf-8"))
+    raw["handoff_open_questions"] = {"T99_typo": ["?"]}
+    with pytest.raises(ValidationError, match="T99_typo"):
+        PolicyConfig.model_validate(raw)

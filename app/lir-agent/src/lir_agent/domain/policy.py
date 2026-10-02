@@ -9,7 +9,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.models import Lane, Outcome
@@ -122,6 +122,7 @@ class PolicyConfig(BaseModel):
     confirmation: dict[str, float]
     llm_exposure: LlmExposure
     output_guard: OutputGuard
+    handoff_open_questions: dict[str, list[str]] = Field(default_factory=dict)
 
     @field_validator("turn_rules", "case_rules")
     @classmethod
@@ -131,6 +132,23 @@ class PolicyConfig(BaseModel):
                 "Each rule list must end with a default rule (empty `when`)"
             )
         return rules
+
+    @model_validator(mode="after")
+    def _open_questions_name_rules(self) -> "PolicyConfig":
+        known = {rule.id for rule in (*self.turn_rules, *self.case_rules)}
+        unknown = sorted(set(self.handoff_open_questions) - known)
+        if unknown:
+            raise ValueError(f"handoff_open_questions names unknown rules: {unknown}")
+        return self
+
+    def open_questions_for(self, *outcomes: Outcome | None) -> list[str]:
+        """The policy's open questions for the rules that sent the case to a human."""
+        return [
+            question
+            for outcome in outcomes
+            if outcome
+            for question in self.handoff_open_questions.get(outcome.rule_id, [])
+        ]
 
 
 class PolicyEngine:

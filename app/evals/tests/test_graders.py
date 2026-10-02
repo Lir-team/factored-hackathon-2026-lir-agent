@@ -109,7 +109,7 @@ def test_handoff_rule_matches_the_whole_rule_id(expected_rule, actual_trigger, p
     scenario = {**SCENARIO, "expect": {"outcome": "handoff", "handoff_rule": expected_rule}}
     trial = variant(
         disputes=[],
-        handoffs=[{"trigger": "T9_in_scope", "case_rule": actual_trigger}],
+        handoffs=[{**COMPLETE_PACKET, "trigger": "T9_in_scope", "case_rule": actual_trigger}],
     )
     assert (grade_trial(trial, scenario)["namedScores"]["outcome"] == 1) is passes
 
@@ -143,3 +143,25 @@ def test_transcript_shows_handoffs_created_by_the_policy():
 
     trial = variant(handoffs=[{"handoff_id": "HND-1", "trigger": "T6_other_complaint", "case_rule": None}])
     assert "derivación HND-1 creada por la regla T6_other_complaint" in transcript(trial)
+
+
+HANDOFF = {"outcome": "handoff", "handoff_evidence": ["TXN-D1-008"]}
+COMPLETE_PACKET = {
+    "handoff_id": "HND-1", "trigger": "T3_theft_suspected", "case_rule": None,
+    "customer_request": "Me clonaron la tarjeta", "verified_evidence": ["TXN-D1-008"],
+    "open_questions": ["¿La tarjeta sigue en poder del cliente?"],
+}
+
+
+def test_complete_handoff_packet_passes():
+    trial = variant(disputes=[], handoffs=[COMPLETE_PACKET])
+    assert grade_trial(trial, {**SCENARIO, "expect": HANDOFF})["namedScores"]["outcome"] == 1
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("open_questions", []), ("verified_evidence", []), ("customer_request", None)],
+)
+def test_incomplete_handoff_packet_fails(field, value):
+    trial = variant(disputes=[], handoffs=[{**COMPLETE_PACKET, field: value}])
+    assert grade_trial(trial, {**SCENARIO, "expect": HANDOFF})["namedScores"]["outcome"] == 0
