@@ -4,6 +4,7 @@ The baseline that Jev, Laya and the LLM are evaluated against. It only knows the
 questions registered in KEYWORDS; any other question raises DecisionError.
 """
 
+import re
 import time
 import unicodedata
 from collections.abc import Mapping
@@ -46,15 +47,42 @@ KEYWORDS: dict[str, dict[str, list[str]]] = {
             "roubaram", "roubo", "clonaram", "clonado", "hackearam",
         ]
     },
-    # Confirmation of a pending dispute (asked by adk-agent). Explicit phrases only: a bare "sí"
-    # cannot be matched safely by substring, so the baseline misses it and the agent asks again.
+    # Confirmation of a pending dispute, asked right after the agent proposed it. Explicit
+    # phrases match anywhere; a plain "sí" is handled by _is_plain_yes (substrings are unsafe).
     "confirma": {
         "true": [
             "confirmo", "confirmado", "dale", "adelante", "de acuerdo", "hazlo",
             "abre la disputa", "procede", "isso mesmo", "pode abrir", "pode seguir",
+            "quiero disputar", "abrir la disputa", "abre el reclamo", "quero contestar",
+            "abra a disputa", "abrir a contestacao",
         ]
     },
 }
+
+
+# Any of these words vetoes a confirmation, whatever else matched: "no quiero disputar",
+# "sí, pero espera", "confirmo que no quiero". A missed yes only makes the agent ask again;
+# a false yes opens a dispute the customer did not want.
+CONFIRMATION_VETO = re.compile(
+    r"\b(no|nao|nunca|pero|mas|espera|esperar|pensar|pensarlo|todavia|aun|ainda)\b"
+)
+
+# A reply that is only these words is a plain yes ("Sí, por favor.", "Sim, pode ser").
+# Any other word ("pero", "espera", "quieres", "no") means it is not a plain yes.
+YES_WORDS = {"si", "sim", "claro", "ok", "okay", "vale", "dale", "correcto", "exacto",
+             "perfecto", "perfeito", "isso", "confirmo", "adelante"}
+COURTESY_WORDS = {"por", "favor", "gracias", "obrigado", "obrigada", "pode", "ser",
+                  "de", "acuerdo", "mesmo", "es", "asi", "eso"}
+PLAIN_YES_MAX_WORDS = 5
+
+
+def _is_plain_yes(text: str) -> bool:
+    words = re.findall(r"[a-z]+", text)
+    return (
+        0 < len(words) <= PLAIN_YES_MAX_WORDS
+        and any(w in YES_WORDS for w in words)
+        and all(w in YES_WORDS or w in COURTESY_WORDS for w in words)
+    )
 
 
 def normalize(text: str) -> str:
@@ -75,6 +103,8 @@ class KeywordDecisionModel:
                 raise DecisionError(f"The baseline has no rules for {key!r}")
             if isinstance(q, Noul):
                 hit = any(k in text for k in rules["true"])
+                if key == "confirma":
+                    hit = (hit or _is_plain_yes(text)) and not CONFIRMATION_VETO.search(text)
                 answers[key] = Answer(value=hit, probability=1.0 if hit else 0.0)
             elif isinstance(q, Choice):
                 answers[key] = _choice(text, q, rules)

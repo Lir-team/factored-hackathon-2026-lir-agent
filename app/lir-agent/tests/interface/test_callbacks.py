@@ -1,3 +1,5 @@
+from datetime import date
+
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
@@ -96,6 +98,18 @@ def test_lane_guidance_is_appended(harness, context):
     assert "Turn lane: proceed" in str(request.config.system_instruction)
 
 
+def test_reference_date_is_appended(make_harness, settings, context):
+    settings.reference_date = date(2026, 6, 17)
+    request = user_request("no reconozco un cargo del 11 de junio")
+    make_harness().callbacks.before_model(context, request)
+    assert "Today is 2026-06-17" in str(request.config.system_instruction)
+
+
+def test_reference_date_defaults_to_current_date(settings):
+    assert settings.reference_date is None
+    assert settings.today() == date.today()
+
+
 def test_output_guard_replaces_refund_promise(harness, context):
     promise = LlmResponse(
         content=types.Content(
@@ -106,7 +120,7 @@ def test_output_guard_replaces_refund_promise(harness, context):
     replaced = harness.callbacks.after_model(context, promise)
     assert (
         replaced.content.parts[0].text
-        == harness.container.policy.config.output_guard.fallback_message
+        == harness.container.policy.config.output_guard.fallback("es")
     )
     clean = LlmResponse(
         content=types.Content(
@@ -114,3 +128,29 @@ def test_output_guard_replaces_refund_promise(harness, context):
         )
     )
     assert harness.callbacks.after_model(context, clean) is None
+
+
+def test_guard_fallback_is_in_the_customers_language(harness, context):
+    harness.callbacks.before_model(context, user_request("Quero falar sobre uma cobrança"))
+    promise = LlmResponse(
+        content=types.Content(
+            role="model", parts=[types.Part(text="Vamos estornar o valor amanhã.")]
+        )
+    )
+    replaced = harness.callbacks.after_model(context, promise)
+    assert replaced.content.parts[0].text == (
+        harness.container.policy.config.output_guard.fallback("pt")
+    )
+
+
+def test_blocked_tool_tells_the_model_what_to_do_instead(make_harness, context):
+    h = make_harness({**IN_SCOPE, "confirma": (False, 0.2)})
+    session = SessionState(context.state)
+    h.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
+    ref = session.ref_for("TXN-D1-006")
+    h.toolkit.get_transaction_evidence(context, ref)
+    h.callbacks.before_model(context, user_request("mmm"))
+    assert session.turn_lane == "confirm"
+    result = h.callbacks.before_tool(tool("open_dispute"), {"transaction_ref": ref}, context)
+    assert result["reason"] == "not_allowed_for_turn_lane"
+    assert "Turn lane: confirm" in result["instruction"]

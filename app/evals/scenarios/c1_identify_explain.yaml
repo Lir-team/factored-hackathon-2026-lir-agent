@@ -1,0 +1,71 @@
+# C1 - "Quiero saber qué es exactamente el cargo, sin buscarlo yo en el extracto."
+# Expected outcomes follow policy.yaml case rules (C3 pending, C5 declined, C9 habitual merchant).
+- description: c1-explain-recurrent-es
+  metadata: {jtbd: [C1, B1], kind: regression}
+  vars:
+    id: c1-explain-recurrent-es
+    goal: Explicar que el cobro de Spotify es una suscripción recurrente ya pagada antes; sin disputa.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script: {turns: ["No reconozco un cobro de Spotify de 179 pesos, ¿qué es?"]}
+    expect: {outcome: explain, txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]}
+
+- description: c1-explain-pending-es
+  metadata: {jtbd: [C1, B1], kind: capability}
+  vars:
+    id: c1-explain-pending-es
+    goal: Explicar que el cargo de Steam está pendiente (autorización, aún no es un cobro final); sin disputa.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script: {turns: ["Me aparece un cargo de PAYPAL *STEAMGAMES por 1299 pesos que no reconozco"]}
+    expect: {outcome: explain, txn_any: [TXN-D1-007]}
+
+- description: c1-explain-recurrent-pt
+  metadata: {jtbd: [C1, C3], kind: capability}
+  vars:
+    id: c1-explain-recurrent-pt
+    goal: Explicar em português que a cobrança do iFood é de um estabelecimento habitual; sem contestação.
+    lang: pt
+    customer_id: CLI-EVAL-BR1
+    script: {turns: ["Não reconheço uma cobrança do iFood de 45,90 reais deste mês"]}
+    expect: {outcome: explain, txn_any: [TXN-B1-001, TXN-B1-002, TXN-B1-003]}
+
+- description: c1-explain-declined-pt
+  metadata: {jtbd: [C1, C3], kind: capability}
+  vars:
+    id: c1-explain-declined-pt
+    goal: Explicar em português que a compra na Magazine Luiza foi recusada e nada foi cobrado.
+    lang: pt
+    customer_id: CLI-EVAL-BR1
+    script: {turns: ["Vi uma compra de 899 reais na Magazine Luiza que não reconheço"]}
+    expect: {outcome: explain, txn_any: [TXN-B1-006]}
+
+- description: c1-clarify-vague-es
+  metadata: {jtbd: [C1], kind: capability}
+  vars:
+    id: c1-clarify-vague-es
+    goal: Pedir un dato (monto, comercio o fecha) antes de actuar; no listar movimientos ni actuar.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script: {turns: ["Me cobraron algo raro la semana pasada"]}
+    expect: {outcome: clarify}
+
+- description: c1-clarify-vague-pt
+  metadata: {jtbd: [C1, C3], kind: regression}
+  vars:
+    id: c1-clarify-vague-pt
+    goal: Pedir em português um dado (valor, estabelecimento ou data) antes de agir.
+    lang: pt
+    customer_id: CLI-EVAL-BR1
+    script: {turns: ["Tem uma cobrança estranha no meu cartão"]}
+    expect: {outcome: clarify}
+
+- description: c1-ask-which-es
+  metadata: {jtbd: [C1], kind: capability}
+  vars:
+    id: c1-ask-which-es
+    goal: Hay dos cargos distintos de 250 pesos en junio; mostrar ambos y preguntar cuál es.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script: {turns: ["No reconozco un cargo de 250 pesos de junio"]}
+    expect: {outcome: ask_which, mention_all: [CINEPOLIS, FARMACIA]}

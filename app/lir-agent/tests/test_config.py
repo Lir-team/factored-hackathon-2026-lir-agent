@@ -79,3 +79,9 @@ def test_api_key_is_kept_out_of_reprs(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "sk-test-secret" not in repr(settings)
     assert settings.llm_api_key is not None
     assert settings.llm_api_key.get_secret_value() == "sk-test-secret"
+
+
+def test_empty_reference_date_means_today(tmp_path: pathlib.Path) -> None:
+    # `.env.example` documents `REFERENCE_DATE=` (empty) as "use the current date".
+    (tmp_path / ".env").write_text("REFERENCE_DATE=\n")
+    assert Settings().reference_date is None

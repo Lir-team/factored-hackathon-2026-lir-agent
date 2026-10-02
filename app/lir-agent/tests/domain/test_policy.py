@@ -53,3 +53,35 @@ def test_output_guard_detects_refund_promise(policy):
     guard = policy.config.output_guard
     assert guard.violations("Listo, te vamos a devolver los 245,50 MXN mañana.")
     assert not guard.violations("Es tu suscripción mensual.")
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "No puedo confirmar que te vamos a devolver el dinero; lo decide un especialista.",
+        "No puedo prometer que te vamos a reembolsar.",
+        "Não posso garantir que vamos estornar o valor.",
+    ],
+)
+def test_negated_refund_statement_is_allowed(policy, reply):
+    assert policy.config.output_guard.violations(reply) == []
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Listo, te vamos a devolver los 245,50 MXN.",
+        "No te preocupes, te vamos a devolver el dinero.",
+        "Tu reembolso aprobado llegará pronto.",
+        "¿Me puedes dar tu CVV?",
+    ],
+)
+def test_promises_and_credential_requests_are_still_blocked(policy, reply):
+    assert policy.config.output_guard.violations(reply)
+
+
+def test_fallback_message_follows_the_customer_language(policy):
+    guard = policy.config.output_guard
+    assert "especialista" in guard.fallback("es")
+    assert "sessão" not in guard.fallback("es") and "/" not in guard.fallback("es")
+    assert "especialista vai" in guard.fallback("pt")

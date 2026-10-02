@@ -63,7 +63,7 @@ class AgentFactory:
                 c.resources.load_mapping(c.settings.turn_guidance_path)
             ),
             messages=CustomerMessages(
-                c.resources.load_mapping(c.settings.customer_messages_path)
+                c.resources.load_localized_mapping(c.settings.customer_messages_path)
             ),
             audit=c.audit,
         )

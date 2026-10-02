@@ -75,6 +75,7 @@ class FindCandidateTransactions:
             for txn in self._repository.list_transactions(session.require_customer_id())
             if self._matches(txn, criteria)
         ]
+        matches = self._prefer_exact_amount(matches, criteria)
         if criteria.merchant_hint and len(matches) > 1:
             matches = self._rank_by_merchant(criteria.merchant_hint, matches)
         shown = matches[: self._settings.max_candidates]
@@ -84,6 +85,24 @@ class FindCandidateTransactions:
             "candidates": [self._presenter.candidate(session, txn) for txn in shown],
             "note": DATA_NOT_INSTRUCTIONS,
         }
+
+    @staticmethod
+    def _prefer_exact_amount(
+        matches: list[Transaction], criteria: SearchCriteria
+    ) -> list[Transaction]:
+        """Keep only exact-amount matches when there are any.
+
+        The tolerance exists for approximate amounts ("unos 250"). When some charges match
+        the stated amount to the cent, near ones (245.50 for "250") only add noise.
+        """
+        if criteria.amount is None:
+            return matches
+        exact = [
+            txn
+            for txn in matches
+            if round(txn.amount or 0.0, 2) == round(criteria.amount, 2)
+        ]
+        return exact or matches
 
     def _matches(self, txn: Transaction, criteria: SearchCriteria) -> bool:
         if criteria.amount is not None:

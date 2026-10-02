@@ -22,6 +22,7 @@ from lir_agent.application.use_cases import RouteTurn
 from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.errors import DisputeBlock
+from lir_agent.domain.language import detect_language
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.domain.session import SessionState
 from lir_agent.interface.adk.guidance import CustomerMessages, TurnGuidance
@@ -48,7 +49,10 @@ def _latest_user_text(llm_request: LlmRequest) -> str | None:
 
 
 def _response_text(llm_response: LlmResponse) -> str:
-    content = llm_response.content
+    return _content_text(llm_response.content)
+
+
+def _content_text(content: types.Content | None) -> str:
     if not content:
         return ""
     return " ".join(part.text for part in (content.parts or []) if part.text)
@@ -103,9 +107,13 @@ class AgentCallbacks:
             return None
         logger.warning("Refused a request from a session: %s", auth_error.value)
         self._audit.record("session_refused", session_id, reason=auth_error.value)
+        user_content = getattr(callback_context, "user_content", None)
+        language = detect_language(_content_text(user_content))
         return types.Content(
             role="model",
-            parts=[types.Part(text=self._messages.for_auth_error(auth_error))],
+            parts=[
+                types.Part(text=self._messages.for_auth_error(auth_error, language))
+            ],
         )
 
     # ---- model ---------------------------------------------------------------------------
@@ -121,7 +129,12 @@ class AgentCallbacks:
         text = _latest_user_text(llm_request)
         if text is not None:
             self._route_turn.execute(session, text, _session_id(callback_context))
-        llm_request.append_instructions([self._guidance.for_turn(session)])
+        llm_request.append_instructions(
+            [
+                self._guidance.date_context(self._settings.today()),
+                self._guidance.for_turn(session),
+            ]
+        )
         return None
 
     def after_model(
@@ -136,9 +149,10 @@ class AgentCallbacks:
         self._audit.record(
             "output_blocked", _session_id(callback_context), patterns=violations
         )
+        language = detect_language(SessionState(callback_context.state).last_user_text)
         return LlmResponse(
             content=types.Content(
-                role="model", parts=[types.Part(text=guard.fallback_message)]
+                role="model", parts=[types.Part(text=guard.fallback(language))]
             )
         )
 
@@ -171,6 +185,9 @@ class AgentCallbacks:
                 "status": "blocked",
                 "reason": "not_allowed_for_turn_lane",
                 "lane": lane.value,
+                # What to do instead (e.g. ask for the confirmation again), so the model
+                # does not improvise "contact support" after a block.
+                "instruction": self._guidance.for_turn(session),
             }
 
         if tool.name == OPEN_DISPUTE_TOOL:

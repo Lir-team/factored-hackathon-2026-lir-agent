@@ -27,3 +27,14 @@ def test_dev_session_is_seeded_only_when_configured(make_harness, settings):
     context = make_context(authenticated=False)
     assert harness.callbacks.before_agent(context) is None
     assert context.state["auth_method"] == "dev_test_session"
+
+
+def test_refusal_is_in_the_customers_language(harness):
+    pt = harness.callbacks.before_agent(
+        make_context(ttl_minutes=-1, user_text="Não reconheço uma cobrança")
+    )
+    es = harness.callbacks.before_agent(
+        make_context(ttl_minutes=-1, user_text="No reconozco un cargo")
+    )
+    assert "sessão" in pt.parts[0].text and "sesión" not in pt.parts[0].text
+    assert "sesión" in es.parts[0].text and "sessão" not in es.parts[0].text

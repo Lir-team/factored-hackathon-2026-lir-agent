@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.models import Lane, Outcome
 
 OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
@@ -55,17 +56,40 @@ class Rule(BaseModel):
         return True
 
 
+# A negation in the same clause, before the match, turns a promise into its denial
+# ("no puedo prometer que te vamos a devolver"). Clauses end at punctuation, so
+# "No te preocupes, te vamos a devolver" is still a promise.
+_NEGATION = re.compile(r"\b(no|não|nao|nunca|jamás|jamais|ni|nem|sin|sem)\b", re.IGNORECASE)
+_CLAUSE_END = re.compile(r"[,;:.!?\n]")
+
+
 class OutputGuard(BaseModel):
     """Deterministic check on model replies (refund promises, credential requests)."""
 
+    # Always blocked, negated or not (e.g. asking for a CVV).
     forbidden_patterns: list[str]
-    fallback_message: str
+    # Blocked unless negated in the same clause (e.g. refund promises).
+    forbidden_unless_negated: list[str] = []
+    fallback_message: dict[Language, str]
 
     def violations(self, text: str) -> list[str]:
         """The forbidden patterns found in a reply."""
-        return [
-            pattern for pattern in self.forbidden_patterns if re.search(pattern, text)
+        always = [p for p in self.forbidden_patterns if re.search(p, text)]
+        promised = [
+            p
+            for p in self.forbidden_unless_negated
+            if any(not _negated(text, m.start()) for m in re.finditer(p, text))
         ]
+        return always + promised
+
+    def fallback(self, language: Language) -> str:
+        """The replacement reply, in the customer's language."""
+        return self.fallback_message.get(language) or self.fallback_message[DEFAULT_LANGUAGE]
+
+
+def _negated(text: str, start: int) -> bool:
+    clause = _CLAUSE_END.split(text[:start])[-1]
+    return bool(_NEGATION.search(clause))
 
 
 class SearchSettings(BaseModel):
