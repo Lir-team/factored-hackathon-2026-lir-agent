@@ -1,4 +1,4 @@
-# Clir Agent
+# Lir Agent
 
 Factored AI & Data Hackathon 2026 entry: a banking customer-service agent for the
 synthetic LATAM Bank dataset (v1.0.0).
