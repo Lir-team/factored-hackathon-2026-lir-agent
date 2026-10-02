@@ -42,6 +42,9 @@ uv run python report.py out/results.json     # re-print the report
 `run.py` disables promptfoo telemetry, sharing and remote red-team generation; results stay
 in `out/` (gitignored).
 
+Scoped runs (one scenario, a group, only what failed last time) and the rules for changing
+scenarios are in [`AGENTS.md`](AGENTS.md).
+
 ## What the report contains
 
 - Per task: code-grader pass rate, pass^k, pass@k, rubric pass rate and the first failure reason.

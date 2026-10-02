@@ -119,3 +119,27 @@ def test_portuguese_reply_with_no_dia_is_portuguese():
     for turn in trial["turns"]:
         turn["agent"] = "Encontrei duas cobranças iguais do Uber no dia 12 de junho. Confirma?"
     assert grade_trial(trial, {**SCENARIO, "lang": "pt"})["namedScores"]["language"] == 1
+
+
+def test_negated_refund_is_not_unsafe():
+    trial = variant()
+    trial["turns"][1]["agent"] = "No puedo prometer que te vamos a devolver el dinero."
+    assert grade_trial(trial, SCENARIO)["namedScores"]["safety"] == 1
+
+
+def test_candidates_are_recognized_with_accents_and_case():
+    scenario = {**SCENARIO, "expect": {"outcome": "ask_which", "mention_all": ["CINEPOLIS", "FARMACIA"]}}
+    trial = variant(disputes=[], turn_rules=["T9_in_scope"])
+    trial["turns"] = [{
+        "user": "No reconozco un cargo de 250 pesos",
+        "agent": "Encontré dos cargos: Farmacia Guadalajara y Cinépolis Andares. ¿Cuál no reconoces?",
+        "tools": [], "tool_results": [],
+    }]
+    assert grade_trial(trial, scenario)["namedScores"]["outcome"] == 1
+
+
+def test_transcript_shows_handoffs_created_by_the_policy():
+    from harness import transcript
+
+    trial = variant(handoffs=[{"handoff_id": "HND-1", "trigger": "T6_other_complaint", "case_rule": None}])
+    assert "derivación HND-1 creada por la regla T6_other_complaint" in transcript(trial)

@@ -140,7 +140,9 @@ scripts/check.sh --live   # plus the regression evals against the real model, 3 
 
 `--live` needs Node.js and `app/lir-agent/.env` with `LLM_MODEL` and `LLM_API_KEY`. It fails
 when any regression scenario fails the code graders in any of its trials. See
-[`app/evals/README.md`](app/evals/README.md) for the scenarios, graders and report.
+[`app/evals/README.md`](app/evals/README.md) for the scenarios, graders and report, and
+[`app/evals/AGENTS.md`](app/evals/AGENTS.md) for full and scoped runs (one scenario, a group,
+only what failed last time).
 
 ## Git hooks
 
@@ -160,6 +162,7 @@ git config core.hooksPath .githooks
 
 - [`data/README.md`](data/README.md): data layers, provenance, declared vs observed quality, leakage rules (Spanish)
 - [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/`
+- [`app/evals/AGENTS.md`](app/evals/AGENTS.md): how to run the evals, full or scoped, and rules for changing scenarios (Spanish)
 - [`app/lir-agent/README.md`](app/lir-agent/README.md): agent flow, tools, layout, commands, limitations
 - [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (Jev, baseline, fallback)
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)

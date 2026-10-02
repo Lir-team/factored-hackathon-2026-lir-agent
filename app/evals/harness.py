@@ -106,9 +106,14 @@ class Trial:
 def transcript(trial: dict) -> str:
     """Readable conversation: customer turns, tool calls with their results, agent replies.
 
-    Tool results are included so a model grader can check that replies are grounded.
+    Tool results are included so a model grader can check that replies are grounded, and so
+    are the handoffs the policy created in code (no tool call), so "ya derivamos tu caso" has
+    visible evidence.
     """
-    lines = []
+    lines = [
+        f"[sistema] derivación {h['handoff_id']} creada por la regla {h['trigger'] or h['case_rule']}"
+        for h in trial.get("handoffs", [])
+    ]
     for t in trial["turns"]:
         lines.append(f"cliente: {t['user']}")
         for call, result in zip(t["tools"], t["tool_results"], strict=False):
