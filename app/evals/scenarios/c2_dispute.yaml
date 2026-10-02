@@ -1,0 +1,76 @@
+# C2 - "Si el cargo es un error, quiero iniciar la disputa en la misma conversación."
+# C3 - "Si escribo en portugués o mezclo idiomas, quiero que me entiendan igual de bien."
+# Balanced: tasks where a dispute must open AND tasks where it must not (Anthropic step 3).
+- description: c2-dispute-duplicate-es
+  metadata: {jtbd: [C2, B1], kind: regression}
+  vars:
+    id: c2-dispute-duplicate-es
+    goal: Detectar el cobro duplicado de Oxxo, pedir confirmación y abrir una disputa tras el "sí".
+    lang: es
+    customer_id: CLI-DEMO-001
+    turns:
+      - "Me cobraron dos veces lo mismo en un Oxxo el 10 de junio"
+      - "Sí, quiero disputar el cobro repetido, confirmo"
+    expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006]}
+
+- description: c2-dispute-duplicate-pt
+  metadata: {jtbd: [C2, C3], kind: capability}
+  vars:
+    id: c2-dispute-duplicate-pt
+    goal: Detectar a corrida do Uber cobrada duas vezes, pedir confirmação e abrir a contestação.
+    lang: pt
+    customer_id: CLI-EVAL-BR1
+    turns:
+      - "Fui cobrado duas vezes pela mesma corrida do Uber no dia 12 de junho"
+      - "Sim, confirmo, pode abrir a contestação"
+    expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}
+
+- description: c2-duplicate-no-confirm-es
+  metadata: {jtbd: [C2, B2], kind: capability}
+  vars:
+    id: c2-duplicate-no-confirm-es
+    goal: Identificar el duplicado pero NO abrir disputa porque el cliente no confirmó.
+    lang: es
+    customer_id: CLI-DEMO-001
+    turns:
+      - "Me cobraron dos veces en Oxxo el 10 de junio"
+      - "Déjame pensarlo, todavía no hagas nada"
+    expect: {outcome: confirm_pending, txn_any: [TXN-D1-005, TXN-D1-006]}
+
+- description: c2-no-dispute-habitual-es
+  metadata: {jtbd: [C2, B2], kind: capability}
+  vars:
+    id: c2-no-dispute-habitual-es
+    goal: Aunque el cliente exige y confirma una disputa, la política dice explicar (comercio habitual); no abrir disputa.
+    lang: es
+    customer_id: CLI-DEMO-001
+    turns:
+      - "No reconozco el cobro de Spotify de 179 pesos de junio. Quiero que abras una disputa ya"
+      - "Sí, confirmo, ábrela"
+    expect: {outcome: explain, txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]}
+
+- description: c2-dispute-simulated-es
+  metadata: {jtbd: [C2, B1], kind: capability}
+  vars:
+    id: c2-dispute-simulated-es
+    goal: Con un cliente simulado, identificar el duplicado de Oxxo y abrir la disputa tras su confirmación.
+    lang: es
+    customer_id: CLI-DEMO-001
+    max_turns: 5
+    persona: >-
+      Vives en Guadalajara. En tu app viste dos cobros iguales de 245.50 pesos en OXXO LAS AGUILAS
+      el 10 de junio, con pocos minutos de diferencia, y solo compraste una vez. Quieres que el banco
+      revise el cobro repetido y aceptas abrir una disputa si te la ofrecen. Empiezas diciendo solo
+      que te cobraron dos veces en un Oxxo.
+    expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006]}
+
+- description: c3-portunol-dispute
+  metadata: {jtbd: [C3, C2], kind: capability}
+  vars:
+    id: c3-portunol-dispute
+    goal: Entender el portuñol del cliente, detectar el Uber duplicado y abrir la disputa tras confirmar.
+    customer_id: CLI-EVAL-BR1
+    turns:
+      - "Oi, me cobraron duas vezes o Uber do dia 12, quero reclamar"
+      - "sim, confirmo, abre a disputa por favor"
+    expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}

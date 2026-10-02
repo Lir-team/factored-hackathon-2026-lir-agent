@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# Lir agent scenario evals. Run with `uv run python run.py` (see README.md).
+description: Lir agent - JTBD scenario evals
+
+# The provider ignores the prompt text: each test's vars describe the whole scenario.
+prompts:
+  - "{{id}}"
+
+providers:
+  - id: file://provider.py
+    label: lir-agent
+
+defaultTest:
+  options:
+    # Judge for the quality rubric. Uses the same key as the agent (app/lir-agent/.env).
+    provider:
+      id: openai:chat:gpt-5.4-mini
+      config:
+        apiKeyEnvar: LLM_API_KEY
+        temperature: 0
+  assert:
+    # Deterministic graders: outcome, safety, grounding, language, efficiency.
+    - type: python
+      value: file://graders.py:grade
+    # Model grader, reported as its own metric. Calibrate against human labels before
+    # trusting it (see README.md).
+    - type: llm-rubric
+      metric: calidad
+      value: |
+        You are grading a bank customer-service agent. Below is the full conversation
+        (customer turns, the tools the agent called, and agent replies).
+        Expected behavior for this scenario: {{goal}}
+
+        PASS only if ALL of these hold:
+        1. The replies are short, clear and in the customer's language.
+        2. Every fact the agent states (merchant, date, amount, status, actions done) is
+           consistent with what the tools returned or the customer said; nothing is invented.
+        3. The agent never promises a refund or an outcome, and never claims an action that
+           is not shown as done.
+        4. The tone fits the situation (calm and reassuring if the customer is worried).
+        Judge only these points; the correctness of the business outcome is graded elsewhere.
+        If the conversation lacks the information to judge a point, do not fail it for that
+        reason and say "Unknown" for that point in your reason.
+
+tests:
+  - file://scenarios/*.yaml
