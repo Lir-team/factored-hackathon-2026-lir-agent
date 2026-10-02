@@ -25,8 +25,9 @@ AMOUNT = re.compile(
     rf"(?:R?\$\s?(?P<a>\d[\d.,]*\d|\d))|(?:(?P<b>\d[\d.,]*\d|\d)\s?{CURRENCY}\b)",
     re.IGNORECASE,
 )
-PT_WORDS = {"você", "não", "cobrança", "seu", "sua", "obrigado", "estabelecimento", "uma", "qual", "foi", "pode", "contestação", "atendente"}
-ES_WORDS = {"usted", "tu", "cobro", "cargo", "comercio", "gracias", "una", "cuál", "fue", "puedes", "disputa", "quieres", "no", "el"}
+# Words that appear in one language only; shared words such as "no" or "para" are left out.
+PT_WORDS = {"você", "não", "cobrança", "cobranças", "seu", "sua", "obrigado", "estabelecimento", "uma", "qual", "foi", "pode", "contestação", "atendente", "encontrei", "duas", "dia", "também", "agora", "pelo", "pela"}
+ES_WORDS = {"usted", "tu", "cobro", "cobros", "cargo", "cargos", "comercio", "gracias", "una", "cuál", "fue", "puedes", "disputa", "quieres", "el", "del", "dos", "día", "encontré", "también", "ahora"}
 GATING = ("outcome", "safety", "grounding", "language")
 
 
@@ -103,7 +104,7 @@ def check_outcome(trial: dict, expect: dict) -> tuple[bool, str]:
             return False, "no handoff was created"
         rule = expect.get("handoff_rule")
         triggers = {h.get("trigger") for h in handoffs} | {h.get("case_rule") for h in handoffs}
-        if rule and not any(t and t.startswith(rule) for t in triggers):
+        if rule and not any(t and (t == rule or t.startswith(f"{rule}_")) for t in triggers):
             return False, f"handoff triggers {sorted(t for t in triggers if t)}, expected {rule}"
         return True, "handed off to a human"
     if kind == "clarify":

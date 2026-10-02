@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_DIR = Path(__file__).resolve().parents[1]
@@ -71,6 +71,12 @@ class Settings(BaseSettings):
             "Never set in production."
         ),
     )
+
+    @field_validator("reference_date", mode="before")
+    @classmethod
+    def _empty_reference_date_is_today(cls, value: object) -> object:
+        """`REFERENCE_DATE=` left empty in `.env` means the current date, not an error."""
+        return None if value == "" else value
 
     def today(self) -> date:
         """The agent's 'today': `reference_date` when set, otherwise the current date."""

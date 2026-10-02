@@ -141,6 +141,8 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
         "fixture_path": WORLD,
         "reference_date": REFERENCE_DATE,
         "audit_path": EVALS_DIR / "out" / "unused-audit.jsonl",
+        # A DEV_CUSTOMER_ID in the agent's .env would sign in every anonymous session.
+        "dev_customer_id": None,
     }
     if agent_model:
         settings_kwargs["llm_model"] = agent_model

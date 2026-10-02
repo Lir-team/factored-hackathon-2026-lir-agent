@@ -94,3 +94,28 @@ def test_explain_fails_when_a_dispute_was_opened():
 )
 def test_amount_extraction(text, expected):
     assert _amounts_in(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("expected_rule", "actual_trigger", "passes"),
+    [
+        ("C1", "C1_high_fraud_score", True),
+        ("C1", "C10_no_conclusive_rule", False),
+        ("T3", "T3b_awaiting_confirmation", False),
+        ("C10", "C10_no_conclusive_rule", True),
+    ],
+)
+def test_handoff_rule_matches_the_whole_rule_id(expected_rule, actual_trigger, passes):
+    scenario = {**SCENARIO, "expect": {"outcome": "handoff", "handoff_rule": expected_rule}}
+    trial = variant(
+        disputes=[],
+        handoffs=[{"trigger": "T9_in_scope", "case_rule": actual_trigger}],
+    )
+    assert (grade_trial(trial, scenario)["namedScores"]["outcome"] == 1) is passes
+
+
+def test_portuguese_reply_with_no_dia_is_portuguese():
+    trial = variant()
+    for turn in trial["turns"]:
+        turn["agent"] = "Encontrei duas cobranças iguais do Uber no dia 12 de junho. Confirma?"
+    assert grade_trial(trial, {**SCENARIO, "lang": "pt"})["namedScores"]["language"] == 1
