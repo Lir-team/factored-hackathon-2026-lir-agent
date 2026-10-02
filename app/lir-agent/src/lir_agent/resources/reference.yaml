@@ -1,0 +1,5 @@
+# Reference data. Country values in the dataset vary ("Mexico", "MX"); evidence compares ISO codes.
+country_aliases:
+  MX: [mexico, méxico, mx]
+  CO: [colombia, co]
+  AR: [argentina, ar]

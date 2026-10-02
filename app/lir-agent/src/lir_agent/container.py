@@ -1,0 +1,117 @@
+"""Composition root: builds every dependency from settings.
+
+Tests pass overrides instead of patching globals.
+"""
+
+from dataclasses import dataclass
+from datetime import timedelta
+
+from decision_layer import DecisionModel, build_default
+
+from lir_agent.application.ports import AuditSink, CaseRepository, TransactionRepository
+from lir_agent.application.presenter import LlmPresenter
+from lir_agent.application.use_cases import (
+    FindCandidateTransactions,
+    GatherTransactionEvidence,
+    GetCustomerProfile,
+    OpenDispute,
+    RequestHandoff,
+    RouteTurn,
+)
+from lir_agent.config.settings import Settings
+from lir_agent.domain.dispute_guard import DisputeGuard
+from lir_agent.domain.evidence import EvidenceBuilder
+from lir_agent.domain.policy import PolicyEngine
+from lir_agent.infrastructure.audit import JsonlAuditSink
+from lir_agent.infrastructure.cases import InMemoryCaseRepository
+from lir_agent.infrastructure.persistence import (
+    DuckDbTransactionRepository,
+    FixtureTransactionRepository,
+)
+from lir_agent.infrastructure.resources import ResourceLoader
+
+STAGED_TRANSACTIONS = "transactions.parquet"
+
+
+@dataclass(frozen=True)
+class Container:
+    """Every dependency of the agent, built once."""
+
+    settings: Settings
+    resources: ResourceLoader
+    repository: TransactionRepository
+    cases: CaseRepository
+    audit: AuditSink
+    decisions: DecisionModel
+    policy: PolicyEngine
+    dispute_guard: DisputeGuard
+    get_profile: GetCustomerProfile
+    find_candidates: FindCandidateTransactions
+    gather_evidence: GatherTransactionEvidence
+    open_dispute: OpenDispute
+    request_handoff: RequestHandoff
+    route_turn: RouteTurn
+
+
+def build_repository(settings: Settings) -> TransactionRepository:
+    """DuckDB over the staged parquet when available (or forced), else the demo fixture."""
+    kind = settings.store
+    if kind == "auto":
+        kind = (
+            "duckdb"
+            if (settings.staging_dir / STAGED_TRANSACTIONS).exists()
+            else "fixture"
+        )
+    if kind == "duckdb":
+        return DuckDbTransactionRepository(settings.staging_dir)
+    return FixtureTransactionRepository(settings.fixture_path)
+
+
+def build_container(
+    settings: Settings,
+    *,
+    repository: TransactionRepository | None = None,
+    cases: CaseRepository | None = None,
+    audit: AuditSink | None = None,
+    decisions: DecisionModel | None = None,
+) -> Container:
+    """Build the container; keyword overrides replace real adapters in tests."""
+    resources = ResourceLoader()
+    policy = resources.load_policy(settings.policy_path)
+    repository = repository or build_repository(settings)
+    cases = cases or InMemoryCaseRepository()
+    audit = audit or JsonlAuditSink(settings.audit_path)
+    decisions = decisions or build_default()
+    presenter = LlmPresenter(policy.config.llm_exposure)
+    evidence_builder = EvidenceBuilder(
+        resources.load_country_resolver(settings.reference_path),
+        duplicate_window=timedelta(
+            hours=policy.config.evidence["duplicate_window_hours"]
+        ),
+    )
+    dispute_guard = DisputeGuard()
+    request_handoff = RequestHandoff(cases)
+    return Container(
+        settings=settings,
+        resources=resources,
+        repository=repository,
+        cases=cases,
+        audit=audit,
+        decisions=decisions,
+        policy=policy,
+        dispute_guard=dispute_guard,
+        get_profile=GetCustomerProfile(repository, presenter),
+        find_candidates=FindCandidateTransactions(
+            repository,
+            decisions,
+            policy.config.search,
+            policy.config.decision_keys["merchant"],
+            presenter,
+        ),
+        gather_evidence=GatherTransactionEvidence(
+            repository, evidence_builder, policy, presenter
+        ),
+        open_dispute=OpenDispute(cases, dispute_guard),
+        request_handoff=request_handoff,
+        route_turn=RouteTurn(decisions, policy, request_handoff, audit),
+    )

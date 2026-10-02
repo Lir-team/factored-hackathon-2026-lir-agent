@@ -1,0 +1,37 @@
+"""Texts attached to a turn: guidance for the model and fixed replies for the customer."""
+
+from lir_agent.domain.errors import AuthError
+from lir_agent.domain.session import SessionState
+
+
+class TurnGuidance:
+    """Renders the per-turn guidance appended to each model request."""
+
+    def __init__(self, templates: dict[str, str]) -> None:
+        """Keep the guidance templates keyed by turn lane or auth error."""
+        self._templates = templates
+
+    def for_auth_error(self, error: AuthError) -> str:
+        """Guidance for the model when the session is not usable."""
+        return self._templates[error.value]
+
+    def for_turn(self, session: SessionState) -> str:
+        """Guidance for the current turn lane, with the rule that produced it."""
+        outcome = session.turn_outcome
+        return self._templates[session.turn_lane.value].format(
+            rule_id=outcome.rule_id if outcome else None,
+            reason=outcome.reason if outcome else None,
+            handoff_id=session.handoff_id,
+        )
+
+
+class CustomerMessages:
+    """Fixed replies sent to the customer without calling the model."""
+
+    def __init__(self, messages: dict[str, str]) -> None:
+        """Keep the customer-facing messages keyed by situation."""
+        self._messages = messages
+
+    def for_auth_error(self, error: AuthError) -> str:
+        """Reply for a session without a valid signed-in customer."""
+        return self._messages[error.value]

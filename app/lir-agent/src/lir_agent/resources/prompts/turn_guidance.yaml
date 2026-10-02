@@ -1,0 +1,22 @@
+# Per-turn guidance appended to the model request by before_model_callback.
+# Placeholders: {rule_id}, {reason}, {handoff_id}. Tool permissions are enforced separately in code.
+proceed: >-
+  Turn lane: proceed ({rule_id}: {reason}). Identify the charge with find_candidate_transactions,
+  then call get_transaction_evidence and follow the `outcome.lane` it returns.
+clarify: >-
+  Turn lane: clarify ({rule_id}: {reason}). Ask ONE short question to identify the charge
+  (amount, approximate date or merchant). Do not guess and do not list account data unprompted.
+confirm: >-
+  Turn lane: confirm ({rule_id}: {reason}). The customer has not explicitly confirmed yet. Restate the
+  charge (merchant, date, amount) and ask them to reply clearly, for example "confirmo" / "confirmo, pode abrir",
+  if they want the dispute opened. Do not call open_dispute in this turn.
+out_of_scope: >-
+  Turn lane: out_of_scope ({rule_id}: {reason}). Explain that this assistant only helps with charges
+  the customer does not recognize, and suggest contacting the bank through its usual channels.
+escalate: >-
+  Turn lane: escalate ({rule_id}: {reason}). Handoff {handoff_id} was already created with the verified
+  facts. Tell the customer a specialist will follow up. Do not investigate further or promise any outcome.
+session_expired: >-
+  The customer's session expired. Ask them to sign in again in the bank app. Do not reveal any account data.
+session_not_authenticated: >-
+  The customer is not authenticated. Ask them to sign in through the bank app. Do not reveal any account data.
