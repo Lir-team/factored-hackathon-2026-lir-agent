@@ -8,6 +8,7 @@ requires-python = ">=3.13"
 # needs. Exact versions live in uv.lock, which is what makes installs
 # reproducible. Pinning == here only removes resolver headroom.
 dependencies = [
+    "duckdb>=1.5.6",
     "google-adk>=2.11.0",
     "litellm>=1.103.2",
     "pydantic-settings>=2.7.0",

@@ -1,0 +1,20 @@
+{
+  "run_at": "2026-09-26T15:58:19+00:00",
+  "tables": {
+    "contacts_enriched": {
+      "rows": 686296,
+      "inputs": [
+        "staging/call_center_interactions.parquet",
+        "staging/customers.parquet",
+        "staging/satisfaction_surveys.parquet"
+      ]
+    },
+    "complaints_enriched": {
+      "rows": 67095,
+      "inputs": [
+        "staging/complaints.parquet",
+        "staging/customers.parquet"
+      ]
+    }
+  }
+}

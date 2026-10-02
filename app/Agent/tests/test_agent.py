@@ -7,6 +7,9 @@ from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from Agent.agent.agent import build_root_agent
+from Agent.agent.hardening.guardrails.authentication import (
+    require_authenticated_customer,
+)
 from Agent.config import get_settings
 
 
@@ -15,7 +18,7 @@ def _isolated_environment(
     monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE"):
+    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE", "LLM_API_KEY"):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()
 
@@ -51,9 +54,52 @@ def test_root_agent_passes_api_base_to_litellm(
     assert agent.model._additional_args["api_base"] == "http://ollama.internal:11434"
 
 
-def test_root_agent_exposes_the_add_tool() -> None:
-    from Agent.agent.agent import add
+def test_root_agent_exposes_the_customer_profile_tool() -> None:
+    from Agent.agent.tools.customers import get_my_customer_profile
 
     agent = build_root_agent()
-    assert add in agent.tools
-    assert add(2, 3) == 5
+    assert get_my_customer_profile in agent.tools
+
+
+def test_root_agent_registers_the_authentication_guardrail() -> None:
+    agent = build_root_agent()
+    assert agent.before_agent_callback is require_authenticated_customer
+
+
+def test_root_agent_instruction_forbids_asking_for_a_customer_id() -> None:
+    instruction = build_root_agent().instruction
+    assert isinstance(instruction, str)
+    assert "never ask" in instruction.lower()
+
+
+def test_root_agent_omits_api_base_for_hosted_providers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    monkeypatch.setenv("LLM_API_BASE", "")
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert "api_base" not in agent.model._additional_args
+
+
+def test_root_agent_passes_api_key_to_litellm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert agent.model._additional_args["api_key"] == "sk-test"
+
+
+def test_root_agent_omits_api_key_when_unset() -> None:
+    agent = build_root_agent()
+    assert isinstance(agent.model, LiteLlm)
+    assert "api_key" not in agent.model._additional_args
+
+
+def test_api_key_is_hidden_from_settings_repr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+    assert "sk-test" not in repr(get_settings())
