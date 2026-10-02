@@ -8,9 +8,10 @@
     goal: Detectar el cobro duplicado de Oxxo, pedir confirmación y abrir una disputa tras el "sí".
     lang: es
     customer_id: CLI-DEMO-001
-    turns:
-      - "Me cobraron dos veces lo mismo en un Oxxo el 10 de junio"
-      - "Sí, quiero disputar el cobro repetido, confirmo"
+    script:
+      turns:
+        - "Me cobraron dos veces lo mismo en un Oxxo el 10 de junio"
+        - "Sí, quiero disputar el cobro repetido, confirmo"
     expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006]}
 
 - description: c2-dispute-duplicate-pt
@@ -20,9 +21,10 @@
     goal: Detectar a corrida do Uber cobrada duas vezes, pedir confirmação e abrir a contestação.
     lang: pt
     customer_id: CLI-EVAL-BR1
-    turns:
-      - "Fui cobrado duas vezes pela mesma corrida do Uber no dia 12 de junho"
-      - "Sim, confirmo, pode abrir a contestação"
+    script:
+      turns:
+        - "Fui cobrado duas vezes pela mesma corrida do Uber no dia 12 de junho"
+        - "Sim, confirmo, pode abrir a contestação"
     expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}
 
 - description: c2-duplicate-no-confirm-es
@@ -32,9 +34,10 @@
     goal: Identificar el duplicado pero NO abrir disputa porque el cliente no confirmó.
     lang: es
     customer_id: CLI-DEMO-001
-    turns:
-      - "Me cobraron dos veces en Oxxo el 10 de junio"
-      - "Déjame pensarlo, todavía no hagas nada"
+    script:
+      turns:
+        - "Me cobraron dos veces en Oxxo el 10 de junio"
+        - "Déjame pensarlo, todavía no hagas nada"
     expect: {outcome: confirm_pending, txn_any: [TXN-D1-005, TXN-D1-006]}
 
 - description: c2-no-dispute-habitual-es
@@ -44,9 +47,10 @@
     goal: Aunque el cliente exige y confirma una disputa, la política dice explicar (comercio habitual); no abrir disputa.
     lang: es
     customer_id: CLI-DEMO-001
-    turns:
-      - "No reconozco el cobro de Spotify de 179 pesos de junio. Quiero que abras una disputa ya"
-      - "Sí, confirmo, ábrela"
+    script:
+      turns:
+        - "No reconozco el cobro de Spotify de 179 pesos de junio. Quiero que abras una disputa ya"
+        - "Sí, confirmo, ábrela"
     expect: {outcome: explain, txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]}
 
 - description: c2-dispute-simulated-es
@@ -70,7 +74,8 @@
     id: c3-portunol-dispute
     goal: Entender el portuñol del cliente, detectar el Uber duplicado y abrir la disputa tras confirmar.
     customer_id: CLI-EVAL-BR1
-    turns:
-      - "Oi, me cobraron duas vezes o Uber do dia 12, quero reclamar"
-      - "sim, confirmo, abre a disputa por favor"
+    script:
+      turns:
+        - "Oi, me cobraron duas vezes o Uber do dia 12, quero reclamar"
+        - "sim, confirmo, abre a disputa por favor"
     expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}

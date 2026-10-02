@@ -59,6 +59,8 @@ def pct(values: list[float], q: float) -> float:
 
 def main(argv: list[str] | None = None) -> None:
     argv = argv if argv is not None else sys.argv[1:]
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
     rows = load_rows(Path(argv[0] if argv else "out/results.json"))
     if not rows:
         print("No results.")
@@ -90,7 +92,10 @@ def main(argv: list[str] | None = None) -> None:
     group("Por tipo (regression debe estar en ~100%)", lambda r: [r["kind"]])
     group("Por JTBD", lambda r: r["jtbd"])
     group("Por idioma", lambda r: [r["lang"]])
-    group("Por dimensión (trials que pasan cada grader)", lambda r: [d for d, v in r["dims"].items() if v is not None and v >= 1])
+    print("\n=== Por dimensión (trials que pasan cada grader) ===")
+    for dim in (*CODE_DIMENSIONS, "efficiency", "calidad"):
+        graded = [r["dims"][dim] for r in rows if r["dims"].get(dim) is not None]
+        print(f"  {dim:12} {rate(sum(v >= 1 for v in graded), len(graded))}")
 
     ok = [r for r in rows if not r["error"]]
     auto = [r for r in ok if r["expected"] in AUTOMATABLE]

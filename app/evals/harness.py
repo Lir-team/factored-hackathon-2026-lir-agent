@@ -4,7 +4,9 @@ Every trial is isolated: a fresh container, case service, audit sink and session
 trials never share state (Anthropic, "Demystifying evals for AI agents", step 4).
 
 A scenario talks to the agent in one of two ways:
-- `turns`: scripted customer messages, sent in order (deterministic customer side).
+- `script.turns`: scripted customer messages, sent in order (deterministic customer side).
+  They are nested in an object because promptfoo expands any list in `vars` into one test
+  per element.
 - `persona`: a simulated customer played by `SIM_MODEL` until it writes ###STOP###
   or `max_turns` is reached.
 """
@@ -12,6 +14,7 @@ A scenario talks to the agent in one of two ways:
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import time
 import uuid
@@ -101,14 +104,34 @@ class Trial:
 
 
 def transcript(trial: dict) -> str:
-    """Readable conversation: customer turns, tools called and agent replies."""
+    """Readable conversation: customer turns, tool calls with their results, agent replies.
+
+    Tool results are included so a model grader can check that replies are grounded.
+    """
     lines = []
     for t in trial["turns"]:
         lines.append(f"cliente: {t['user']}")
-        if t["tools"]:
-            lines.append("  [tools] " + ", ".join(c["name"] for c in t["tools"]))
+        for call, result in zip(t["tools"], t["tool_results"], strict=False):
+            response = json.dumps(result["response"], ensure_ascii=False, default=str)
+            lines.append(f"  [tool] {call['name']}({json.dumps(call['args'], ensure_ascii=False)}) -> {response[:2000]}")
         lines.append(f"agente: {t['agent']}")
     return "\n".join(lines)
+
+
+def scenario_turns(scenario: dict) -> list[str] | None:
+    """Scripted customer messages, or None for a simulated customer.
+
+    Raises instead of guessing: a string here would be sent one character per turn.
+    """
+    script = scenario.get("script")
+    if script is None:
+        if not scenario.get("persona"):
+            raise ValueError(f"{scenario.get('id')}: needs `script.turns` or `persona`")
+        return None
+    turns = script.get("turns") if isinstance(script, dict) else None
+    if not isinstance(turns, list) or not all(isinstance(t, str) and t for t in turns):
+        raise ValueError(f"{scenario.get('id')}: `script.turns` must be a list of messages")
+    return turns
 
 
 def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
@@ -132,8 +155,9 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
     turns: list[Turn] = []
     t0 = time.perf_counter()
     stopped_by = "script_end"
-    if scenario.get("turns"):
-        for text in scenario["turns"]:
+    script = scenario_turns(scenario)
+    if script:
+        for text in script:
             turns.append(_send(runner, session_id, text, settings.llm_model, usage))
     else:
         stopped_by = _simulate(runner, session_id, scenario, settings.llm_model, usage, turns)

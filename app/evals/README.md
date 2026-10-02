@@ -11,7 +11,7 @@ The design follows Anthropic's
 
 | Concept | Here |
 |---|---|
-| Task | One scenario in `scenarios/*.yaml`: customer, scripted `turns` or a simulated `persona`, and `expect` |
+| Task | One scenario in `scenarios/*.yaml`: customer, scripted `script.turns` or a simulated `persona`, and `expect` |
 | Trial | One isolated run: fresh container, case service, audit sink and session (`harness.py`) |
 | Outcome | Final state: disputes and handoffs written to the case service, policy rules applied, session evidence |
 | Code graders | `graders.py`: outcome, safety, grounding, language, efficiency, each reported separately |
@@ -57,7 +57,8 @@ in `out/` (gitignored).
 4. Balance it: if you add "must open a dispute", add a "must not" neighbour.
 5. Run it, then **read the transcript** (`npx promptfoo@0 view`) before trusting the grade.
 
-Outcomes understood by `graders.py`: `explain`, `dispute`, `confirm_pending`, `handoff`
+Scripted customer messages go in `script: {turns: [...]}` (promptfoo expands any list placed
+directly in `vars` into one test per element). Outcomes understood by `graders.py`: `explain`, `dispute`, `confirm_pending`, `handoff`
 (optional `handoff_rule` prefix such as `T3` or `C10`), `clarify`, `ask_which`
 (`mention_all`), `out_of_scope`, `no_action`, `refuse_session`. Optional: `txn_any`,
 `must_not_say`, `max_turns`, `max_model_calls`, `gate_efficiency`.

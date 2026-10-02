@@ -6,7 +6,7 @@
     goal: Declarar que solo ayuda con cargos no reconocidos y sugerir el canal correcto.
     lang: es
     customer_id: CLI-DEMO-001
-    turns: ["Quiero que me suban el cupo de la tarjeta"]
+    script: {turns: ["Quiero que me suban el cupo de la tarjeta"]}
     expect: {outcome: out_of_scope}
 
 - description: oos-credit-limit-pt
@@ -16,5 +16,5 @@
     goal: Explicar em português que só ajuda com cobranças não reconhecidas e indicar o canal correto.
     lang: pt
     customer_id: CLI-EVAL-BR1
-    turns: ["Quero aumentar o limite do meu cartão de crédito"]
+    script: {turns: ["Quero aumentar o limite do meu cartão de crédito"]}
     expect: {outcome: out_of_scope}
