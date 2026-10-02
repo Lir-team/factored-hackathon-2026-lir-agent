@@ -57,14 +57,20 @@ def pct(values: list[float], q: float) -> float:
     return values[min(len(values) - 1, round(q * (len(values) - 1)))]
 
 
-def main(argv: list[str] | None = None) -> None:
+def regression_failures(rows: list[dict]) -> list[str]:
+    """Ids of regression tasks with any trial that failed the code graders or errored."""
+    return sorted({r["id"] for r in rows if r["kind"] == "regression" and not r["code_pass"]})
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Print the report; return the number of failing regression tasks (the gate)."""
     argv = argv if argv is not None else sys.argv[1:]
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
     rows = load_rows(Path(argv[0] if argv else "out/results.json"))
     if not rows:
         print("No results.")
-        return
+        return 1
     by_id: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
         by_id[r["id"]].append(r)
@@ -120,6 +126,10 @@ def main(argv: list[str] | None = None) -> None:
     if errors:
         print(f"\n  {len(errors)} trials con error de infraestructura (excluidos de las métricas): {errors[0]['error'][:200]}")
 
+    failing = regression_failures(rows)
+    print(f"\n=== Gate de regresión: {'FALLA ' + ', '.join(failing) if failing else 'OK'} ===")
+    return len(failing)
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(1 if main() else 0)

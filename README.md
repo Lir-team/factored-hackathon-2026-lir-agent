@@ -53,9 +53,11 @@ minimized data: opaque transaction references and an allowlist of fields.
 .
 ├── app/
 │   ├── lir-agent/       # Python agent (Google ADK + LiteLLM), managed with uv
-│   └── decision-layer/  # Typed decisions with probabilities (Jev, keyword baseline, fallback)
+│   ├── decision-layer/  # Typed decisions with probabilities (Jev, keyword baseline, fallback)
+│   └── evals/           # Scenario evals from the jobs to be done (promptfoo runner, code graders)
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
 ├── docs/         # Product proposal and architecture diagram (docs/architecture/)
+├── scripts/      # check.sh: does everything still work?
 └── .githooks/    # Git hooks: secret scan on commit, no direct push to main
 ```
 
@@ -128,6 +130,17 @@ uv run pytest && uv run ruff check . && uv run pyright
 `--customer-id` and `DEV_CUSTOMER_ID` stand in for the bank's identity check (biometric
 KYC, mocked). See [`app/lir-agent/README.md`](app/lir-agent/README.md) for the tools,
 layout, configuration and limitations.
+
+## Does everything still work?
+
+```bash
+scripts/check.sh          # tests, lint and types of every app; no network, no cost (~20 s)
+scripts/check.sh --live   # plus the regression evals against the real model, 3 trials each
+```
+
+`--live` needs Node.js and `app/lir-agent/.env` with `LLM_MODEL` and `LLM_API_KEY`. It fails
+when any regression scenario fails the code graders in any of its trials. See
+[`app/evals/README.md`](app/evals/README.md) for the scenarios, graders and report.
 
 ## Git hooks
 

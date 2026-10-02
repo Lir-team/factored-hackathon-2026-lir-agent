@@ -34,6 +34,7 @@ uv run python run.py                         # every task, 1 trial
 uv run python run.py --repeat 3              # 3 trials per task: pass^3 and pass@3
 uv run python run.py --filter-pattern c2-    # only tasks whose description matches
 uv run python run.py --model openai/gpt-5.4-mini   # compare agent models
+uv run python run.py --gate --repeat 3       # regression tasks only; exit 1 if any fails
 npx promptfoo@0 view                          # browse transcripts and grader reasons
 uv run python report.py out/results.json     # re-print the report
 ```
