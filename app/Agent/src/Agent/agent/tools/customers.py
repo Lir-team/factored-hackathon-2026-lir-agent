@@ -1,7 +1,8 @@
 """Customer tools.
 
-Customer records are PII. Logs carry the customer ID for traceability and
-never the record itself.
+Customer records are PII. The model only receives the fields in
+`MODEL_VISIBLE_FIELDS`: what it never sees, it cannot leak. Logs carry the
+customer ID for traceability and never the record itself.
 """
 
 import logging
@@ -18,9 +19,18 @@ from Agent.infrastructure.customers import CustomerRepository
 
 logger = logging.getLogger(__name__)
 
-# Internal columns the model has no use for. The ID stays out of the record
-# so the model never sees it.
-_HIDDEN_COLUMNS = {"_source_file", "customer_id"}
+# The only customer fields sent to the model. An allowlist, not a denylist:
+# a column added to the data later stays hidden until someone opts it in here.
+# Identity documents, contact data, address, demographics, financials and the
+# customer ID are deliberately absent.
+MODEL_VISIBLE_FIELDS = (
+    "first_name",
+    "segment",
+    "customer_status",
+    "registration_date",
+    "country",
+    "accepts_marketing",
+)
 
 
 @lru_cache
@@ -45,8 +55,11 @@ def get_my_customer_profile(tool_context: ToolContext) -> dict[str, Any]:
     one.
 
     Returns:
-        A dict with `found` set to True and the customer's fields under
-        `customer`, or `found` set to False when no such customer exists.
+        A dict with `found` set to True and a minimal, non-sensitive profile
+        under `customer` (first name, segment, account status, registration
+        date, country and marketing opt-in), or `found` set to False when no
+        such customer exists. Contact details, identity documents and
+        financial data are never available.
 
     Raises:
         UnauthenticatedSessionError: If the session has no authenticated
@@ -62,9 +75,9 @@ def get_my_customer_profile(tool_context: ToolContext) -> dict[str, Any]:
         )
         return {"found": False}
     customer = {
-        key: _to_json_value(value)
-        for key, value in row.items()
-        if key not in _HIDDEN_COLUMNS
+        field: _to_json_value(row[field])
+        for field in MODEL_VISIBLE_FIELDS
+        if field in row
     }
     logger.debug("Customer %s found", customer_id, extra={"customer_id": customer_id})
     return {"found": True, "customer": customer}
