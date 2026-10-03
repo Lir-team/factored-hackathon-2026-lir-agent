@@ -90,7 +90,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| `GET` | `/healthz` | - | `{"status": "ok"}` |
+| `GET` | `/health` | - | `{"status": "ok"}` |
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}` |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
 

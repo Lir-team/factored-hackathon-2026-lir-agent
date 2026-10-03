@@ -78,8 +78,9 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
 
     app = FastAPI(title="Lir agent API", version="1.0.0")
 
-    @app.get("/healthz")
-    async def healthz() -> dict[str, str]:
+    # Not /healthz: Cloud Run reserves public paths ending in "z".
+    @app.get("/health")
+    async def health() -> dict[str, str]:
         return {"status": "ok"}
 
     @app.post("/v1/sessions", status_code=status.HTTP_201_CREATED)

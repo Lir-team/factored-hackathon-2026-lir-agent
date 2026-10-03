@@ -40,8 +40,8 @@ def client(settings, gateway) -> TestClient:
     return TestClient(create_app(settings, gateway=gateway))  # type: ignore[arg-type]
 
 
-def test_healthz_needs_no_identity(client):
-    assert client.get("/healthz").json() == {"status": "ok"}
+def test_health_needs_no_identity(client):
+    assert client.get("/health").json() == {"status": "ok"}
 
 
 def test_session_is_owned_by_the_iap_identity(client, gateway):
