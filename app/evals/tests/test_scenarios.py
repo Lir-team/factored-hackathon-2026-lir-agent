@@ -36,3 +36,23 @@ def test_task_is_well_formed(file, task):
 def test_a_string_is_rejected_as_turns():
     with pytest.raises(ValueError):
         scenario_turns({"id": "x", "script": {"turns": "hola"}})
+
+
+def test_every_scenario_customer_and_transaction_exists_in_the_world():
+    import json
+
+    world = json.loads((SCENARIOS[0].parents[1] / "fixtures" / "eval_world.json").read_text(encoding="utf-8"))
+    customers = {c["customer_id"] for c in world["customers"]}
+    transactions = {t["transaction_id"] for t in world["transactions"]}
+    assert {t["customer_id"] for t in world["transactions"]} <= customers
+    for _, task in TASKS:
+        assert task["vars"].get("customer_id", next(iter(customers))) in customers
+        assert set(task["vars"]["expect"].get("txn_any", [])) <= transactions
+
+
+def test_world_loads_through_the_agent_repository():
+    from lir_agent.infrastructure.persistence import FixtureTransactionRepository
+
+    repository = FixtureTransactionRepository(SCENARIOS[0].parents[1] / "fixtures" / "eval_world.json")
+    adjustment = next(t for t in repository.list_transactions("CLI-EVAL-AR1") if t.transaction_id == "TXN-A1-003")
+    assert (adjustment.transaction_type, adjustment.channel, adjustment.merchant_name) == ("Adjustment", "Web", None)

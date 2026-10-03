@@ -44,3 +44,8 @@ def test_foreign_country_uses_iso_codes(builder, repository):
         evidence.transaction_country,
         evidence.foreign,
     ) == ("MX", "AR", True)
+
+
+def test_evidence_carries_transaction_type_and_channel(builder, repository):
+    evidence = evidence_for(builder, repository, "TXN-D1-001")
+    assert (evidence.transaction_type, evidence.channel) == ("Purchase", "Web")

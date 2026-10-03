@@ -154,9 +154,10 @@ confirmation:
 llm_exposure:
   # Identity documents, contact data, address, demographics, financials and the customer id are absent.
   customer_fields: [first_name, segment, customer_status, registration_date, country, accepts_marketing]
-  candidate_fields: [transaction_date, amount, currency, merchant_name, merchant_category, transaction_status]
+  candidate_fields: [transaction_date, amount, currency, merchant_name, merchant_category, transaction_status,
+                    transaction_type, channel]
   evidence_fields: [date, amount, currency, merchant_name, merchant_category, status,
-                    merchant_prior_count, merchant_last_seen, has_duplicate]
+                    transaction_type, channel, merchant_prior_count, merchant_last_seen, has_duplicate]
   # Rule ids stay in state and audit; they can reveal risk signals (e.g. a high fraud score).
   outcome_fields: [lane, reason]
 

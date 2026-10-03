@@ -21,6 +21,11 @@ ASK_FOR_A_DETAIL = (
     "the amount, the merchant name, or the exact date of the charge. For an exact date, "
     "search with date_from and date_to both set to that day; date_to defaults to today."
 )
+NO_MERCHANT_FOUND = (
+    "None of the customer's charges is from that merchant. Tell the customer you found no "
+    "charge from it. Do NOT present any other charge as that merchant. Ask for the amount "
+    "or the date of the charge instead."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,9 +89,21 @@ class FindCandidateTransactions:
             for txn in self._repository.list_transactions(session.require_customer_id())
             if self._matches(txn, criteria)
         ]
+        hint = (criteria.merchant_hint or "").strip()
+        if hint:
+            # The merchant is a filter, not a hint: other charges must never be returned as
+            # if they were that merchant (the model would present them as such).
+            matches = self._filter_by_merchant(hint, matches)
+            if not matches:
+                return {
+                    "status": "no_merchant_match",
+                    "merchant_hint": hint,
+                    "total_matches": 0,
+                    "candidates": [],
+                    "instruction": NO_MERCHANT_FOUND,
+                    "note": DATA_NOT_INSTRUCTIONS,
+                }
         matches = self._prefer_exact_amount(matches, criteria)
-        if criteria.merchant_hint and len(matches) > 1:
-            matches = self._rank_by_merchant(criteria.merchant_hint, matches)
         shown = matches[: self._settings.max_candidates]
         return {
             "status": "ok",
@@ -138,33 +155,48 @@ class FindCandidateTransactions:
             return False
         return not (criteria.date_to and day > criteria.date_to)
 
-    def _rank_by_merchant(
+    def _filter_by_merchant(
         self, hint: str, candidates: list[Transaction]
     ) -> list[Transaction]:
-        """Rank candidates with the typed D4 merchant decision.
+        """Keep the candidates of the merchant the customer named, the D4 pick first.
 
-        Only merchant names are sent (no amounts or dates leave the service). Falls back
-        to a substring match when no decision model answers.
+        A charge matches when its merchant name contains the hint, or when the typed D4
+        decision picked it (fuzzy names such as "oxxo tienda" vs "OXXO"). Charges without a
+        merchant never match and are never offered to D4. The decision runs even for a
+        single candidate, so one charge of another merchant cannot slip through. Only
+        merchant names are sent (no amounts or dates leave the service). When the decision
+        model fails, only the substring match applies.
         """
+        named = [txn for txn in candidates if txn.merchant_name]
+        if not named:
+            return []
+        needle = hint.casefold()
+        matched = [
+            txn for txn in named if needle in (txn.merchant_name or "").casefold()
+        ]
+        best = self._decided_merchant(hint, named)
+        if best is None:
+            return matched
+        return [best, *[txn for txn in matched if txn is not best]]
+
+    def _decided_merchant(
+        self, hint: str, named: list[Transaction]
+    ) -> Transaction | None:
+        """The candidate the D4 decision picked with enough confidence, if any."""
         options = {
             f"c{i}": f"{txn.merchant_name} ({txn.merchant_category})"
-            for i, txn in enumerate(candidates)
+            for i, txn in enumerate(named)
         }
         try:
             result = self._decisions.decide(
                 hint, {self._merchant_key: d4_merchant(options)}
             )
             answer = result.answers[self._merchant_key]
-            if (
-                answer.value != NO_MERCHANT_MATCH
-                and answer.probability >= self._settings.merchant_min_probability
-            ):
-                best = candidates[int(str(answer.value)[1:])]
-                return [best, *[txn for txn in candidates if txn is not best]]
         except DecisionError:
-            pass
-        needle = hint.casefold()
-        return sorted(
-            candidates,
-            key=lambda txn: needle not in (txn.merchant_name or "").casefold(),
-        )
+            return None
+        if (
+            answer.value == NO_MERCHANT_MATCH
+            or answer.probability < self._settings.merchant_min_probability
+        ):
+            return None
+        return named[int(str(answer.value)[1:])]
