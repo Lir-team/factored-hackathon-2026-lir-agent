@@ -190,3 +190,75 @@ def test_a_vague_search_asks_for_a_detail_instead_of_listing(harness, session, c
 )
 def test_one_concrete_detail_is_enough_to_search(harness, session, criteria):
     assert harness.container.find_candidates.execute(session, criteria)["status"] == "ok"
+
+
+TODAY = date(2026, 6, 15)
+
+
+@pytest.fixture
+def find_today(settings, tmp_path):
+    """The find use case over a fixed 'today' and charges on 06-10, 06-14 and 06-20."""
+    txn = {
+        "customer_id": "CLI-DEMO-001", "currency": "MXN", "merchant_category": "Retail",
+        "transaction_status": "Approved", "amount": 10.0, "merchant_name": "CINE",
+    }
+    day = lambda d: f"2026-06-{d}T10:00:00"  # noqa: E731
+    world = {
+        "customers": [{"customer_id": "CLI-DEMO-001", "country": "Mexico"}],
+        "transactions": [
+            {**txn, "transaction_id": "T-10", "transaction_date": day(10)},
+            {**txn, "transaction_id": "T-14", "transaction_date": day(14)},
+            {**txn, "transaction_id": "T-20", "transaction_date": day(20)},
+        ],
+    }
+    (tmp_path / "world.json").write_text(json.dumps(world), encoding="utf-8")
+    settings.fixture_path = tmp_path / "world.json"
+    container = build_container(
+        settings,
+        audit=InMemoryAuditSink(),
+        decisions=ScriptedDecisions(IN_SCOPE),
+        today=lambda: TODAY,
+    )
+    return container.find_candidates
+
+
+def found_ids(session, result):
+    return {session.resolve_ref(c["transaction_ref"]) for c in result["candidates"]}
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(date_from=TODAY),  # date_to defaults to today: a one-day span
+        SearchCriteria(date_from=date(2026, 6, 14)),  # yesterday, within the range
+        SearchCriteria(date_from=date(2026, 6, 14), date_to=date(2026, 6, 14)),  # exact day
+    ],
+)
+def test_date_from_alone_is_a_concrete_detail_when_close_to_today(
+    find_today, session, criteria
+):
+    assert find_today.execute(session, criteria)["status"] == "ok"
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(date_from=date(2026, 6, 10)),  # five days up to today
+        SearchCriteria(date_to=date(2026, 6, 14)),  # no start date
+        SearchCriteria(date_from=date(2026, 6, 14), date_to=date(2026, 6, 10)),  # inverted
+        SearchCriteria(date_from=date(2026, 6, 20)),  # in the future: today < date_from
+    ],
+)
+def test_other_date_shapes_ask_for_a_detail(find_today, session, criteria):
+    assert find_today.execute(session, criteria)["status"] == "needs_detail"
+
+
+def test_a_missing_date_to_filters_up_to_today(find_today, session):
+    result = find_today.execute(session, SearchCriteria(date_from=date(2026, 6, 14)))
+    assert found_ids(session, result) == {"T-14"}  # T-20 is after today
+
+
+def test_an_inverted_date_range_is_rejected_when_parsed():
+    with pytest.raises(InvalidSearchCriteriaError) as error:
+        SearchCriteria.parse(None, "2026-06-14", "2026-06-10", None)
+    assert error.value.field == "date_to"

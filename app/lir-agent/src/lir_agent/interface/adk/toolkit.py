@@ -77,8 +77,9 @@ class ChargeInvestigationToolkit:
 
         Args:
             amount: Approximate amount in the transaction currency, if the customer gave one.
-            date_from: Earliest date to consider, ISO format YYYY-MM-DD.
-            date_to: Latest date to consider, ISO format YYYY-MM-DD.
+            date_from: Earliest date to consider, ISO format YYYY-MM-DD. Required to search by
+                date; for an exact date, set it and date_to to that same day.
+            date_to: Latest date to consider, ISO format YYYY-MM-DD. Defaults to today.
             merchant_hint: Merchant name or description exactly as the customer wrote it.
 
         Returns:

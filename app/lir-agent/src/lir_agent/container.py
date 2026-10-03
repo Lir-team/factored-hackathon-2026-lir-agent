@@ -5,7 +5,7 @@ Tests pass overrides instead of patching globals.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from decision_layer import (
@@ -102,6 +102,7 @@ def build_container(
     cases: CaseRepository | None = None,
     audit: AuditSink | None = None,
     decisions: DecisionModel | None = None,
+    today: Callable[[], date] | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
@@ -135,6 +136,7 @@ def build_container(
             policy.config.search,
             policy.config.decision_keys["merchant"],
             presenter,
+            today,
         ),
         gather_evidence=GatherTransactionEvidence(
             repository, evidence_builder, policy, presenter
