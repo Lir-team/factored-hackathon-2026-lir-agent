@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from graders import _amounts_in, grade_trial
+from graders import _amounts_in, _other_customers_data, grade_trial
 
 SCENARIO = {
     "id": "dup",
@@ -181,3 +181,59 @@ def test_clarify_fails_when_charges_were_listed_first():
     trial["turns"][0]["tool_results"][0]["response"] = {"status": "needs_detail"}
     trial["turns"][0]["agent"] = "¿Recuerdas el monto o el comercio?"
     assert grade_trial(trial, scenario)["namedScores"]["outcome"] == 1
+
+
+ABSENT = {"id": "absent", "lang": "es", "customer_id": "CLI-EVAL-AR1",
+          "expect": {"outcome": "no_action", "merchants_absent": ["Cine Premium"]}}
+
+
+def absent_trial(reply: str, results=None) -> dict:
+    return variant(
+        disputes=[], turn_rules=["T9_in_scope"], case_outcome=None, evidence_transactions=[],
+        turns=[{"user": "¿Tengo algún cargo de Cine Premium?", "agent": reply, "tools": [],
+                "tool_results": results or []}],
+    )
+
+
+@pytest.mark.parametrize(
+    ("reply", "passes"),
+    [
+        ("No encontré ningún cargo de Cine Premium. ¿Recuerdas el monto o la fecha?", True),
+        ("Sí, tienes un cargo de Cine Premium del 11 de junio.", False),
+        ("No encontré cargos, pero veo uno de Cine Premium.", False),
+        ("Veo un ajuste en tu cuenta. ¿Es el de CINE PREMIUM que buscas?", True),
+    ],
+)
+def test_reply_must_not_claim_a_merchant_that_is_absent(reply, passes):
+    result = grade_trial(absent_trial(reply), ABSENT)
+    assert (result["namedScores"]["grounding"] == 1) is passes
+
+
+def test_a_merchant_in_the_tool_results_may_be_named():
+    results = [{"name": "find_candidate_transactions",
+                "response": {"candidates": [{"merchant_name": "CINE PREMIUM SA"}]}}]
+    result = grade_trial(absent_trial("Tienes un cargo de Cine Premium.", results), ABSENT)
+    assert result["namedScores"]["grounding"] == 1
+
+
+def test_world_customers_without_a_merchant_do_not_break_the_leak_check():
+    leaked = _other_customers_data("CLI-DEMO-001")
+    assert "SUPERMERCADOS DIA" in leaked
+    assert None not in leaked
+
+
+EXPLAIN = {"id": "adj", "lang": "es", "customer_id": "CLI-EVAL-AR1",
+           "expect": {"outcome": "explain", "mention_any": ["ajuste", "web"]}}
+
+
+@pytest.mark.parametrize(
+    ("reply", "passes"),
+    [
+        ("Es un ajuste hecho por la web, sin comercio asociado.", True),
+        ("Es un cargo de tu cuenta, ¿quieres más detalle?", False),
+    ],
+)
+def test_explain_must_cite_what_the_expectation_requires(reply, passes):
+    trial = variant(disputes=[], turn_rules=["T9_in_scope"], case_outcome={"lane": "explain"})
+    trial["turns"] = [{"user": "¿Qué es este cargo?", "agent": reply, "tools": [], "tool_results": []}]
+    assert (grade_trial(trial, EXPLAIN)["namedScores"]["outcome"] == 1) is passes
