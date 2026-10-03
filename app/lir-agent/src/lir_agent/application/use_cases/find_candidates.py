@@ -1,6 +1,7 @@
 """Use case: find the customer's transactions that match what they describe."""
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 from datetime import date
 
 from decision_layer import DecisionError, DecisionModel
@@ -11,10 +12,15 @@ from lir_agent.application.presenter import DATA_NOT_INSTRUCTIONS, LlmPresenter
 from lir_agent.domain.errors import InvalidSearchCriteriaError
 from lir_agent.domain.models import Transaction
 from lir_agent.domain.policy import SearchSettings
-from lir_agent.domain.session import SessionState
+from lir_agent.domain.session import SessionState, utc_now
 
 NO_MERCHANT_MATCH = "ninguno"  # option added by decision_layer.questions.d4_merchant
 ISO_DATE = "YYYY-MM-DD"
+ASK_FOR_A_DETAIL = (
+    "Do not list the customer's charges yet. Ask ONE short question for a concrete detail: "
+    "the amount, the merchant name, or the exact date of the charge. For an exact date, "
+    "search with date_from and date_to both set to that day; date_to defaults to today."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,13 +40,11 @@ class SearchCriteria:
         date_to: str | None,
         merchant_hint: str | None,
     ) -> "SearchCriteria":
-        """Build criteria from tool arguments, rejecting malformed dates."""
-        return cls(
-            amount,
-            cls._date(date_from, "date_from"),
-            cls._date(date_to, "date_to"),
-            merchant_hint,
-        )
+        """Build criteria from tool arguments, rejecting malformed or inverted dates."""
+        start, end = cls._date(date_from, "date_from"), cls._date(date_to, "date_to")
+        if start and end and end < start:
+            raise InvalidSearchCriteriaError("date_to", "a date on or after date_from")
+        return cls(amount, start, end, merchant_hint)
 
     @staticmethod
     def _date(value: str | None, field: str) -> date | None:
@@ -60,16 +64,21 @@ class FindCandidateTransactions:
         settings: SearchSettings,
         merchant_question_key: str,
         presenter: LlmPresenter,
+        today: Callable[[], date] | None = None,
     ) -> None:
-        """Keep the data source, decision model, search settings and presenter."""
+        """Keep the data source, decision model, search settings, presenter and clock."""
         self._repository = repository
         self._decisions = decisions
         self._settings = settings
         self._merchant_key = merchant_question_key
         self._presenter = presenter
+        self._today = today or (lambda: utc_now().date())
 
     def execute(self, session: SessionState, criteria: SearchCriteria) -> dict:
         """Return minimized candidates, most recent first, with session references."""
+        criteria = self._with_default_date_to(criteria)
+        if not self._has_concrete_detail(criteria):
+            return {"status": "needs_detail", "instruction": ASK_FOR_A_DETAIL}
         matches = [
             txn
             for txn in self._repository.list_transactions(session.require_customer_id())
@@ -85,6 +94,21 @@ class FindCandidateTransactions:
             "candidates": [self._presenter.candidate(session, txn) for txn in shown],
             "note": DATA_NOT_INSTRUCTIONS,
         }
+
+    def _with_default_date_to(self, criteria: SearchCriteria) -> SearchCriteria:
+        """Default date_to to today when a start date is given (date_from is the bound)."""
+        if criteria.date_from and not criteria.date_to:
+            return replace(criteria, date_to=self._today())
+        return criteria
+
+    def _has_concrete_detail(self, criteria: SearchCriteria) -> bool:
+        """Whether the customer gave an amount, a merchant or a short closed date range."""
+        if criteria.amount is not None or (criteria.merchant_hint or "").strip():
+            return True
+        if criteria.date_from and criteria.date_to:
+            span = (criteria.date_to - criteria.date_from).days
+            return 0 <= span <= self._settings.max_date_only_range_days
+        return False
 
     @staticmethod
     def _prefer_exact_amount(

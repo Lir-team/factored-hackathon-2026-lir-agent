@@ -1,11 +1,15 @@
 import json
+from datetime import date
 
 import pytest
+from decision_layer import ChainDecisionModel, DecisionError
 
 from lir_agent.application.use_cases import SearchCriteria
+from lir_agent.container import build_container
 from lir_agent.domain.errors import InvalidSearchCriteriaError, TransactionNotFoundError
 from lir_agent.domain.session import SessionState
-from tests.support import OTHER_CUSTOMER_TXN
+from lir_agent.infrastructure.audit import InMemoryAuditSink
+from tests.support import IN_SCOPE, OTHER_CUSTOMER_TXN, ScriptedDecisions
 
 
 @pytest.fixture
@@ -143,3 +147,118 @@ def test_exact_amount_matches_hide_near_ones(make_harness, settings, tmp_path, c
     assert [session.resolve_ref(c["transaction_ref"]) for c in near["candidates"]] == [
         "T-NEAR"
     ]
+
+
+def test_a_fallback_in_the_decision_chain_is_audited(settings, context):
+    # A model that always fails must not go unnoticed behind the baseline.
+    class Broken:
+        name = "broken"
+
+        def decide(self, state, questions):
+            raise DecisionError("provider rejected the request")
+
+    audit = InMemoryAuditSink()
+    chain = ChainDecisionModel([Broken(), ScriptedDecisions(IN_SCOPE)])
+    container = build_container(settings, audit=audit, decisions=chain)
+    container.route_turn.execute(SessionState(context.state), "No reconozco un cargo", "s1")
+    fallback = [e for e in audit.entries if e["event"] == "decision_fallback"]
+    assert fallback[0]["failures"] == [["broken", "provider rejected the request"]]
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(),  # "tengo un cobro raro"
+        SearchCriteria(date_from=date(2026, 6, 8), date_to=date(2026, 6, 14)),  # "la semana pasada"
+        SearchCriteria(date_from=date(2026, 6, 1)),  # open range
+    ],
+)
+def test_a_vague_search_asks_for_a_detail_instead_of_listing(harness, session, criteria):
+    # Product decision: ask for the amount, merchant or exact date before showing charges.
+    result = harness.container.find_candidates.execute(session, criteria)
+    assert result["status"] == "needs_detail"
+    assert "candidates" not in result
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(amount=99),
+        SearchCriteria(merchant_hint="Oxxo"),
+        SearchCriteria(date_from=date(2026, 6, 11), date_to=date(2026, 6, 11)),  # one day
+    ],
+)
+def test_one_concrete_detail_is_enough_to_search(harness, session, criteria):
+    assert harness.container.find_candidates.execute(session, criteria)["status"] == "ok"
+
+
+TODAY = date(2026, 6, 15)
+
+
+@pytest.fixture
+def find_today(settings, tmp_path):
+    """The find use case over a fixed 'today' and charges on 06-10, 06-14 and 06-20."""
+    txn = {
+        "customer_id": "CLI-DEMO-001", "currency": "MXN", "merchant_category": "Retail",
+        "transaction_status": "Approved", "amount": 10.0, "merchant_name": "CINE",
+    }
+    day = lambda d: f"2026-06-{d}T10:00:00"  # noqa: E731
+    world = {
+        "customers": [{"customer_id": "CLI-DEMO-001", "country": "Mexico"}],
+        "transactions": [
+            {**txn, "transaction_id": "T-10", "transaction_date": day(10)},
+            {**txn, "transaction_id": "T-14", "transaction_date": day(14)},
+            {**txn, "transaction_id": "T-20", "transaction_date": day(20)},
+        ],
+    }
+    (tmp_path / "world.json").write_text(json.dumps(world), encoding="utf-8")
+    settings.fixture_path = tmp_path / "world.json"
+    container = build_container(
+        settings,
+        audit=InMemoryAuditSink(),
+        decisions=ScriptedDecisions(IN_SCOPE),
+        today=lambda: TODAY,
+    )
+    return container.find_candidates
+
+
+def found_ids(session, result):
+    return {session.resolve_ref(c["transaction_ref"]) for c in result["candidates"]}
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(date_from=TODAY),  # date_to defaults to today: a one-day span
+        SearchCriteria(date_from=date(2026, 6, 14)),  # yesterday, within the range
+        SearchCriteria(date_from=date(2026, 6, 14), date_to=date(2026, 6, 14)),  # exact day
+    ],
+)
+def test_date_from_alone_is_a_concrete_detail_when_close_to_today(
+    find_today, session, criteria
+):
+    assert find_today.execute(session, criteria)["status"] == "ok"
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(date_from=date(2026, 6, 10)),  # five days up to today
+        SearchCriteria(date_to=date(2026, 6, 14)),  # no start date
+        SearchCriteria(date_from=date(2026, 6, 14), date_to=date(2026, 6, 10)),  # inverted
+        SearchCriteria(date_from=date(2026, 6, 20)),  # in the future: today < date_from
+    ],
+)
+def test_other_date_shapes_ask_for_a_detail(find_today, session, criteria):
+    assert find_today.execute(session, criteria)["status"] == "needs_detail"
+
+
+def test_a_missing_date_to_filters_up_to_today(find_today, session):
+    result = find_today.execute(session, SearchCriteria(date_from=date(2026, 6, 14)))
+    assert found_ids(session, result) == {"T-14"}  # T-20 is after today
+
+
+def test_an_inverted_date_range_is_rejected_when_parsed():
+    with pytest.raises(InvalidSearchCriteriaError) as error:
+        SearchCriteria.parse(None, "2026-06-14", "2026-06-10", None)
+    assert error.value.field == "date_to"
