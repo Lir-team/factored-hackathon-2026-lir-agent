@@ -15,7 +15,11 @@ from google.adk.runners import InMemoryRunner
 from pydantic import BaseModel, Field, field_validator
 
 from lir_agent.config.settings import Settings
-from lir_agent.interface.http.gateway import AgentGateway, SessionNotFoundError
+from lir_agent.interface.http.gateway import (
+    AgentGateway,
+    CustomerNotFoundError,
+    SessionNotFoundError,
+)
 
 APP_NAME = "lir"
 # IAP prefixes the e-mail with the identity provider.
@@ -47,12 +51,16 @@ class MessageResponse(BaseModel):
 
 
 def build_gateway(settings: Settings) -> AgentGateway:
-    """Wire the real agent behind an in-memory ADK runner."""
-    from lir_agent.interface.adk import build_agent  # heavy import, only when serving
+    """Wire the real agent behind an in-memory ADK runner, sharing one container."""
+    from lir_agent.container import build_container  # heavy imports, only when serving
+    from lir_agent.interface.adk import build_agent
 
-    runner = InMemoryRunner(agent=build_agent(settings), app_name=APP_NAME)
+    container = build_container(settings)
+    runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
     return AgentGateway(
         runner,
+        customers=container.repository,
+        audit=container.audit,
         session_ttl=timedelta(minutes=settings.session_ttl_minutes),
         auth_method=settings.http_auth_method,
     )
@@ -91,7 +99,12 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid customer_id"
             )
-        started = await agent_gateway.start_session(caller, body.customer_id)
+        try:
+            started = await agent_gateway.start_session(caller, body.customer_id)
+        except CustomerNotFoundError:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "Customer not found"
+            ) from None
         return StartSessionResponse(
             session_id=started.session_id, expires_at=started.expires_at.isoformat()
         )

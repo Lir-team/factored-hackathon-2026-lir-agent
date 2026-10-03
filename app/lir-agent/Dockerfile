@@ -32,9 +32,9 @@ COPY --from=build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     ENVIRONMENT=production \
-    # Cloud Run mounts the data bucket here; the audit log goes to writable /tmp.
+    # Cloud Run mounts the data bucket here; audit entries go to Cloud Logging.
     DATA_DIR=/mnt/data \
-    AUDIT_PATH=/tmp/lir/audit.jsonl
+    AUDIT_SINK=stdout
 USER lir
 WORKDIR /home/lir
 EXPOSE 8080

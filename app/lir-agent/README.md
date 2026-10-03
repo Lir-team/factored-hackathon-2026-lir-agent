@@ -91,7 +91,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | `GET` | `/health` | - | `{"status": "ok"}` |
-| `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}` |
+| `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
 
 Locally, without IAP:
@@ -109,7 +109,8 @@ docker build -f app/lir-agent/Dockerfile -t lir-agent app/
 ```
 
 The image runs as a non-root user, reads data from `DATA_DIR=/mnt/data` (the Cloud Storage
-bucket mounted by Cloud Run) and gets its keys from Secret Manager as environment variables.
+bucket mounted by Cloud Run) and gets its keys from Secret Manager as environment variables. With `AUDIT_SINK=stdout`
+(set in the image) every audit entry is a structured JSON line in Cloud Logging.
 
 ## Try it (demo fixture)
 
@@ -141,8 +142,8 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 ## Known limitations
 
 - `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
-- Session state and the audit log are local (in-memory sessions, JSONL file); production
-  needs a persistent session service and BigQuery or Cloud Logging. On Cloud Run this means
+- Sessions are in memory; production needs a persistent session service (Firestore). The
+  audit log is a local JSONL file, or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`). On Cloud Run this means
   one instance (`max-instances=1`) so a session's messages reach the instance that holds it.
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
   (Cloud Run ingress and IAP settings, managed in `lir-infra`).

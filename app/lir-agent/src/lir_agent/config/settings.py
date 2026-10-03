@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     turn_guidance_path: Path = RESOURCES_DIR / "prompts" / "turn_guidance.yaml"
     customer_messages_path: Path = RESOURCES_DIR / "prompts" / "customer_messages.yaml"
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
+    # Where audit entries go: a local JSONL file, or stdout as structured JSON (Cloud Run
+    # forwards it to Cloud Logging).
+    audit_sink: Literal["jsonl", "stdout"] = "jsonl"
 
     session_ttl_minutes: int = Field(default=15, gt=0)
     reference_date: date | None = Field(

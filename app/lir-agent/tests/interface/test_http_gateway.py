@@ -10,7 +10,13 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 
 from lir_agent.domain.session import SessionState, utc_now
-from lir_agent.interface.http import AgentGateway, SessionNotFoundError
+from lir_agent.infrastructure.audit import InMemoryAuditSink
+from lir_agent.infrastructure.persistence import FixtureTransactionRepository
+from lir_agent.interface.http import (
+    AgentGateway,
+    CustomerNotFoundError,
+    SessionNotFoundError,
+)
 
 
 class CustomerEchoAgent(BaseAgent):
@@ -28,10 +34,19 @@ class CustomerEchoAgent(BaseAgent):
 
 
 @pytest.fixture
-def gateway() -> AgentGateway:
+def audit() -> InMemoryAuditSink:
+    return InMemoryAuditSink()
+
+
+@pytest.fixture
+def gateway(settings, audit) -> AgentGateway:
     runner = InMemoryRunner(agent=CustomerEchoAgent(name="echo"), app_name="lir-test")
     return AgentGateway(
-        runner, session_ttl=timedelta(minutes=15), auth_method="iap_operator"
+        runner,
+        customers=FixtureTransactionRepository(settings.fixture_path),
+        audit=audit,
+        session_ttl=timedelta(minutes=15),
+        auth_method="iap_operator",
     )
 
 
@@ -60,3 +75,18 @@ def test_operator_cannot_use_another_operators_session(gateway):
 def test_unknown_session_is_not_found(gateway):
     with pytest.raises(SessionNotFoundError):
         asyncio.run(gateway.send("tester@example.com", "missing", "hola"))
+
+
+def test_unknown_customer_gets_no_session(gateway, audit):
+    with pytest.raises(CustomerNotFoundError):
+        asyncio.run(gateway.start_session("tester@example.com", "CLI-UNKNOWN"))
+    assert audit.entries == []
+
+
+def test_session_start_is_audited_without_the_customer_id(gateway, audit):
+    started = asyncio.run(gateway.start_session("tester@example.com", "CLI-DEMO-001"))
+    [entry] = audit.entries
+    assert entry["event"] == "session_started"
+    assert entry["session_id"] == started.session_id
+    assert entry["operator"] == "tester@example.com"
+    assert "CLI-DEMO-001" not in str(entry)

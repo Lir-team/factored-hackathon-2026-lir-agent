@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from google.adk.runners import Runner
 from google.genai import types
 
+from lir_agent.application.ports import AuditSink, TransactionRepository
 from lir_agent.domain.session import SessionState
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 class SessionNotFoundError(Exception):
     """The session does not exist, expired from memory, or belongs to another operator."""
+
+
+class CustomerNotFoundError(Exception):
+    """No customer with this id exists in the data source."""
 
 
 @dataclass(frozen=True)
@@ -38,11 +43,15 @@ class AgentGateway:
         self,
         runner: Runner,
         *,
+        customers: TransactionRepository,
+        audit: AuditSink,
         session_ttl: timedelta,
         auth_method: str,
     ) -> None:
-        """Keep the runner and how sessions are authenticated."""
+        """Keep the runner, the customer lookup, the audit sink and the session policy."""
         self._runner = runner
+        self._customers = customers
+        self._audit = audit
         self._session_ttl = session_ttl
         self._auth_method = auth_method
 
@@ -52,7 +61,13 @@ class AgentGateway:
         return self._runner.app_name
 
     async def start_session(self, operator: str, customer_id: str) -> StartedSession:
-        """Create a session for `customer_id`, owned by `operator`."""
+        """Create a session for `customer_id`, owned by `operator`.
+
+        Raises:
+            CustomerNotFoundError: If the customer does not exist.
+        """
+        if self._customers.get_customer(customer_id) is None:
+            raise CustomerNotFoundError(customer_id)
         state: dict = {}
         expires_at = SessionState(state).start(
             customer_id, self._session_ttl, self._auth_method
@@ -61,7 +76,12 @@ class AgentGateway:
         await self._runner.session_service.create_session(
             app_name=self.app_name, user_id=operator, session_id=session_id, state=state
         )
-        logger.info("HTTP session %s started", session_id)
+        self._audit.record(
+            "session_started",
+            session_id,
+            auth_method=self._auth_method,
+            operator=operator,
+        )
         return StartedSession(session_id=session_id, expires_at=expires_at)
 
     async def send(self, operator: str, session_id: str, text: str) -> str:

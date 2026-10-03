@@ -29,7 +29,7 @@ from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
-from lir_agent.infrastructure.audit import JsonlAuditSink
+from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
 from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
@@ -75,6 +75,13 @@ def build_repository(settings: Settings) -> TransactionRepository:
     return FixtureTransactionRepository(settings.fixture_path)
 
 
+def build_audit(settings: Settings) -> AuditSink:
+    """The audit sink chosen by `AUDIT_SINK`."""
+    if settings.audit_sink == "stdout":
+        return StdoutAuditSink()
+    return JsonlAuditSink(settings.audit_path)
+
+
 def build_decisions(
     settings: Settings, completion: Callable[..., Any] | None = None
 ) -> DecisionModel:
@@ -109,7 +116,7 @@ def build_container(
     policy = resources.load_policy(settings.policy_path)
     repository = repository or build_repository(settings)
     cases = cases or InMemoryCaseRepository()
-    audit = audit or JsonlAuditSink(settings.audit_path)
+    audit = audit or build_audit(settings)
     decisions = decisions or build_decisions(settings)
     presenter = LlmPresenter(policy.config.llm_exposure)
     evidence_builder = EvidenceBuilder(

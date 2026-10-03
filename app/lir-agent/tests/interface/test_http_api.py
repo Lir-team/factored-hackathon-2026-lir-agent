@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 import pytest
 from fastapi.testclient import TestClient
 
-from lir_agent.interface.http import SessionNotFoundError, create_app
+from lir_agent.interface.http import (
+    CustomerNotFoundError,
+    SessionNotFoundError,
+    create_app,
+)
 from lir_agent.interface.http.gateway import StartedSession
 
 IAP_HEADER = {
@@ -18,6 +22,8 @@ class FakeGateway:
         self.messages: list[tuple[str, str, str]] = []
 
     async def start_session(self, operator: str, customer_id: str) -> StartedSession:
+        if customer_id == "CLI-UNKNOWN":
+            raise CustomerNotFoundError(customer_id)
         session_id = f"s{len(self.sessions) + 1}"
         self.sessions[session_id] = (operator, customer_id)
         return StartedSession(session_id=session_id, expires_at=EXPIRES)
@@ -99,3 +105,11 @@ def test_message_length_is_bounded(client, text):
         "/v1/sessions/s1/messages", json={"text": text}, headers=IAP_HEADER
     )
     assert response.status_code == 422
+
+
+def test_unknown_customer_is_not_found(client, gateway):
+    response = client.post(
+        "/v1/sessions", json={"customer_id": "cli-unknown"}, headers=IAP_HEADER
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Customer not found"}
