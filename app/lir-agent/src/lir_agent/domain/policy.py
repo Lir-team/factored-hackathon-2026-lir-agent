@@ -61,6 +61,7 @@ class Rule(BaseModel):
 # "No te preocupes, te vamos a devolver" is still a promise.
 _NEGATION = re.compile(r"\b(no|não|nao|nunca|jamás|jamais|ni|nem|sin|sem)\b", re.IGNORECASE)
 _CLAUSE_END = re.compile(r"[,;:.!?\n]")
+_WORD = re.compile(r"\w+")
 
 
 class OutputGuard(BaseModel):
@@ -70,7 +71,17 @@ class OutputGuard(BaseModel):
     forbidden_patterns: list[str]
     # Blocked unless negated in the same clause (e.g. refund promises).
     forbidden_unless_negated: list[str] = []
+    # Words allowed between a negation and the promise for the negation to govern it
+    # ("no puedo prometer que ..."). Any other word in between means the negation belongs
+    # to something else ("si no lo reconoces, te vamos a devolver"), so the promise is
+    # blocked. Empty keeps the clause-only rule.
+    negation_bridge_words: frozenset[str] = frozenset()
     fallback_message: dict[Language, str]
+
+    @field_validator("negation_bridge_words", mode="before")
+    @classmethod
+    def _lowercase_bridge_words(cls, words: Any) -> Any:
+        return frozenset(w.lower() for w in words) if words is not None else words
 
     def violations(self, text: str) -> list[str]:
         """The forbidden patterns found in a reply."""
@@ -78,7 +89,7 @@ class OutputGuard(BaseModel):
         promised = [
             p
             for p in self.forbidden_unless_negated
-            if any(not _negated(text, m.start()) for m in re.finditer(p, text))
+            if any(not self._negated(text, m.start()) for m in re.finditer(p, text))
         ]
         return always + promised
 
@@ -86,10 +97,18 @@ class OutputGuard(BaseModel):
         """The replacement reply, in the customer's language."""
         return self.fallback_message.get(language) or self.fallback_message[DEFAULT_LANGUAGE]
 
-
-def _negated(text: str, start: int) -> bool:
-    clause = _CLAUSE_END.split(text[:start])[-1]
-    return bool(_NEGATION.search(clause))
+    def _negated(self, text: str, start: int) -> bool:
+        clause = _CLAUSE_END.split(text[:start])[-1]
+        negations = list(_NEGATION.finditer(clause))
+        if not self.negation_bridge_words:
+            return bool(negations)
+        return any(
+            all(
+                word.lower() in self.negation_bridge_words
+                for word in _WORD.findall(clause[negation.end() :])
+            )
+            for negation in negations
+        )
 
 
 class SearchSettings(BaseModel):

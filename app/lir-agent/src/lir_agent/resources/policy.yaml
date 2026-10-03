@@ -5,7 +5,7 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.1.0-synthetic
+version: 0.2.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
@@ -143,6 +143,21 @@ output_guard:
     - '(?i)\breembols\w*\s+(aprobad|confirmad|garantizad)'
     - '(?i)\b(vamos|iremos)\s+(devolver|reembolsar|estornar)'
     - '(?i)\bestorno\s+(aprovad|confirmad|garantid)'
+  # A negation only cancels a promise when every word between them is listed here, so
+  # "no puedo prometer que te vamos a devolver" passes but "si no lo reconoces te vamos
+  # a devolver" and "no te preocupes que te vamos a devolver" are blocked. A missing word
+  # can only block a safe reply (the fallback is sent), never let a promise through.
+  negation_bridge_words: [
+    # Modal verbs: "no puedo / não posso / no conseguimos"
+    puedo, podemos, puede, pueden, poder, posso, pode, podem, consigo, conseguimos,
+    # Commitment verbs: "prometer, confirmar, garantizar, asegurar"
+    prometer, prometo, prometemos, confirmar, confirmo, confirmamos,
+    garantizar, garantizo, garantizamos, garantir, garanto, garantimos,
+    asegurar, aseguro, aseguramos, assegurar, asseguro, asseguramos,
+    # Function words and pronouns: "no puedo confirmar todavía que te ..."
+    que, se, te, le, lhe, lo, la, a, o, aún, aun, todavía, ainda,
+    por, este, esse, canal, ahora, agora,
+  ]
   fallback_message:
     es: >-
       Tu caso quedó registrado y un especialista lo revisará. No podemos confirmar
