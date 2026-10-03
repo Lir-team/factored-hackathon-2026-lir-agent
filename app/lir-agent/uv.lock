@@ -1121,7 +1121,6 @@ dependencies = [
     { name = "google-adk" },
     { name = "litellm" },
     { name = "pydantic-settings" },
-    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "uvicorn" },
 ]
@@ -1143,7 +1142,6 @@ requires-dist = [
     { name = "google-adk", specifier = ">=2.11.0" },
     { name = "litellm", specifier = ">=1.103.2" },
     { name = "pydantic-settings", specifier = ">=2.7.0" },
-    { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]

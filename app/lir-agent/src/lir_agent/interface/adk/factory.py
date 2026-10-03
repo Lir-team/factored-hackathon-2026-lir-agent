@@ -2,11 +2,10 @@
 
 from typing import Any
 
-from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
-from lir_agent.config.settings import ENV_FILE, Settings, get_settings
+from lir_agent.config.settings import Settings, get_settings
 from lir_agent.container import Container, build_container
 from lir_agent.interface.adk.callbacks import AgentCallbacks
 from lir_agent.interface.adk.guidance import CustomerMessages, TurnGuidance
@@ -90,9 +89,6 @@ def build_agent(
     settings: Settings | None = None, container: Container | None = None
 ) -> LlmAgent:
     """Build the agent from settings, or from a prebuilt container in tests."""
-    # Exports keys read from the environment by other libraries (e.g. Jev credentials
-    # for the decision layer). Existing environment variables always win.
-    load_dotenv(ENV_FILE, override=False)
     return AgentFactory(
         container or build_container(settings or get_settings())
     ).create()

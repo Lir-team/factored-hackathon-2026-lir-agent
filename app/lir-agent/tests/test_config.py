@@ -14,7 +14,15 @@ def _isolated_environment(
 ) -> None:
     """Give each test an empty environment and a directory with no `.env`."""
     monkeypatch.chdir(tmp_path)
-    for key in ("ENVIRONMENT", "LOG_LEVEL", "LLM_MODEL", "LLM_API_BASE"):
+    for key in (
+        "ENVIRONMENT",
+        "LOG_LEVEL",
+        "LLM_MODEL",
+        "LLM_API_BASE",
+        "JEV_ENABLED",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "CLOUDFLARE_API_TOKEN",
+    ):
         monkeypatch.delenv(key, raising=False)
     get_settings.cache_clear()
 
@@ -99,7 +107,47 @@ def test_llm_decisions_chain_falls_back_to_the_baseline(monkeypatch: pytest.Monk
 def test_default_decisions_keep_the_baseline(monkeypatch: pytest.MonkeyPatch) -> None:
     from lir_agent.container import build_decisions
 
-    monkeypatch.delenv("JEV_ENABLED", raising=False)
+    assert build_decisions(Settings()).name == "keywords-v1"
+
+
+def test_jev_settings_are_typed_and_the_token_is_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("JEV_ENABLED", "1")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-1")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-secret")
+    settings = Settings()
+    assert settings.jev_enabled is True
+    assert settings.cloudflare_account_id == "acct-1"
+    assert settings.cloudflare_api_token is not None
+    assert settings.cloudflare_api_token.get_secret_value() == "cf-secret"
+    assert "cf-secret" not in repr(settings)
+
+
+def test_jev_is_off_by_default() -> None:
+    settings = Settings()
+    assert settings.jev_enabled is False
+    assert settings.cloudflare_api_token is None
+
+
+def test_enabled_jev_with_credentials_leads_the_chain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lir_agent.container import build_decisions
+
+    monkeypatch.setenv("JEV_ENABLED", "1")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-1")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-secret")
+    assert build_decisions(Settings()).name == "jev > keywords-v1"
+
+
+def test_enabled_jev_without_a_token_keeps_the_baseline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from lir_agent.container import build_decisions
+
+    monkeypatch.setenv("JEV_ENABLED", "1")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-1")
     assert build_decisions(Settings()).name == "keywords-v1"
 
 

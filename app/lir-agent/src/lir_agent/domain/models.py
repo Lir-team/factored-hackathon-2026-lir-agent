@@ -79,6 +79,7 @@ class Evidence(_Frozen):
     merchant_name: str | None
     merchant_category: str | None
     status: str | None
+    transaction_type: str | None
     channel: str | None
     merchant_prior_count: int
     merchant_last_seen: datetime | None

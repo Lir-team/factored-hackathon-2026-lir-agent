@@ -1,0 +1,28 @@
+# C1 - Charges the customer asks about that have no merchant, or a merchant they never paid.
+# CLI-EVAL-AR1 has a supermarket purchase, a transfer and an adjustment: no cinema charge.
+- description: c1-merchant-not-found-es
+  metadata: {jtbd: [C1, B1], kind: regression}
+  vars:
+    id: c1-merchant-not-found-es
+    goal: No existe ningún cargo de Cine Premium; decirlo sin presentar otro cargo como de ese comercio, sin disputa ni derivación.
+    lang: es
+    customer_id: CLI-EVAL-AR1
+    script: {turns: ["¿Tengo algún cargo de Cine Premium?"]}
+    expect:
+      outcome: no_action
+      merchants_absent: ["Cine Premium"]
+      must_not_say: ["SUPERMERCADOS DIA"]
+
+- description: c1-explain-adjustment-no-merchant-es
+  metadata: {jtbd: [C1, B1], kind: regression}
+  vars:
+    id: c1-explain-adjustment-no-merchant-es
+    goal: Explicar un cargo sin comercio (un ajuste hecho por web, ya revertido) citando tipo y canal, sin inventar un comercio ni abrir disputa.
+    lang: es
+    customer_id: CLI-EVAL-AR1
+    script: {turns: ["No reconozco un cargo de 311.497,38 pesos, ¿qué es?"]}
+    expect:
+      outcome: explain
+      txn_any: [TXN-A1-003]
+      mention_any: [ajuste, web]
+      must_not_say: ["SUPERMERCADOS DIA"]

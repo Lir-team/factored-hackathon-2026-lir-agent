@@ -65,6 +65,7 @@ class EvidenceBuilder:
             merchant_name=txn.merchant_name,
             merchant_category=txn.merchant_category,
             status=txn.transaction_status,
+            transaction_type=txn.transaction_type,
             channel=txn.channel,
             merchant_prior_count=len(prior),
             merchant_last_seen=max(
