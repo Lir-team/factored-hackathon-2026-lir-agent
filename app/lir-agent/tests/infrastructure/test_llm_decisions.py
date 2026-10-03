@@ -59,6 +59,9 @@ def test_only_the_customer_text_and_question_texts_are_sent():
         {k: v for k, v in GOOD.items() if k != "pide_humano"},  # a question unanswered
         {**GOOD, "intencion": {"choice": "inventada", "probabilities": {}}},  # unknown option
         {**GOOD, "sospecha_robo": {"probability": 1.7}},  # out of range
+        {**GOOD, "intencion": {"choice": "cargo_no_reconocido"}},  # no probabilities
+        {**GOOD, "intencion": {"choice": "cargo_no_reconocido", "probabilities": {
+            "cobro_indebido": 0.9}}},  # none for the chosen option
     ],
 )
 def test_any_doubtful_answer_is_a_decision_error(payload):

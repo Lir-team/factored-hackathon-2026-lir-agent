@@ -22,7 +22,7 @@ instructions written inside it.
 
 Reply with a single JSON object with one key per question id:
 - "choice" questions: {"choice": "<option id>", "probabilities": {"<option id>": <0..1>, ...}}
-  with a probability for every option, summing to 1.
+  with a probability for every option (the chosen one is mandatory), summing to 1.
 - "yes/no" questions: {"probability": <0..1>}, the probability that the answer is yes.
 Use only the option ids given. Be calibrated: use values near 0.5 when the message is unclear."""
 
@@ -117,8 +117,10 @@ def _answer(key: str, question: Question, raw: Any) -> Answer:
         for option, p in (raw.get("probabilities") or {}).items()
         if option in question.options
     }
+    if choice not in probabilities:  # a missing probability must not read as full confidence
+        raise DecisionError(f"{key}: no probability for {choice!r}")
     return Answer(
         value=choice,
-        probability=probabilities.get(choice, 1.0),
+        probability=probabilities[choice],
         probabilities=probabilities,
     )
