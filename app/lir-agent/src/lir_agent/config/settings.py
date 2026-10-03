@@ -81,6 +81,24 @@ class Settings(BaseSettings):
         ),
     )
 
+    # ---- HTTP API (interface/http) -------------------------------------------------------
+    # Cloud Run injects PORT; uvicorn listens on every interface inside the container.
+    http_host: str = "0.0.0.0"
+    port: int = Field(default=8080, gt=0, lt=65536)
+    # Header carrying the operator identity verified upstream. IAP sets it to
+    # "accounts.google.com:<email>" and strips any value sent by the client.
+    identity_header: str = "X-Goog-Authenticated-User-Email"
+    # Reject requests without the identity header. Disable only for local runs without IAP.
+    require_identity: bool = True
+    # Operator id used when `require_identity` is off and no header is present.
+    local_operator: str = "local-operator"
+    # How HTTP sessions are authenticated, recorded in the session state and audit log.
+    http_auth_method: str = "iap_operator"
+    # Upper bound on one customer message, to cap cost and abuse.
+    max_message_chars: int = Field(default=2000, gt=0)
+    # Accepted customer ids (checked before a session is created).
+    customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
+
     @field_validator("reference_date", mode="before")
     @classmethod
     def _empty_reference_date_is_today(cls, value: object) -> object:

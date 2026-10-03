@@ -10,11 +10,13 @@ requires-python = ">=3.13"
 dependencies = [
     "decision-layer",
     "duckdb>=1.5.6",
+    "fastapi>=0.141.1",
     "google-adk>=2.11.0",
     "litellm>=1.103.2",
     "pydantic-settings>=2.7.0",
     "python-dotenv>=1.0",
     "pyyaml>=6",
+    "uvicorn>=0.54.0",
 ]
 
 [tool.uv.sources]
@@ -26,6 +28,7 @@ decision-layer = { path = "../decision-layer", editable = true }
 [dependency-groups]
 dev = [
     "pytest>=8.3.0",
+    "httpx>=0.28.1",
     "pytest-cov>=6.0.0",
     "pyright>=1.1.390",
     "ruff>=0.16.5",
@@ -34,6 +37,7 @@ dev = [
 [project.scripts]
 lir-agent = "lir_agent.main:main"
 chat = "lir_agent.chat:main"
+lir-agent-api = "lir_agent.server:main"
 
 [build-system]
 requires = ["uv_build>=0.11.0,<0.12.0"]

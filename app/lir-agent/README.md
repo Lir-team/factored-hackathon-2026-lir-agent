@@ -72,6 +72,7 @@ uv run lir-agent                          # print the resolved configuration
 uv run chat --customer-id CLI-DEMO-001    # terminal chat; type "chao pescao" to exit
 uv run adk web apps                       # browser dev UI (needs DEV_CUSTOMER_ID in .env)
 uv run adk run apps/lir                   # ADK terminal chat (needs DEV_CUSTOMER_ID)
+uv run lir-agent-api                      # HTTP API on PORT (default 8080)
 uv run pytest                             # tests (offline: scripted decisions, fixture data)
 uv run ruff check . && uv run ruff format --check .
 uv run pyright                            # type check
@@ -79,6 +80,36 @@ uv run pyright                            # type check
 
 `--customer-id` and `DEV_CUSTOMER_ID` stand in for the bank's identity check (biometric
 KYC, mocked).
+
+## HTTP API
+
+The container entry point on Cloud Run. IAP verifies the caller's Google identity and sends
+it in `X-Goog-Authenticated-User-Email`; that caller (a tester or the bank channel) owns the
+sessions it creates, and requests without it get `401`. The customer is chosen when the
+session is created, standing in for the bank's identity check (biometric KYC, mocked).
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/healthz` | - | `{"status": "ok"}` |
+| `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}` |
+| `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
+
+Locally, without IAP:
+
+```bash
+REQUIRE_IDENTITY=false uv run lir-agent-api
+curl -X POST localhost:8080/v1/sessions -H 'content-type: application/json' -d '{"customer_id":"CLI-DEMO-001"}'
+curl -X POST localhost:8080/v1/sessions/<session_id>/messages -H 'content-type: application/json' -d '{"text":"No reconozco un cargo de 245.50 en OXXO"}'
+```
+
+Container (build context is `app/`, for the decision-layer path dependency):
+
+```bash
+docker build -f app/lir-agent/Dockerfile -t lir-agent app/
+```
+
+The image runs as a non-root user, reads data from `DATA_DIR=/mnt/data` (the Cloud Storage
+bucket mounted by Cloud Run) and gets its keys from Secret Manager as environment variables.
 
 ## Try it (demo fixture)
 
@@ -111,6 +142,9 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 
 - `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
 - Session state and the audit log are local (in-memory sessions, JSONL file); production
-  needs a persistent session service and BigQuery or Cloud Logging.
+  needs a persistent session service and BigQuery or Cloud Logging. On Cloud Run this means
+  one instance (`max-instances=1`) so a session's messages reach the instance that holds it.
+- The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
+  (Cloud Run ingress and IAP settings, managed in `lir-infra`).
 - The keyword baseline misses a bare "sí" as a confirmation; Jev is expected to handle it.
 - `CLI-DEMO-001` exists only in the demo fixture; with DuckDB use a real customer id.

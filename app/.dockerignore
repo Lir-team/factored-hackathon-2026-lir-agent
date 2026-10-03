@@ -1,0 +1,16 @@
+# Build context is app/: only lir-agent and decision-layer sources are needed.
+**/.venv
+**/__pycache__
+**/*.py[oc]
+**/.pytest_cache
+**/.ruff_cache
+**/.coverage
+**/htmlcov
+**/.audit
+**/.adk
+**/tests
+# Secrets never enter the image; Cloud Run injects them from Secret Manager.
+**/.env
+**/.env.*
+!**/.env.example
+evals
