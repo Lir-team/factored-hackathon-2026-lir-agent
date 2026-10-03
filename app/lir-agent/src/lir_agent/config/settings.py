@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     decisions: Literal["default", "llm"] = "default"
     # LiteLLM model for "llm" decisions; empty reuses LLM_MODEL (same key and base URL).
     decision_llm_model: str | None = None
+    # Key for DECISION_LLM_MODEL when it is another provider than LLM_MODEL. Empty: LiteLLM
+    # reads the provider's own variable (e.g. OPENROUTER_API_KEY). LLM_API_KEY and
+    # LLM_API_BASE are only reused when the decisions reuse LLM_MODEL itself.
+    decision_llm_api_key: SecretStr | None = None
     # Optional LiteLLM reasoning_effort for "llm" decisions ("none" cut gpt-6-luna's p50 from
     # ~2.5 s to ~1.9 s with the same answers on a 5-message check). Empty: provider default.
     decision_llm_reasoning_effort: str | None = None

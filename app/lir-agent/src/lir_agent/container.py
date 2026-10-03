@@ -90,11 +90,16 @@ def build_decisions(
     `completion` replaces LiteLLM's for the LLM model (tests, or metering in the evals).
     """
     if settings.decisions == "llm":
-        api_key = settings.llm_api_key.get_secret_value() if settings.llm_api_key else None
+        # The agent's key and base URL belong to LLM_MODEL's provider: sending them to
+        # another provider fails (401) and silently falls back to the baseline.
+        reuses_agent_model = not settings.decision_llm_model
+        key = settings.decision_llm_api_key or (
+            settings.llm_api_key if reuses_agent_model else None
+        )
         llm = LlmDecisionModel(
             settings.decision_llm_model or settings.llm_model,
-            api_key=api_key,
-            api_base=settings.llm_api_base or None,
+            api_key=key.get_secret_value() if key else None,
+            api_base=(settings.llm_api_base or None) if reuses_agent_model else None,
             reasoning_effort=settings.decision_llm_reasoning_effort,
             completion=completion,
         )

@@ -101,3 +101,55 @@ def test_default_decisions_keep_the_baseline(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.delenv("JEV_ENABLED", raising=False)
     assert build_decisions(Settings()).name == "keywords-v1"
+
+
+def _decision_call_kwargs(settings: Settings) -> dict:
+    """Run one decision through build_decisions and return what reached the provider."""
+    import json
+    from types import SimpleNamespace
+
+    from decision_layer.questions import TURN_QUESTIONS
+
+    from lir_agent.container import build_decisions
+
+    calls: list[dict] = []
+
+    def completion(**kwargs):
+        calls.append(kwargs)
+        message = SimpleNamespace(content=json.dumps({}))
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=None)
+
+    build_decisions(settings, completion=completion).decide("hola", TURN_QUESTIONS)
+    return calls[0]
+
+
+def test_decisions_on_the_agent_model_reuse_its_key_and_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DECISIONS", "llm")
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o")
+    monkeypatch.setenv("LLM_API_KEY", "sk-agent")
+    monkeypatch.setenv("LLM_API_BASE", "")
+    kwargs = _decision_call_kwargs(Settings())
+    assert kwargs["model"] == "openai/gpt-4o"
+    assert kwargs["api_key"] == "sk-agent"
+    assert "api_base" not in kwargs
+
+
+def test_decisions_on_another_provider_never_get_the_agent_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DECISIONS", "llm")
+    monkeypatch.setenv("LLM_MODEL", "ollama_chat/llama3.1")
+    monkeypatch.setenv("LLM_API_KEY", "sk-agent")
+    monkeypatch.setenv("DECISION_LLM_MODEL", "openrouter/typesafe/jev-router")
+    kwargs = _decision_call_kwargs(Settings())
+    assert kwargs["model"] == "openrouter/typesafe/jev-router"
+    assert "api_key" not in kwargs and "api_base" not in kwargs
+
+
+def test_decision_key_is_used_for_another_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DECISIONS", "llm")
+    monkeypatch.setenv("DECISION_LLM_MODEL", "openrouter/typesafe/jev-router")
+    monkeypatch.setenv("DECISION_LLM_API_KEY", "sk-or-decisions")
+    assert _decision_call_kwargs(Settings())["api_key"] == "sk-or-decisions"
