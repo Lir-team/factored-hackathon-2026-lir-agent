@@ -35,8 +35,10 @@ class ScriptedDecisions:
     ) -> None:
         self.answers = answers or {}
         self.fail = fail
+        self.calls: list[tuple] = []  # (state, questions) of every decide() call
 
     def decide(self, state, questions):
+        self.calls.append((state, questions))
         if self.fail:
             raise DecisionError("unavailable")
         missing = set(questions) - set(self.answers)

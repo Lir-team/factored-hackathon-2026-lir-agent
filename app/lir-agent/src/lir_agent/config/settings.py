@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
-        # `.env` also holds keys read by other libraries (decision layer, LiteLLM).
+        # `.env` may hold keys this app does not declare; ignore them.
         extra="ignore",
     )
 
@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     # Optional LiteLLM reasoning_effort for "llm" decisions ("none" cut gpt-6-luna's p50 from
     # ~2.5 s to ~1.9 s with the same answers on a 5-message check). Empty: provider default.
     decision_llm_reasoning_effort: str | None = None
+    # Jev (TypeSafe) on Cloudflare Workers AI leads the "default" decisions only when
+    # enabled and both credentials are set; otherwise the keyword baseline decides.
+    jev_enabled: bool = False
+    cloudflare_account_id: str | None = None
+    cloudflare_api_token: SecretStr | None = None
 
     # Root of the data lake (staging/, curated/ ...).
     data_dir: Path = REPO_ROOT / "data"

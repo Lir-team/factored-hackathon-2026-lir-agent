@@ -59,3 +59,15 @@ def test_agent_builds_and_tool_schemas_hide_session_fields(harness):
         assert "tool_context" not in properties
         assert "customer_id" not in properties
         assert "self" not in properties
+
+
+def test_model_sees_transaction_type_and_channel(harness, context):
+    found = harness.toolkit.find_candidate_transactions(
+        context, date_from="2026-01-01", merchant_hint="Spotify"
+    )
+    candidate = found["candidates"][0]
+    assert (candidate["transaction_type"], candidate["channel"]) == ("Purchase", "Web")
+    evidence = harness.toolkit.get_transaction_evidence(
+        context, candidate["transaction_ref"]
+    )["evidence"]
+    assert (evidence["transaction_type"], evidence["channel"]) == ("Purchase", "Web")

@@ -21,6 +21,13 @@
    "city": "São Paulo",
    "segment": "Plus",
    "customer_status": "Active"
+  },
+  {
+   "customer_id": "CLI-EVAL-AR1",
+   "country": "Argentina",
+   "city": "Buenos Aires",
+   "segment": "Plus",
+   "customer_status": "Active"
   }
  ],
  "transactions": [
@@ -347,6 +354,60 @@
    "transaction_city": "São Paulo",
    "transaction_status": "Declined",
    "fraud_score": 22.0
+  },
+  {
+   "customer_id": "CLI-EVAL-AR1",
+   "transaction_id": "TXN-A1-001",
+   "transaction_date": "2026-06-05T18:20:00",
+   "product_id": "PRD-A1-TD",
+   "transaction_type": "Purchase",
+   "transaction_category": "Food",
+   "amount": 18500.0,
+   "currency": "ARS",
+   "amount_usd": 15.4,
+   "channel": "POS",
+   "merchant_name": "SUPERMERCADOS DIA",
+   "merchant_category": "Supermarket",
+   "transaction_country": "Argentina",
+   "transaction_city": "Buenos Aires",
+   "transaction_status": "Approved",
+   "fraud_score": 4.0
+  },
+  {
+   "customer_id": "CLI-EVAL-AR1",
+   "transaction_id": "TXN-A1-002",
+   "transaction_date": "2026-06-10T10:05:00",
+   "product_id": "PRD-A1-TD",
+   "transaction_type": "Transfer",
+   "transaction_category": "Other",
+   "amount": 50000.0,
+   "currency": "ARS",
+   "amount_usd": 41.7,
+   "channel": "Web",
+   "merchant_name": null,
+   "merchant_category": null,
+   "transaction_country": "Argentina",
+   "transaction_city": "Buenos Aires",
+   "transaction_status": "Approved",
+   "fraud_score": 3.0
+  },
+  {
+   "customer_id": "CLI-EVAL-AR1",
+   "transaction_id": "TXN-A1-003",
+   "transaction_date": "2026-06-11T09:30:00",
+   "product_id": "PRD-A1-TD",
+   "transaction_type": "Adjustment",
+   "transaction_category": "Other",
+   "amount": 311497.38,
+   "currency": "ARS",
+   "amount_usd": 259.6,
+   "channel": "Web",
+   "merchant_name": null,
+   "merchant_category": null,
+   "transaction_country": "Argentina",
+   "transaction_city": "Buenos Aires",
+   "transaction_status": "Reversed",
+   "fraud_score": 4.0
   }
  ]
 }

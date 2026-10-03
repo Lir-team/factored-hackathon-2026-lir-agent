@@ -65,7 +65,7 @@ Scripted customer messages go in `script: {turns: [...]}` (promptfoo expands any
 directly in `vars` into one test per element). Outcomes understood by `graders.py`: `explain`, `dispute`, `confirm_pending`, `handoff`
 (optional `handoff_rule` prefix such as `T3` or `C10`), `clarify`, `ask_which`
 (`mention_all`), `out_of_scope`, `no_action`, `refuse_session`. Optional: `txn_any`,
-`must_not_say`, `max_turns`, `max_model_calls`, `gate_efficiency`.
+`must_not_say`, `mention_any`, `merchants_absent`, `max_turns`, `max_model_calls`, `gate_efficiency`.
 
 ## Data and caveats
 

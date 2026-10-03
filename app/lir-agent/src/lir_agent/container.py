@@ -11,8 +11,8 @@ from typing import Any
 from decision_layer import (
     ChainDecisionModel,
     DecisionModel,
+    JevClient,
     KeywordDecisionModel,
-    build_default,
 )
 
 from lir_agent.application.ports import AuditSink, CaseRepository, TransactionRepository
@@ -92,7 +92,19 @@ def build_decisions(
             completion=completion,
         )
         return ChainDecisionModel([llm, KeywordDecisionModel()])
-    return build_default()
+    models: list[DecisionModel] = []
+    if (
+        settings.jev_enabled
+        and settings.cloudflare_account_id
+        and settings.cloudflare_api_token
+    ):
+        models.append(
+            JevClient(
+                account_id=settings.cloudflare_account_id,
+                api_token=settings.cloudflare_api_token.get_secret_value(),
+            )
+        )
+    return ChainDecisionModel([*models, KeywordDecisionModel()])
 
 
 def build_container(
