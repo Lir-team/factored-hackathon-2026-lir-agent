@@ -104,14 +104,44 @@ tools_by_turn_lane:
             request_human_handoff]
   clarify: [get_my_customer_profile, find_candidate_transactions, request_human_handoff]
   confirm: [get_my_customer_profile, get_transaction_evidence, request_human_handoff]
-  escalate: [request_human_handoff]
+  # Escalated turns may still look up the charge the customer described (read-only), so it
+  # reaches the specialist in the handoff packet. Disputes stay out of this lane.
+  escalate: [find_candidate_transactions, get_transaction_evidence, request_human_handoff]
   out_of_scope: [get_my_customer_profile, request_human_handoff]
+
+# What the specialist still has to resolve, per rule that sends the case to a human
+# (Bases §3: "unresolved questions"). Added to the handoff packet in code; the model may add
+# more. Keys must be rule ids above.
+handoff_open_questions:
+  T0_decisions_unavailable:
+    - "Clasificar el pedido: el modelo de decisiones no respondió."
+  T1_wants_human:
+    - "Qué necesita el cliente: pidió una persona antes de detallar el caso."
+  T3_theft_suspected:
+    - "¿La tarjeta sigue en poder del cliente? Bloquearla si corresponde."
+    - "¿Hay otros movimientos que el cliente no reconoce?"
+  T6_other_complaint:
+    - "Detalle de la queja: dónde, cuándo y qué ocurrió."
+  C1_high_fraud_score:
+    - "Validar con el cliente si reconoce esta transacción de alto riesgo."
+  C2_foreign_relevant_amount:
+    - "¿El cliente estuvo en el país de la transacción o la autorizó?"
+  C6_duplicate_high_amount:
+    - "Confirmar el duplicado y decidir la disputa: el monto supera el límite de automatización."
+  C8_high_amount:
+    - "Revisar el cargo: el monto supera el límite de automatización."
+  C10_no_conclusive_rule:
+    - "Ninguna regla es concluyente: revisar con el cliente el comercio y el origen del cargo."
 
 evidence:
   duplicate_window_hours: 24
 
 search:
   amount_tolerance_pct: 2.0
+  # Product decision: before showing any charge, the customer must give one concrete detail
+  # (amount, merchant, or a date range of at most this many days). "La semana pasada" alone
+  # gets a question back, whatever the decision model thinks the intent is.
+  max_date_only_range_days: 1
   max_candidates: 5
   merchant_min_probability: 0.50
 

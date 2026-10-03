@@ -7,7 +7,7 @@
     lang: es
     customer_id: CLI-DEMO-001
     script: {turns: ["Hay una compra de 38900 en Argentina que no hice, creo que me clonaron la tarjeta"]}
-    expect: {outcome: handoff, handoff_rule: T3}
+    expect: {outcome: handoff, handoff_rule: T3, handoff_evidence: [TXN-D1-008]}
 
 - description: c4-wants-human-pt
   metadata: {jtbd: [C4, C3], kind: capability}
@@ -27,7 +27,7 @@
     lang: es
     customer_id: CLI-DEMO-001
     script: {turns: ["No reconozco una compra de ELECTRONICA DEL ESTE del 13 de junio"]}
-    expect: {outcome: handoff, handoff_rule: C1}
+    expect: {outcome: handoff, handoff_rule: C1, handoff_evidence: [TXN-D1-008]}
 
 - description: c4-propose-unknown-merchant-es
   metadata: {jtbd: [C4, C5], kind: regression}
@@ -37,7 +37,7 @@
     lang: es
     customer_id: CLI-DEMO-001
     script: {turns: ["No reconozco un cargo de 99 pesos del 11 de junio"]}
-    expect: {outcome: handoff, handoff_rule: C10}
+    expect: {outcome: handoff, handoff_rule: C10, handoff_evidence: [TXN-D1-009]}
 
 - description: c4-other-complaint-es
   metadata: {jtbd: [C4], kind: capability}
@@ -61,4 +61,4 @@
       Estás nervioso. Viste en tu app una compra de 38,900 pesos en ELECTRONICA DEL ESTE SRL en
       Buenos Aires el 13 de junio. Nunca viajaste a Argentina y crees que te clonaron la tarjeta.
       Quieres que alguien del banco se haga cargo y preguntas si te van a devolver el dinero.
-    expect: {outcome: handoff}
+    expect: {outcome: handoff, handoff_evidence: [TXN-D1-008]}

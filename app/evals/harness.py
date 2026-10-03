@@ -29,7 +29,7 @@ from google.adk.runners import InMemoryRunner
 from google.genai import types
 from lir_agent.chat import APP_NAME, USER_ID
 from lir_agent.config.settings import Settings
-from lir_agent.container import build_container
+from lir_agent.container import build_container, build_decisions
 from lir_agent.domain.models import DisputeCase, HandoffPacket
 from lir_agent.domain.session import SessionState
 from lir_agent.infrastructure.audit import InMemoryAuditSink
@@ -55,7 +55,12 @@ class RecordingCaseRepository(InMemoryCaseRepository):
     def __init__(self) -> None:
         super().__init__()
         self.disputes: list[DisputeCase] = []
-        self.handoffs: list[HandoffPacket] = []
+        self._handoffs_by_id: dict[str, HandoffPacket] = {}
+
+    @property
+    def handoffs(self) -> list[HandoffPacket]:
+        """The latest version of each handoff (a packet can be updated with new evidence)."""
+        return list(self._handoffs_by_id.values())
 
     def open_dispute(
         self, customer_id: str, transaction_id: str, reason: str
@@ -65,7 +70,7 @@ class RecordingCaseRepository(InMemoryCaseRepository):
         return case
 
     def submit_handoff(self, packet: HandoffPacket) -> str:
-        self.handoffs.append(packet)
+        self._handoffs_by_id[packet.handoff_id] = packet
         return super().submit_handoff(packet)
 
 
@@ -92,7 +97,9 @@ class Trial:
     input_tokens: int
     output_tokens: int
     model_calls: int
-    cost_usd: float
+    cost_usd: float  # agent + decision model
+    decision_calls: int
+    decision_cost_usd: float
     latency_ms: float
     stopped_by: str
 
@@ -153,12 +160,14 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
         settings_kwargs["llm_model"] = agent_model
     settings = Settings(**settings_kwargs)
     audit, cases = InMemoryAuditSink(), RecordingCaseRepository()
-    container = build_container(settings, audit=audit, cases=cases)
+    usage = {"in": 0, "out": 0, "calls": 0, "cost": 0.0, "decision_calls": 0, "decision_cost": 0.0}
+    # LLM decisions call LiteLLM directly (not through ADK events): meter them too.
+    decisions = build_decisions(settings, completion=_metered_completion(usage))
+    container = build_container(settings, audit=audit, cases=cases, decisions=decisions)
     runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
     customer_id = scenario.get("customer_id")
     session_id = _start_session(runner, customer_id, scenario.get("session", "ok"))
 
-    usage = {"in": 0, "out": 0, "calls": 0, "cost": 0.0}
     turns: list[Turn] = []
     t0 = time.perf_counter()
     stopped_by = "script_end"
@@ -189,7 +198,9 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
         input_tokens=usage["in"],
         output_tokens=usage["out"],
         model_calls=usage["calls"],
-        cost_usd=round(usage["cost"], 6),
+        cost_usd=round(usage["cost"] + usage["decision_cost"], 6),
+        decision_calls=usage["decision_calls"],
+        decision_cost_usd=round(usage["decision_cost"], 6),
         latency_ms=round(latency_ms, 1),
         stopped_by=stopped_by,
     )
@@ -284,6 +295,20 @@ def _handoff_view(packet: HandoffPacket) -> dict:
         "open_questions": packet.open_questions,
         "has_model_summary": bool(packet.model_summary),
     }
+
+
+def _metered_completion(usage: dict):
+    """LiteLLM completion that adds each decision call's cost to the trial."""
+
+    def completion(**kwargs):
+        response = litellm.completion(**kwargs)
+        u = getattr(response, "usage", None)
+        prompt, done = getattr(u, "prompt_tokens", 0) or 0, getattr(u, "completion_tokens", 0) or 0
+        usage["decision_calls"] += 1
+        usage["decision_cost"] += _cost(kwargs["model"], prompt, done)
+        return response
+
+    return completion
 
 
 def _cost(model: str, prompt: int, completion: int) -> float:

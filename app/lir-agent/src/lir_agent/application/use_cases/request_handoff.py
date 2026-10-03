@@ -4,6 +4,7 @@ import uuid
 
 from lir_agent.application.ports import CaseRepository
 from lir_agent.domain.models import HandoffPacket
+from lir_agent.domain.policy import PolicyConfig
 from lir_agent.domain.session import SessionState, utc_now
 
 HANDOFF_ID_PREFIX = "HND-"
@@ -12,9 +13,10 @@ HANDOFF_ID_PREFIX = "HND-"
 class RequestHandoff:
     """Use case: hand the case to a human with the verified facts gathered so far."""
 
-    def __init__(self, cases: CaseRepository) -> None:
-        """Keep the case service that stores handoffs."""
+    def __init__(self, cases: CaseRepository, policy: PolicyConfig) -> None:
+        """Keep the case service that stores handoffs and the policy's open questions."""
         self._cases = cases
+        self._policy = policy
 
     def execute(
         self,
@@ -26,19 +28,48 @@ class RequestHandoff:
         if session.handoff_id:
             return {"status": "already_submitted", "handoff_id": session.handoff_id}
 
-        packet = self._build_packet(session, summary, open_questions or [])
-        handoff_id = self._cases.submit_handoff(packet)
-        verified = (
-            self._cases.get_handoff(handoff_id) == packet
-        )  # read back before reporting success
-        session.handoff_id = handoff_id
+        questions = self._questions(session, open_questions or [])
+        packet = self._build_packet(session, summary, questions)
+        verified = self._submit(packet)
+        session.handoff_id = packet.handoff_id
         session.record_action(
-            {"action": "handoff", "handoff_id": handoff_id, "verified": verified}
+            {"action": "handoff", "handoff_id": packet.handoff_id, "verified": verified}
         )
         return {
             "status": "submitted" if verified else "unverified",
-            "handoff_id": handoff_id,
+            "handoff_id": packet.handoff_id,
         }
+
+    def attach_evidence(self, session: SessionState) -> None:
+        """Add evidence gathered after the handoff (e.g. the charge a theft victim describes).
+
+        A turn-level escalation (theft, wants a human) is created before any lookup; the
+        specialist must still receive the charge the agent identifies afterwards.
+        """
+        stored = self._cases.get_handoff(session.handoff_id or "")
+        if stored is None:
+            return
+        updated = stored.model_copy(
+            update={
+                "case_outcome": session.case_outcome,
+                "verified_evidence": session.evidence,
+                "actions_taken": session.actions,
+                "open_questions": self._questions(session, stored.open_questions),
+            }
+        )
+        self._submit(updated)
+
+    def _questions(self, session: SessionState, extra: list[str]) -> list[str]:
+        """Policy questions for the rules involved, then the model's, without repeats."""
+        questions = self._policy.open_questions_for(
+            session.turn_outcome, session.case_outcome
+        )
+        return list(dict.fromkeys([*questions, *extra]))
+
+    def _submit(self, packet: HandoffPacket) -> bool:
+        """Store the packet and read it back before reporting success."""
+        handoff_id = self._cases.submit_handoff(packet)
+        return self._cases.get_handoff(handoff_id) == packet
 
     @staticmethod
     def _build_packet(

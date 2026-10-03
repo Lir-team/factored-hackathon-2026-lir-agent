@@ -26,8 +26,15 @@ Si `pytest` falla, no corras evals: un escenario mal formado gasta llamadas y da
 | Medir de verdad (pass^3) | `uv run python run.py --repeat 3` | 81 | ~4 min |
 | Gate de regresión (lo que usa `check.sh --live`) | `uv run python run.py --gate --repeat 3` | 27 | ~2 min |
 | Comparar otro modelo del agente | `uv run python run.py --repeat 3 --model openai/gpt-5.4-mini` | 81 | ~4 min |
+| Comparar decisiones LLM vs baseline | `DECISIONS=llm uv run python run.py --repeat 3` | 81 | ~7 min |
 
 El paralelismo por defecto es 4 (`-j 4`). Con `gpt-6-luna` cada trial cuesta ~US$0.0005, más el juez.
+
+Para comparar dos configuraciones, guardá cada `out/results.json` con otro nombre antes de la
+siguiente corrida. El costo de cada trial suma el agente y el modelo de decisiones
+(`decision_calls`, `decision_cost_usd` en el metadata). Si el modelo de decisiones falla, la
+cadena cae al baseline y queda un evento `decision_fallback` en la auditoría: revisalo antes de
+concluir que "el LLM decide igual que el baseline".
 
 ## 3. Corridas acotadas (lo normal mientras se desarrolla)
 

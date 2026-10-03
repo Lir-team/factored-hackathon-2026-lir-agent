@@ -99,6 +99,16 @@ class RouteTurn:
             input_tokens=result.input_tokens,
             wall_ms=round((time.perf_counter() - started) * 1000, 1),
         )
+        # A chain answered, but a model before it failed: record why, so a provider that
+        # always fails (billing, auth, an unsupported parameter) does not go unnoticed.
+        failures = getattr(self._decisions, "failures", None)
+        if failures:
+            self._audit.record(
+                "decision_fallback",
+                session_id,
+                answered_by=result.model,
+                failures=[[name, reason] for name, reason in failures],
+            )
         return {
             key: {"value": a.value, "probability": a.probability}
             for key, a in result.answers.items()

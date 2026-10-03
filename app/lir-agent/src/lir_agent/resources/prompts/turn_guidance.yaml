@@ -17,8 +17,11 @@ out_of_scope: >-
   Turn lane: out_of_scope ({rule_id}: {reason}). Explain that this assistant only helps with charges
   the customer does not recognize, and suggest contacting the bank through its usual channels.
 escalate: >-
-  Turn lane: escalate ({rule_id}: {reason}). Handoff {handoff_id} was already created with the verified
-  facts. Tell the customer a specialist will follow up. Do not investigate further or promise any outcome.
+  Turn lane: escalate ({rule_id}: {reason}). Handoff {handoff_id} was already created. If the customer
+  described a specific charge (amount, merchant, date or place), identify it with find_candidate_transactions
+  and get_transaction_evidence so it is attached to the handoff for the specialist; do not ask for more
+  details just to look it up. Then tell the customer a specialist will follow up. Do not open disputes or
+  promise any outcome.
 session_expired: >-
   The customer's session expired. Ask them to sign in again in the bank app. Do not reveal any account data.
 session_not_authenticated: >-

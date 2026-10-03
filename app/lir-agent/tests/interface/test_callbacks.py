@@ -154,3 +154,35 @@ def test_blocked_tool_tells_the_model_what_to_do_instead(make_harness, context):
     result = h.callbacks.before_tool(tool("open_dispute"), {"transaction_ref": ref}, context)
     assert result["reason"] == "not_allowed_for_turn_lane"
     assert "Turn lane: confirm" in result["instruction"]
+
+
+def test_turn_level_handoff_has_the_policy_open_questions(make_harness, context):
+    h = make_harness({**IN_SCOPE, "sospecha_robo": (True, 0.9)})
+    session = SessionState(context.state)
+    h.callbacks.before_model(context, user_request("Me clonaron la tarjeta"))
+    packet = h.container.cases.get_handoff(session.handoff_id)
+    expected = h.container.policy.config.handoff_open_questions["T3_theft_suspected"]
+    assert packet.open_questions == expected
+
+
+def test_charge_found_after_a_handoff_is_attached_to_it(make_harness, context):
+    h = make_harness({**IN_SCOPE, "sospecha_robo": (True, 0.9)})
+    session = SessionState(context.state)
+    h.callbacks.before_model(context, user_request("Una compra en Argentina que no hice, me clonaron"))
+    assert session.turn_lane == "escalate"
+    ref = session.ref_for("TXN-D1-008")
+    assert h.callbacks.before_tool(tool("get_transaction_evidence"), {"transaction_ref": ref}, context) is None
+    h.toolkit.get_transaction_evidence(context, ref)
+    packet = h.container.cases.get_handoff(session.handoff_id)
+    assert [e.transaction_id for e in packet.verified_evidence] == ["TXN-D1-008"]
+    assert packet.case_outcome.rule_id == "C1_high_fraud_score"
+    assert set(h.container.policy.config.handoff_open_questions["C1_high_fraud_score"]) <= set(
+        packet.open_questions
+    )
+
+
+def test_escalate_lane_still_cannot_open_a_dispute(make_harness, context):
+    h = make_harness({**IN_SCOPE, "sospecha_robo": (True, 0.9)})
+    h.callbacks.before_model(context, user_request("Me clonaron la tarjeta"))
+    result = h.callbacks.before_tool(tool("open_dispute"), {"transaction_ref": "T1"}, context)
+    assert result["reason"] == "not_allowed_for_turn_lane"
