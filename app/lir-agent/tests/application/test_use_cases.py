@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 import pytest
 from decision_layer import ChainDecisionModel, DecisionError
@@ -162,3 +163,30 @@ def test_a_fallback_in_the_decision_chain_is_audited(settings, context):
     container.route_turn.execute(SessionState(context.state), "No reconozco un cargo", "s1")
     fallback = [e for e in audit.entries if e["event"] == "decision_fallback"]
     assert fallback[0]["failures"] == [["broken", "provider rejected the request"]]
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(),  # "tengo un cobro raro"
+        SearchCriteria(date_from=date(2026, 6, 8), date_to=date(2026, 6, 14)),  # "la semana pasada"
+        SearchCriteria(date_from=date(2026, 6, 1)),  # open range
+    ],
+)
+def test_a_vague_search_asks_for_a_detail_instead_of_listing(harness, session, criteria):
+    # Product decision: ask for the amount, merchant or exact date before showing charges.
+    result = harness.container.find_candidates.execute(session, criteria)
+    assert result["status"] == "needs_detail"
+    assert "candidates" not in result
+
+
+@pytest.mark.parametrize(
+    "criteria",
+    [
+        SearchCriteria(amount=99),
+        SearchCriteria(merchant_hint="Oxxo"),
+        SearchCriteria(date_from=date(2026, 6, 11), date_to=date(2026, 6, 11)),  # one day
+    ],
+)
+def test_one_concrete_detail_is_enough_to_search(harness, session, criteria):
+    assert harness.container.find_candidates.execute(session, criteria)["status"] == "ok"

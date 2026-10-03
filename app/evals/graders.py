@@ -115,6 +115,8 @@ def check_outcome(trial: dict, expect: dict) -> tuple[bool, str]:
     if kind == "clarify":
         if disputes or handoffs:
             return False, "acted instead of asking for clarification"
+        if _listed_charges(trial):
+            return False, "listed the customer's charges before asking for a detail"
         if "?" not in last:
             return False, "the last reply asks no question"
         return True, "asked for clarification"
@@ -223,6 +225,15 @@ def _fold(text: str) -> str:
     """Lowercase without accents: "Cinépolis" mentions "CINEPOLIS"."""
     decomposed = unicodedata.normalize("NFKD", text.casefold())
     return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def _listed_charges(trial: dict) -> bool:
+    """Whether a search returned charges to the model (and so, to the conversation)."""
+    return any(
+        (result.get("response") or {}).get("candidates")
+        for turn in trial.get("turns", [])
+        for result in turn.get("tool_results", [])
+    )
 
 
 def _agent_texts(trial: dict) -> list[str]:

@@ -138,6 +138,10 @@ evidence:
 
 search:
   amount_tolerance_pct: 2.0
+  # Product decision: before showing any charge, the customer must give one concrete detail
+  # (amount, merchant, or a date range of at most this many days). "La semana pasada" alone
+  # gets a question back, whatever the decision model thinks the intent is.
+  max_date_only_range_days: 1
   max_candidates: 5
   merchant_min_probability: 0.50
 

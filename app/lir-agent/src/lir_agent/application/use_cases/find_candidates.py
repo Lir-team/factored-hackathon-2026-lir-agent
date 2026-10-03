@@ -15,6 +15,10 @@ from lir_agent.domain.session import SessionState
 
 NO_MERCHANT_MATCH = "ninguno"  # option added by decision_layer.questions.d4_merchant
 ISO_DATE = "YYYY-MM-DD"
+ASK_FOR_A_DETAIL = (
+    "Do not list the customer's charges yet. Ask ONE short question for a concrete detail: "
+    "the amount, the merchant name, or the exact date of the charge."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +74,8 @@ class FindCandidateTransactions:
 
     def execute(self, session: SessionState, criteria: SearchCriteria) -> dict:
         """Return minimized candidates, most recent first, with session references."""
+        if not self._has_concrete_detail(criteria):
+            return {"status": "needs_detail", "instruction": ASK_FOR_A_DETAIL}
         matches = [
             txn
             for txn in self._repository.list_transactions(session.require_customer_id())
@@ -85,6 +91,15 @@ class FindCandidateTransactions:
             "candidates": [self._presenter.candidate(session, txn) for txn in shown],
             "note": DATA_NOT_INSTRUCTIONS,
         }
+
+    def _has_concrete_detail(self, criteria: SearchCriteria) -> bool:
+        """Whether the customer gave an amount, a merchant or a short closed date range."""
+        if criteria.amount is not None or (criteria.merchant_hint or "").strip():
+            return True
+        if criteria.date_from and criteria.date_to:
+            span = (criteria.date_to - criteria.date_from).days
+            return span <= self._settings.max_date_only_range_days
+        return False
 
     @staticmethod
     def _prefer_exact_amount(

@@ -165,3 +165,19 @@ def test_complete_handoff_packet_passes():
 def test_incomplete_handoff_packet_fails(field, value):
     trial = variant(disputes=[], handoffs=[{**COMPLETE_PACKET, field: value}])
     assert grade_trial(trial, {**SCENARIO, "expect": HANDOFF})["namedScores"]["outcome"] == 0
+
+
+def test_clarify_fails_when_charges_were_listed_first():
+    scenario = {**SCENARIO, "expect": {"outcome": "clarify"}}
+    trial = variant(disputes=[], turn_rules=["T9_in_scope"])
+    trial["turns"] = [{
+        "user": "Me cobraron algo raro la semana pasada",
+        "agent": "Veo estos cargos: UBER y IFOOD. ¿Cuál no reconoces?",
+        "tools": [{"name": "find_candidate_transactions", "args": {}}],
+        "tool_results": [{"name": "find_candidate_transactions",
+                          "response": {"status": "ok", "candidates": [{"transaction_ref": "T1"}]}}],
+    }]
+    assert grade_trial(trial, scenario)["namedScores"]["outcome"] == 0
+    trial["turns"][0]["tool_results"][0]["response"] = {"status": "needs_detail"}
+    trial["turns"][0]["agent"] = "¿Recuerdas el monto o el comercio?"
+    assert grade_trial(trial, scenario)["namedScores"]["outcome"] == 1

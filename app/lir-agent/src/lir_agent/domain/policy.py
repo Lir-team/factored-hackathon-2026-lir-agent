@@ -96,6 +96,7 @@ class SearchSettings(BaseModel):
     """Limits and thresholds for matching the customer's description."""
 
     amount_tolerance_pct: float
+    max_date_only_range_days: int = 1
     max_candidates: int
     merchant_min_probability: float
 
