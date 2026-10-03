@@ -29,7 +29,7 @@ from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
-from lir_agent.infrastructure.audit import JsonlAuditSink
+from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
 from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
@@ -75,6 +75,13 @@ def build_repository(settings: Settings) -> TransactionRepository:
     return FixtureTransactionRepository(settings.fixture_path)
 
 
+def build_audit(settings: Settings) -> AuditSink:
+    """The audit sink chosen by `AUDIT_SINK`."""
+    if settings.audit_sink == "stdout":
+        return StdoutAuditSink()
+    return JsonlAuditSink(settings.audit_path)
+
+
 def build_decisions(
     settings: Settings, completion: Callable[..., Any] | None = None
 ) -> DecisionModel:
@@ -83,11 +90,16 @@ def build_decisions(
     `completion` replaces LiteLLM's for the LLM model (tests, or metering in the evals).
     """
     if settings.decisions == "llm":
-        api_key = settings.llm_api_key.get_secret_value() if settings.llm_api_key else None
+        # The agent's key and base URL belong to LLM_MODEL's provider: sending them to
+        # another provider fails (401) and silently falls back to the baseline.
+        reuses_agent_model = not settings.decision_llm_model
+        key = settings.decision_llm_api_key or (
+            settings.llm_api_key if reuses_agent_model else None
+        )
         llm = LlmDecisionModel(
             settings.decision_llm_model or settings.llm_model,
-            api_key=api_key,
-            api_base=settings.llm_api_base or None,
+            api_key=key.get_secret_value() if key else None,
+            api_base=(settings.llm_api_base or None) if reuses_agent_model else None,
             reasoning_effort=settings.decision_llm_reasoning_effort,
             completion=completion,
         )
@@ -121,7 +133,7 @@ def build_container(
     policy = resources.load_policy(settings.policy_path)
     repository = repository or build_repository(settings)
     cases = cases or InMemoryCaseRepository()
-    audit = audit or JsonlAuditSink(settings.audit_path)
+    audit = audit or build_audit(settings)
     decisions = decisions or build_decisions(settings)
     presenter = LlmPresenter(policy.config.llm_exposure)
     evidence_builder = EvidenceBuilder(

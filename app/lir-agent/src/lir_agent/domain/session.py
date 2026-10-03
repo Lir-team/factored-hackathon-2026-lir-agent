@@ -59,11 +59,13 @@ class SessionState:
         self._raw = raw
 
     # ---- authentication ------------------------------------------------------------------
-    def start(self, customer_id: str, ttl: timedelta, method: str) -> None:
-        """Bind the authenticated customer to the session with an expiry."""
+    def start(self, customer_id: str, ttl: timedelta, method: str) -> datetime:
+        """Bind the authenticated customer to the session; return when it expires."""
+        expires_at = utc_now() + ttl
         self._raw[_Key.CUSTOMER_ID] = customer_id
-        self._raw[_Key.AUTH_EXPIRES_AT] = (utc_now() + ttl).isoformat()
+        self._raw[_Key.AUTH_EXPIRES_AT] = expires_at.isoformat()
         self._raw[_Key.AUTH_METHOD] = method
+        return expires_at
 
     def auth_error(self, at: datetime | None = None) -> AuthError | None:
         """Why the session cannot be used now, or None when it is valid."""

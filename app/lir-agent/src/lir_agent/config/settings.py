@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     decisions: Literal["default", "llm"] = "default"
     # LiteLLM model for "llm" decisions; empty reuses LLM_MODEL (same key and base URL).
     decision_llm_model: str | None = None
+    # Key for DECISION_LLM_MODEL when it is another provider than LLM_MODEL. Empty: LiteLLM
+    # reads the provider's own variable (e.g. OPENROUTER_API_KEY). LLM_API_KEY and
+    # LLM_API_BASE are only reused when the decisions reuse LLM_MODEL itself.
+    decision_llm_api_key: SecretStr | None = None
     # Optional LiteLLM reasoning_effort for "llm" decisions ("none" cut gpt-6-luna's p50 from
     # ~2.5 s to ~1.9 s with the same answers on a 5-message check). Empty: provider default.
     decision_llm_reasoning_effort: str | None = None
@@ -69,6 +73,9 @@ class Settings(BaseSettings):
     turn_guidance_path: Path = RESOURCES_DIR / "prompts" / "turn_guidance.yaml"
     customer_messages_path: Path = RESOURCES_DIR / "prompts" / "customer_messages.yaml"
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
+    # Where audit entries go: a local JSONL file, or stdout as structured JSON (Cloud Run
+    # forwards it to Cloud Logging).
+    audit_sink: Literal["jsonl", "stdout"] = "jsonl"
 
     session_ttl_minutes: int = Field(default=15, gt=0)
     reference_date: date | None = Field(
@@ -85,6 +92,24 @@ class Settings(BaseSettings):
             "Never set in production."
         ),
     )
+
+    # ---- HTTP API (interface/http) -------------------------------------------------------
+    # Cloud Run injects PORT; uvicorn listens on every interface inside the container.
+    http_host: str = "0.0.0.0"
+    port: int = Field(default=8080, gt=0, lt=65536)
+    # Header carrying the operator identity verified upstream. IAP sets it to
+    # "accounts.google.com:<email>" and strips any value sent by the client.
+    identity_header: str = "X-Goog-Authenticated-User-Email"
+    # Reject requests without the identity header. Disable only for local runs without IAP.
+    require_identity: bool = True
+    # Operator id used when `require_identity` is off and no header is present.
+    local_operator: str = "local-operator"
+    # How HTTP sessions are authenticated, recorded in the session state and audit log.
+    http_auth_method: str = "iap_operator"
+    # Upper bound on one customer message, to cap cost and abuse.
+    max_message_chars: int = Field(default=2000, gt=0)
+    # Accepted customer ids (checked before a session is created).
+    customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
 
     @field_validator("reference_date", mode="before")
     @classmethod

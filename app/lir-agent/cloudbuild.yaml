@@ -1,0 +1,20 @@
+# Builds and pushes the agent image. Submit from the repository root (context is app/):
+#
+#   gcloud builds submit app \
+#     --config app/lir-agent/cloudbuild.yaml \
+#     --substitutions _IMAGE=<image_registry>/lir-agent:<tag> \
+#     --service-account <build_service_account> \
+#     --gcs-source-staging-dir gs://<build_source_bucket>/source
+#
+# The values come from `terraform output` in lir-infra.
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "lir-agent/Dockerfile", "-t", "${_IMAGE}", "."]
+
+images:
+  - ${_IMAGE}
+
+options:
+  # A custom build service account needs an explicit logging mode.
+  logging: CLOUD_LOGGING_ONLY
