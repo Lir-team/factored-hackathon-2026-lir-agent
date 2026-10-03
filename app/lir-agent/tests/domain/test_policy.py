@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from lir_agent.domain.models import Lane
-from lir_agent.domain.policy import PolicyConfig, PolicyEngine
+from lir_agent.domain.policy import OutputGuard, PolicyConfig, PolicyEngine
 from lir_agent.infrastructure.resources import ResourceLoader
 from tests.support import IN_SCOPE
 
@@ -61,6 +61,9 @@ def test_output_guard_detects_refund_promise(policy):
         "No puedo confirmar que te vamos a devolver el dinero; lo decide un especialista.",
         "No puedo prometer que te vamos a reembolsar.",
         "Não posso garantir que vamos estornar o valor.",
+        "No te vamos a devolver el dinero sin revisar el caso.",
+        "Todavía no puedo confirmar por este canal que te vamos a reembolsar.",
+        "Ainda não posso confirmar que vamos estornar a compra.",
     ],
 )
 def test_negated_refund_statement_is_allowed(policy, reply):
@@ -78,6 +81,28 @@ def test_negated_refund_statement_is_allowed(policy, reply):
 )
 def test_promises_and_credential_requests_are_still_blocked(policy, reply):
     assert policy.config.output_guard.violations(reply)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Si no lo reconoces te vamos a devolver el dinero.",
+        "No te preocupes que te vamos a devolver el dinero.",
+        "Sin problema te vamos a devolver todo.",
+        "Aunque no lo autorizaste te vamos a reembolsar mañana.",
+        "Se você não reconhece vamos estornar o valor.",
+        "Não se preocupe que vamos estornar tudo.",
+    ],
+)
+def test_negation_that_does_not_govern_the_promise_is_ignored(policy, reply):
+    assert policy.config.output_guard.violations(reply)
+
+
+def test_without_bridge_words_any_negation_in_the_clause_counts(policy):
+    raw = policy.config.output_guard.model_dump(mode="json")
+    raw["negation_bridge_words"] = []
+    guard = OutputGuard.model_validate(raw)
+    assert guard.violations("Si no lo reconoces te vamos a devolver el dinero.") == []
 
 
 def test_fallback_message_follows_the_customer_language(policy):
