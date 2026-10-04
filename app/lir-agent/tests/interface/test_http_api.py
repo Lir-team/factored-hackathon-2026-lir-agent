@@ -272,8 +272,9 @@ def test_a_customer_approves_from_the_web_link(settings, conversations):
     token = (links[request.approval_id] or "").rsplit("t=", 1)[1]
     url = f"/v1/approvals/{request.approval_id}"
 
-    assert client.get(url, params={"token": "wrong"}).status_code == 404
-    card = client.get(url, params={"token": token}).json()
+    assert client.get(url, headers={"X-Approval-Token": "wrong"}).status_code == 404
+    assert client.get(url).status_code == 422  # no token, no card
+    card = client.get(url, headers={"X-Approval-Token": token}).json()
     assert (card["title"], card["status"]) == ("Abrir una disputa", "pending")
     body = {"decision": "approve", "token": token, "content_hash": card["content_hash"]}
     decided = client.post(f"{url}/decision", json=body)

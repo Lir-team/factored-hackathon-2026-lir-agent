@@ -204,6 +204,15 @@ class PresentApprovals:
             )
         return links
 
+    async def execute_for_case(self, case_id: str) -> dict[str, str | None]:
+        """Present a case's pending customer requests (e.g. once its chat is linked)."""
+        pending = [
+            r.approval_id
+            for r in reversed(self._repository.list(ApprovalStatus.PENDING, Approver.CUSTOMER))
+            if r.case_id == case_id
+        ]
+        return await self.execute(pending)
+
     def _issue_link(self, request: ApprovalRequest) -> str | None:
         """A fresh single-use web link; the stored hash replaces any earlier one."""
         if not self._link_template or request.approver is not Approver.CUSTOMER:
@@ -216,9 +225,10 @@ class PresentApprovals:
 class VerifyApprovalLink:
     """Who holds a web link: the customer the request belongs to, while it is pending."""
 
-    def __init__(self, repository: ApprovalRepository) -> None:
-        """Keep the request store."""
+    def __init__(self, repository: ApprovalRepository, audit: AuditSink) -> None:
+        """Keep the request store and the audit sink (refused links are recorded)."""
         self._repository = repository
+        self._audit = audit
 
     def execute(self, approval_id: str, token: str, channel: str = "web") -> tuple[
         ApprovalRequest, Actor
@@ -234,7 +244,15 @@ class VerifyApprovalLink:
             or not request.link_token_hash
             or hash_token(token) != request.link_token_hash
         ):
-            raise ApprovalError("not_found")  # never tell which part was wrong
+            # Never tell which part was wrong; record it (guessing links leaves a trail).
+            self._audit.record(
+                "approval_link_refused",
+                request.session_id if request else None,
+                approval_id=approval_id,
+                known_request=request is not None,
+                channel=channel,
+            )
+            raise ApprovalError("not_found")
         return request, Actor(
             role=Approver.CUSTOMER, identity=request.customer_id, channel=channel
         )

@@ -1,5 +1,6 @@
 """Use cases, one class per business action, each exposing `execute`."""
 
+from lir_agent.application.use_cases.answer_approval_button import AnswerApprovalButton
 from lir_agent.application.use_cases.answer_telegram import AnswerTelegramMessage
 from lir_agent.application.use_cases.approvals import (
     DecideApproval,
@@ -21,6 +22,7 @@ from lir_agent.application.use_cases.route_turn import RouteTurn
 from lir_agent.application.use_cases.submit_case import SubmitCase
 
 __all__ = [
+    "AnswerApprovalButton",
     "AnswerTelegramMessage",
     "DecideApproval",
     "FindCandidateTransactions",

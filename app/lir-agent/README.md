@@ -140,7 +140,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
-| `GET` | `/v1/approvals/{approval_id}?token=...` | - | The approval card behind a customer's single-use link (web surface) |
+| `GET` | `/v1/approvals/{approval_id}` | header `X-Approval-Token` | The approval card behind a customer's single-use link (web surface). The token travels in a header so no proxy logs it; failed attempts are audited (`approval_link_refused`) |
 | `POST` | `/v1/approvals/{approval_id}/decision` | `{"decision": "approve" \| "reject", "token": "...", "content_hash": "..."}` | The customer decides from the web card. `404` wrong or spent link, `409` already decided or content changed, `410` expired |
 | `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required) |
 | `POST` | `/v1/approvals/{approval_id}/review` | `{"decision": ..., "content_hash": ..., "note": ...}` | A specialist decides a request that waits for one (IAP identity required, never a local fallback) |
@@ -187,7 +187,7 @@ Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 ch
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -d "url=https://<public base URL>/channels/telegram" \
   -d "secret_token=$TELEGRAM_WEBHOOK_SECRET" \
-  -d 'allowed_updates=["message"]'
+  -d 'allowed_updates=["message","callback_query"]'
 ```
 
 Telegram only calls HTTPS URLs: locally, expose the API with a tunnel (e.g.
@@ -328,9 +328,10 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 
 - Disputes, handoffs and approval requests are in-memory mocks with documented contracts; no
   money moves.
-- Approval surfaces: the API (web link and chat replies) ships here; the Telegram buttons, the
-  `lir-web` card and exposing the customer routes on API Gateway are follow-up work. Until the
-  Telegram surface lands, a customer on Telegram cannot approve a dispute.
+- Approval surfaces: Telegram buttons (`TelegramApprovalSurface`, webhook `callback_query`) and
+  the web link (`lir-web` card) ship; exposing the customer routes on API Gateway is follow-up
+  work. Telegram only opens `https` links from a button: with a local `http` link template the
+  "view on the web" button is left out.
 - ADK sessions are in memory: on Cloud Run this means one instance (`max-instances=1`) so a
   session's messages reach the instance that holds it, and a restart ends open
   conversations. Case state (start tokens, chat links, case conversations, waiting replies)

@@ -12,7 +12,7 @@ from collections import OrderedDict
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from lir_agent.application.use_cases import AnswerTelegramMessage
+from lir_agent.application.use_cases import AnswerApprovalButton, AnswerTelegramMessage
 
 SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token"
 # Recent update ids remembered to drop Telegram's retries.
@@ -29,11 +29,20 @@ class _Message(BaseModel):
     text: str | None = None
 
 
+class _CallbackQuery(BaseModel):
+    """A press on a button under a bot message."""
+
+    id: str
+    message: _Message | None = None
+    data: str | None = None
+
+
 class _Update(BaseModel):
-    """The only fields read from an update; edits, callbacks and the rest are ignored."""
+    """The only fields read from an update; edits and the rest are ignored."""
 
     update_id: int
     message: _Message | None = None
+    callback_query: _CallbackQuery | None = None
 
 
 class _RecentUpdates:
@@ -54,7 +63,11 @@ class _RecentUpdates:
             self._ids.popitem(last=False)
 
 
-def telegram_router(secret: str, answer: AnswerTelegramMessage) -> APIRouter:
+def telegram_router(
+    secret: str,
+    answer: AnswerTelegramMessage,
+    answer_button: AnswerApprovalButton | None = None,
+) -> APIRouter:
     """The webhook route, accepting only calls carrying `secret`."""
     router = APIRouter()
     recent = _RecentUpdates()
@@ -67,6 +80,15 @@ def telegram_router(secret: str, answer: AnswerTelegramMessage) -> APIRouter:
         try:
             update = _Update.model_validate(await request.json())
         except ValueError:  # bad JSON, or not an update this bot understands
+            return Response()
+        if recent.seen(update.update_id):
+            return Response()
+        press = update.callback_query
+        if press is not None:
+            chat = press.message.chat if press.message else None
+            if answer_button and chat is not None and chat.type == "private":
+                await answer_button.execute(chat.id, press.id, press.data)
+            recent.remember(update.update_id)
             return Response()
         message = update.message
         if (

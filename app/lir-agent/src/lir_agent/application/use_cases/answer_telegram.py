@@ -84,6 +84,9 @@ class AnswerTelegramMessage:
         self._audit.record("telegram_linked", None, case_id=start.case_id)
         await self._say(chat_id, link.language, "linked", folio=link.folio)
         await self._deliver(start.case_id)
+        # Requests created before the chat was linked could not be shown until now.
+        if self._present_approvals:
+            await self._present_approvals.execute_for_case(start.case_id)
 
     async def _ask(self, chat_id: int, link: ChatLink, text: str) -> None:
         conversation = self._store.get_conversation(link.case_id)

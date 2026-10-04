@@ -43,6 +43,8 @@ class RecordingMessenger:
 
     def __init__(self) -> None:
         self.sent: list[tuple[int, str]] = []
+        self.buttons: list[tuple[int, list]] = []
+        self.answers: list[tuple[str, str, bool]] = []
         self.failures = 0
 
     async def send(self, chat_id: int, text: str) -> None:
@@ -50,6 +52,13 @@ class RecordingMessenger:
             self.failures -= 1
             raise MessageNotSentError("Telegram is down")
         self.sent.append((chat_id, text))
+
+    async def send_buttons(self, chat_id: int, text: str, rows: list) -> None:
+        await self.send(chat_id, text)
+        self.buttons.append((chat_id, rows))
+
+    async def answer_callback(self, callback_id: str, text: str, alert: bool = False) -> None:
+        self.answers.append((callback_id, text, alert))
 
 
 def fake_verifier(token: str) -> dict:
@@ -76,11 +85,12 @@ class Bot:
         self.audit = InMemoryAuditSink()
         self.messenger = RecordingMessenger()
         self.conversations = FakeConversations()
-        container = build_container(
+        self.container = container = build_container(
             settings,
             audit=self.audit,
             case_inbox=RecordingInbox(),
             case_store=self.store,
+            messenger=self.messenger,
         )
         self.client = TestClient(
             create_app(
@@ -122,6 +132,19 @@ class Bot:
             json=envelope(PAYLOAD) if body is None else body,
             headers=request_headers,
         )
+
+    def press(self, data: str, chat_id: int = CHAT, callback_id: str = "cb-1"):
+        """A press on a button under a bot message, as Telegram sends it."""
+        body = {
+            "update_id": self._next_update,
+            "callback_query": {
+                "id": callback_id,
+                "data": data,
+                "message": {"message_id": 9, "chat": {"id": chat_id, "type": "private"}},
+            },
+        }
+        self._next_update += 1
+        return self.post(body)
 
     def texts(self) -> list[str]:
         return [text for _, text in self.messenger.sent]
