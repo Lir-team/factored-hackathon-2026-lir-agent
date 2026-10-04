@@ -1,0 +1,49 @@
+# Labels of the handoff report a bank specialist reads (GET /v1/handoffs/{id}/report.md).
+# Facts come from the handoff packet built from session state; only the model summary is
+# model-written, and the report says so.
+es:
+  title: "Reporte de derivación"
+  created_at: "Fecha"
+  customer_id: "Cliente"
+  customer_request: "Solicitud del cliente"
+  policy: "Decisión de la política"
+  turn_lane: "Carril del turno"
+  case_lane: "Carril del caso"
+  rule: "Regla"
+  reason: "Motivo"
+  policy_version: "Versión de política"
+  evidence: "Evidencia verificada"
+  evidence_columns: ["Fecha", "Monto", "Comercio", "Categoría", "Estado", "País", "Duplicado de", "Score fraude"]
+  no_evidence: "Sin evidencia de transacciones asociada."
+  actions: "Acciones realizadas"
+  no_actions: "Ninguna acción automática."
+  decisions: "Decisiones tipadas del último turno"
+  decision_columns: ["Pregunta", "Respuesta", "Probabilidad"]
+  open_questions: "Preguntas abiertas para el especialista"
+  no_open_questions: "Sin preguntas abiertas."
+  model_summary: "Resumen del modelo (generado por IA, no verificado)"
+  no_model_summary: "El modelo no entregó resumen."
+  none: "—"
+pt:
+  title: "Relatório de encaminhamento"
+  created_at: "Data"
+  customer_id: "Cliente"
+  customer_request: "Solicitação do cliente"
+  policy: "Decisão da política"
+  turn_lane: "Faixa do turno"
+  case_lane: "Faixa do caso"
+  rule: "Regra"
+  reason: "Motivo"
+  policy_version: "Versão da política"
+  evidence: "Evidência verificada"
+  evidence_columns: ["Data", "Valor", "Estabelecimento", "Categoria", "Status", "País", "Duplicada de", "Score de fraude"]
+  no_evidence: "Sem evidência de transações associada."
+  actions: "Ações realizadas"
+  no_actions: "Nenhuma ação automática."
+  decisions: "Decisões tipadas do último turno"
+  decision_columns: ["Pergunta", "Resposta", "Probabilidade"]
+  open_questions: "Perguntas em aberto para o especialista"
+  no_open_questions: "Sem perguntas em aberto."
+  model_summary: "Resumo do modelo (gerado por IA, não verificado)"
+  no_model_summary: "O modelo não forneceu resumo."
+  none: "—"

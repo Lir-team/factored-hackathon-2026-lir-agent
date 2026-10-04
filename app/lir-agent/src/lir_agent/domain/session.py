@@ -24,6 +24,7 @@ class _Key(StrEnum):
     AUTH_METHOD = "auth_method"
     LAST_USER_TEXT = "last_user_text"
     DECISIONS = "decisions"
+    DECISION_META = "decision_meta"
     TURN_OUTCOME = "turn_outcome"
     CASE_OUTCOME = "case_outcome"
     TRANSACTION_REFS = "transaction_refs"
@@ -112,6 +113,15 @@ class SessionState:
     @decisions.setter
     def decisions(self, decisions: dict | None) -> None:
         self._raw[_Key.DECISIONS] = decisions
+
+    @property
+    def decision_meta(self) -> dict | None:
+        """Which decision model answered the current turn, its latency and any fallback."""
+        return self._raw.get(_Key.DECISION_META)
+
+    @decision_meta.setter
+    def decision_meta(self, meta: dict | None) -> None:
+        self._raw[_Key.DECISION_META] = meta
 
     @property
     def turn_outcome(self) -> Outcome | None:

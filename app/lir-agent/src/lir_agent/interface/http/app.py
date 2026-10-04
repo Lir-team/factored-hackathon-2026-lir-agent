@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from lir_agent.application.ports import (
@@ -68,10 +68,31 @@ class StartSessionResponse(BaseModel):
     expires_at: str
 
 
+class TraceView(BaseModel):
+    """How one turn was decided (returned only when `expose_trace` is on)."""
+
+    decision_model: str | None
+    decision_fallback: list[str] | None
+    decisions: dict | None
+    turn_lane: str | None
+    turn_rule: str | None
+    case_lane: str | None
+    case_rule: str | None
+    policy_version: str | None
+    tools: list[str]
+    handoff_id: str | None
+    llm_model: str
+    latency_ms: float
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float | None
+
+
 class MessageResponse(BaseModel):
-    """The agent's reply to one customer message."""
+    """The agent's reply to one customer message, and its trace when enabled."""
 
     reply: str
+    trace: TraceView | None = None
 
 
 class CaseAcceptedResponse(BaseModel):
@@ -124,11 +145,14 @@ def _push_verifier(
     return True, injected or google_token_verifier(settings.pubsub_push_audience)
 
 
-def _real_conversations(settings: Settings) -> Conversations:
-    """The real agent behind ADK; imported lazily because the agent stack is heavy."""
+def _real_conversations(settings: Settings, container: "Container") -> Conversations:
+    """The real agent behind ADK, sharing the app container (one case store).
+
+    Imported lazily because the agent stack is heavy.
+    """
     from lir_agent.interface.adk import build_conversations
 
-    return build_conversations(settings)
+    return build_conversations(settings, container)
 
 
 def create_app(
@@ -139,8 +163,8 @@ def create_app(
     push_token_verifier: TokenVerifier | None = None,
 ) -> FastAPI:
     """Build the API; tests inject the agent, adapters and the push token verifier."""
-    agent = conversations or _real_conversations(settings)
     deps = container or _real_container(settings)
+    agent = conversations or _real_conversations(settings, deps)
     intake = deps.submit_case
     session_ttl = timedelta(minutes=settings.session_ttl_minutes)
     customer_id_pattern = re.compile(settings.customer_id_pattern)
@@ -216,12 +240,36 @@ def create_app(
         session_id: str, body: MessageRequest, caller: Annotated[str, Depends(operator)]
     ) -> MessageResponse:
         try:
-            reply = await agent.send(caller, session_id, body.text.strip())
+            turn = await agent.converse(caller, session_id, body.text.strip())
         except ConversationNotFoundError:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND, "Session not found"
             ) from None
-        return MessageResponse(reply=reply)
+        trace = TraceView(**vars(turn.trace)) if settings.expose_trace else None
+        return MessageResponse(reply=turn.reply, trace=trace)
+
+    @app.get(
+        "/v1/handoffs/{handoff_id}/report.md",
+        response_class=PlainTextResponse,
+        responses={404: {"description": "Handoff not found"}},
+    )
+    async def handoff_report(
+        handoff_id: str,
+        caller: Annotated[str, Depends(operator)],
+        language: str | None = None,
+    ) -> PlainTextResponse:
+        """The case file for the bank specialist, in Markdown (es or pt)."""
+        packet = deps.cases.get_handoff(handoff_id)
+        if packet is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Handoff not found")
+        # Reading a case file exposes customer data: who read it is audited.
+        deps.audit.record(
+            "handoff_report_viewed", None, handoff_id=handoff_id, operator=caller
+        )
+        return PlainTextResponse(
+            deps.handoff_report.markdown(packet, language),
+            media_type="text/markdown; charset=utf-8",
+        )
 
     @app.post(
         "/v1/cases",

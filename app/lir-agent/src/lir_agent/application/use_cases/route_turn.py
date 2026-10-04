@@ -40,7 +40,7 @@ class RouteTurn:
         questions = dict(TURN_QUESTIONS)
         if pending:
             questions[self._confirms_key] = CONFIRMATION
-        decisions = self._classify(text, questions, session_id)
+        decisions, session.decision_meta = self._classify(text, questions, session_id)
 
         confirmed_now = self._resolve_confirmation(session, pending, decisions)
         facts = {
@@ -83,14 +83,18 @@ class RouteTurn:
 
     def _classify(
         self, text: str, questions: dict, session_id: str | None
-    ) -> dict | None:
-        """Serialized typed decisions, or None when no model could decide (the policy escalates)."""
+    ) -> tuple[dict | None, dict | None]:
+        """Serialized typed decisions and who answered them.
+
+        Decisions are None when no model could decide (the policy escalates); the metadata
+        names the model that answered, its latency and the models that failed before it.
+        """
         started = time.perf_counter()
         try:
             result = self._decisions.decide(text, questions)
         except DecisionError as error:
             self._audit.record("decision_failed", session_id, error=str(error))
-            return None
+            return None, {"model": None, "latency_ms": None, "fallback": [str(error)]}
         self._audit.record(
             "decision",
             session_id,
@@ -101,7 +105,7 @@ class RouteTurn:
         )
         # A chain answered, but a model before it failed: record why, so a provider that
         # always fails (billing, auth, an unsupported parameter) does not go unnoticed.
-        failures = getattr(self._decisions, "failures", None)
+        failures = getattr(self._decisions, "failures", None) or []
         if failures:
             self._audit.record(
                 "decision_fallback",
@@ -109,7 +113,13 @@ class RouteTurn:
                 answered_by=result.model,
                 failures=[[name, reason] for name, reason in failures],
             )
-        return {
+        decisions = {
             key: {"value": a.value, "probability": a.probability}
             for key, a in result.answers.items()
         }
+        meta = {
+            "model": result.model,
+            "latency_ms": result.latency_ms,
+            "fallback": [f"{name}: {reason}" for name, reason in failures] or None,
+        }
+        return decisions, meta
