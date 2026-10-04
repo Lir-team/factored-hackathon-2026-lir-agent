@@ -41,7 +41,6 @@ class AuthError(StrEnum):
 
 
 class DisputeBlock(StrEnum):
-    """Why a dispute cannot be opened."""
+    """Why a dispute cannot be put to the customer for approval."""
 
-    POLICY_DOES_NOT_ALLOW = "policy_does_not_allow_dispute"
-    CONFIRMATION_REQUIRED = "confirmation_required"
+    NO_GROUND = "no_ground_for_dispute"

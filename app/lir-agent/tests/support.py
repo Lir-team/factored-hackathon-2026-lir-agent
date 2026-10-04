@@ -65,7 +65,6 @@ class Harness:
             container.get_profile,
             container.find_candidates,
             container.gather_evidence,
-            container.open_dispute,
             container.request_handoff,
         )
         loader, settings = ResourceLoader(), container.settings
@@ -73,7 +72,7 @@ class Harness:
             settings=settings,
             policy=container.policy,
             route_turn=container.route_turn,
-            dispute_guard=container.dispute_guard,
+            approval_gate=container.request_action_approval,
             guidance=TurnGuidance(loader.load_mapping(settings.turn_guidance_path)),
             messages=CustomerMessages(
                 loader.load_localized_mapping(settings.customer_messages_path)

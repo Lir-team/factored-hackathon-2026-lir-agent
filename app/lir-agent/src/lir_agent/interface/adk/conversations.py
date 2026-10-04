@@ -130,6 +130,7 @@ class AdkConversations:
         )
         if session is None:
             raise ConversationNotFoundError(session_id)
+        approvals_before = len(SessionState(session.state).approval_ids)
         content = types.Content(role="user", parts=[types.Part(text=text)])
         reply: list[str] = []
         tools: list[str] = []
@@ -148,26 +149,31 @@ class AdkConversations:
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
         if not reply:
             logger.warning("Agent returned no text for session %s", session_id)
-        trace = await self._trace(
-            owner, session_id, tools, latency_ms, input_tokens, output_tokens
-        )
+        state = await self._state(owner, session_id)
+        trace = self._trace(state, tools, latency_ms, input_tokens, output_tokens)
         self._audit.record("turn_completed", session_id, **vars(trace))
-        return Turn(reply="".join(reply), trace=trace)
+        return Turn(
+            reply="".join(reply),
+            trace=trace,
+            approvals=tuple(state.approval_ids[approvals_before:]),
+        )
 
-    async def _trace(
+    async def _state(self, owner: str, session_id: str) -> SessionState:
+        """The session state after a turn."""
+        session = await self._runner.session_service.get_session(
+            app_name=self.app_name, user_id=owner, session_id=session_id
+        )
+        return SessionState(session.state if session else {})
+
+    def _trace(
         self,
-        owner: str,
-        session_id: str,
+        state: SessionState,
         tools: list[str],
         latency_ms: float,
         input_tokens: int,
         output_tokens: int,
     ) -> TurnTrace:
         """Read the turn's decisions and lanes back from the session state."""
-        session = await self._runner.session_service.get_session(
-            app_name=self.app_name, user_id=owner, session_id=session_id
-        )
-        state = SessionState(session.state if session else {})
         meta = state.decision_meta or {}
         turn, case = state.turn_outcome, state.case_outcome
         outcome = turn or case

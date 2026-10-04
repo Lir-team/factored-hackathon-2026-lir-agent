@@ -91,6 +91,7 @@ class Trial:
     turns: list[Turn]
     disputes: list[dict]
     handoffs: list[dict]
+    approvals: list[dict]
     turn_rules: list[str]
     case_outcome: dict | None
     evidence_transactions: list[str]
@@ -191,6 +192,16 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
         turns=turns,
         disputes=[d.model_dump(mode="json") for d in cases.disputes],
         handoffs=[_handoff_view(h) for h in cases.handoffs],
+        approvals=[
+            {
+                "action": a.action,
+                "approver": a.approver.value,
+                "status": a.status.value,
+                "params": a.params,
+                "details": [d.model_dump() for d in a.details],
+            }
+            for a in container.approvals.list()
+        ],
         turn_rules=[
             e["outcome"]["rule_id"] for e in events if e.get("event") == "turn_routed"
         ],

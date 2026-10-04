@@ -4,8 +4,8 @@
   session without a valid signed-in customer before the agent (and model) run.
 - before_model: routes each new customer message (RouteTurn), appends lane guidance and
   protects the request: identifiers redacted, bank records as placeholders.
-- before_tool: authentication, session expiry, tools allowed per turn lane, dispute confirmation,
-  and placeholders in the arguments resolved before the tool runs.
+- before_tool: authentication, session expiry, tools allowed per turn lane, placeholders in the
+  arguments resolved, and important actions turned into approval requests (human in the loop).
 - after_tool / after_model: audit records, placeholders resolved for the customer and the
   deterministic output guard.
 """
@@ -21,10 +21,8 @@ from google.adk.tools import BaseTool, ToolContext
 from google.genai import types
 
 from lir_agent.application.ports import AuditSink
-from lir_agent.application.use_cases import RouteTurn
+from lir_agent.application.use_cases import RequestActionApproval, RouteTurn
 from lir_agent.config.settings import Settings
-from lir_agent.domain.dispute_guard import DisputeGuard
-from lir_agent.domain.errors import DisputeBlock
 from lir_agent.domain.language import detect_language
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.domain.pseudonyms import Pseudonyms, redact_identifiers
@@ -34,8 +32,6 @@ from lir_agent.interface.adk.guidance import CustomerMessages, TurnGuidance
 logger = logging.getLogger(__name__)
 
 DEV_AUTH_METHOD = "dev_test_session"
-OPEN_DISPUTE_TOOL = "open_dispute"
-
 
 def _session_id(context: Any) -> str | None:
     return getattr(getattr(context, "session", None), "id", None)
@@ -93,7 +89,7 @@ class AgentCallbacks:
         settings: Settings,
         policy: PolicyEngine,
         route_turn: RouteTurn,
-        dispute_guard: DisputeGuard,
+        approval_gate: RequestActionApproval,
         guidance: TurnGuidance,
         messages: CustomerMessages,
         audit: AuditSink,
@@ -102,7 +98,7 @@ class AgentCallbacks:
         self._settings = settings
         self._policy = policy
         self._route_turn = route_turn
-        self._dispute_guard = dispute_guard
+        self._approval_gate = approval_gate
         self._guidance = guidance
         self._messages = messages
         self._audit = audit
@@ -240,7 +236,7 @@ class AgentCallbacks:
     def before_tool(
         self, tool: BaseTool, args: dict, tool_context: ToolContext
     ) -> dict | None:
-        """Deny tools without a valid session, outside the turn lane or without confirmation."""
+        """Deny tools without a valid session or outside the turn lane; gate important actions."""
         session, session_id = (
             SessionState(tool_context.state),
             _session_id(tool_context),
@@ -276,10 +272,19 @@ class AgentCallbacks:
         for key, value in args.items():
             args[key] = pseudonyms.reveal_value(value)
 
-        if tool.name == OPEN_DISPUTE_TOOL:
-            denial = self._check_dispute(session, session_id, args)
-            if denial:
-                return denial
+        # Human in the loop: an important action (listed in the policy) never runs from the
+        # conversation. Its call becomes an approval request; the action runs on approval.
+        if self._approval_gate.requires_approval(tool.name):
+            result = self._approval_gate.execute(session, tool.name, args, session_id)
+            self._audit.record(
+                "tool_call",
+                session_id,
+                tool=tool.name,
+                args=args,
+                approval=result.get("approval_id"),
+                status=result["status"],
+            )
+            return result
 
         self._audit.record("tool_call", session_id, tool=tool.name, args=args)
         return None
@@ -298,25 +303,4 @@ class AgentCallbacks:
             tool=tool.name,
             status=(tool_response or {}).get("status"),
         )
-        return None
-
-    def _check_dispute(
-        self, session: SessionState, session_id: str | None, args: dict
-    ) -> dict | None:
-        transaction_id = session.resolve_ref(args.get("transaction_ref"))
-        block = self._dispute_guard.check(session, transaction_id)
-        if block is DisputeBlock.CONFIRMATION_REQUIRED:
-            session.pending_confirmation = transaction_id
-            self._audit.record(
-                "confirmation_requested", session_id, transaction_id=transaction_id
-            )
-            return {
-                "status": "confirmation_required",
-                "instruction": "Ask the customer to confirm explicitly in their next message.",
-            }
-        if block:
-            self._audit.record(
-                "tool_denied", session_id, tool=OPEN_DISPUTE_TOOL, reason=block.value
-            )
-            return {"status": "blocked", "reason": block.value}
         return None

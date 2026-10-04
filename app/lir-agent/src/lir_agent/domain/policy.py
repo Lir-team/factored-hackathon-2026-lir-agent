@@ -11,6 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from lir_agent.domain.approvals import Approver
 from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.models import Lane, Outcome
 from lir_agent.domain.pseudonyms import Kind
@@ -133,6 +134,22 @@ class LlmExposure(BaseModel):
     pseudonymized_fields: dict[str, Kind] = Field(default_factory=dict)
 
 
+class ApprovalSettings(BaseModel):
+    """Human in the loop: who approves each kind of action, and for how long a request lives."""
+
+    ttl_minutes: int = Field(gt=0)
+    # Tools that are important actions, with their approvers in order: a call creates an
+    # approval request instead of running, and only the last approval runs the action.
+    actions: dict[str, list[Approver]]
+
+    @field_validator("actions")
+    @classmethod
+    def _non_empty(cls, actions: dict[str, list[Approver]]) -> dict[str, list[Approver]]:
+        if any(not approvers for approvers in actions.values()):
+            raise ValueError("Every approval needs at least one approver")
+        return actions
+
+
 class PolicyConfig(BaseModel):
     """The whole versioned policy file, validated at startup."""
 
@@ -143,7 +160,7 @@ class PolicyConfig(BaseModel):
     tools_by_turn_lane: dict[Lane, list[str]]
     evidence: dict[str, float]
     search: SearchSettings
-    confirmation: dict[str, float]
+    approvals: ApprovalSettings
     llm_exposure: LlmExposure
     output_guard: OutputGuard
     handoff_open_questions: dict[str, list[str]] = Field(default_factory=dict)
@@ -206,9 +223,8 @@ class PolicyEngine:
 
     def all_referenced_tools(self) -> set[str]:
         """Every tool name the policy refers to, checked against the toolkit at startup."""
-        return {
-            name for names in self._config.tools_by_turn_lane.values() for name in names
-        }
+        lanes = {name for names in self._config.tools_by_turn_lane.values() for name in names}
+        return lanes | set(self._config.approvals.actions)
 
     def turn_facts(self, decisions: dict[str, dict] | None) -> dict[str, Any]:
         """Policy facts from serialized decisions ({question_key: {value, probability}})."""

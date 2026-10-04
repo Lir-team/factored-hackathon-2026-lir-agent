@@ -42,35 +42,42 @@ def test_tool_not_allowed_for_lane(make_harness, context):
     assert result["reason"] == "not_allowed_for_turn_lane"
 
 
-def test_dispute_requires_explicit_confirmation_then_verifies(make_harness, context):
-    h = make_harness({**IN_SCOPE, "confirma": (True, 0.95)})
+def test_opening_a_dispute_becomes_a_request_for_the_customers_approval(harness, context):
     session = SessionState(context.state)
-    h.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
+    harness.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
     ref = session.ref_for("TXN-D1-006")
-    h.toolkit.get_transaction_evidence(context, ref)
+    harness.toolkit.get_transaction_evidence(context, ref)
 
-    args = {"transaction_ref": ref, "reason": "duplicate"}
-    assert (
-        h.callbacks.before_tool(tool("open_dispute"), args, context)["status"]
-        == "confirmation_required"
+    args = {"transaction_ref": ref, "reason": "Cobro duplicado"}
+    result = harness.callbacks.before_tool(tool("open_dispute"), args, context)
+
+    assert result is not None and result["status"] == "approval_requested"
+    request = harness.container.approvals.get(result["approval_id"])
+    assert request is not None
+    assert (request.approver, request.status, request.then) == ("customer", "pending", [])
+    assert request.params == {"transaction_id": "TXN-D1-006", "reason": "Cobro duplicado"}
+    assert [d.label for d in request.details] == ["Comercio", "Fecha", "Monto", "Motivo"]
+    assert session.approval_ids == [request.approval_id]
+    # Nothing was opened, and asking again returns the same request.
+    assert harness.toolkit.open_dispute(context, **args)["status"] == "blocked"
+    again = harness.callbacks.before_tool(tool("open_dispute"), args, context)
+    assert again is not None and again["approval_id"] == request.approval_id
+
+
+def test_a_typed_yes_opens_nothing(harness, context):
+    session = SessionState(context.state)
+    harness.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
+    ref = session.ref_for("TXN-D1-006")
+    harness.toolkit.get_transaction_evidence(context, ref)
+    harness.callbacks.before_tool(
+        tool("open_dispute"), {"transaction_ref": ref, "reason": "x"}, context
     )
 
-    h.callbacks.before_model(context, user_request("Sí, confirmo, abre la disputa"))
-    assert outcome_rule(session) == "T2_confirmation_received"
-    assert h.callbacks.before_tool(tool("open_dispute"), args, context) is None
-    assert h.toolkit.open_dispute(context, **args)["status"] == "verified"
+    harness.callbacks.before_model(context, user_request("Sí, confirmo, ábrela"))
 
-
-def test_unclear_answer_keeps_confirmation_pending(make_harness, context):
-    h = make_harness({**IN_SCOPE, "confirma": (False, 0.2)})
-    session = SessionState(context.state)
-    h.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
-    h.toolkit.get_transaction_evidence(context, session.ref_for("TXN-D1-006"))
-    request = user_request("mmm no sé")
-    h.callbacks.before_model(context, request)
-    assert session.turn_lane == "confirm"
-    assert session.pending_confirmation == "TXN-D1-006"
-    assert "Turn lane: confirm" in str(request.config.system_instruction)
+    [approval_id] = session.approval_ids
+    request = harness.container.approvals.get(approval_id)
+    assert request is not None and request.status == "pending"
 
 
 def test_dispute_blocked_when_policy_says_explain(harness, context):
@@ -83,7 +90,7 @@ def test_dispute_blocked_when_policy_says_explain(harness, context):
     result = harness.callbacks.before_tool(
         tool("open_dispute"), {"transaction_ref": ref}, context
     )
-    assert result["reason"] == "policy_does_not_allow_dispute"
+    assert result["reason"] == "action_not_allowed"
 
 
 def test_escalation_creates_handoff_with_verified_facts(make_harness, context):
@@ -155,16 +162,15 @@ def test_guard_fallback_is_in_the_customers_language(harness, context):
 
 
 def test_blocked_tool_tells_the_model_what_to_do_instead(make_harness, context):
-    h = make_harness({**IN_SCOPE, "confirma": (False, 0.2)})
+    h = make_harness({**IN_SCOPE, "intencion": ("otra_queja", 0.3)})
     session = SessionState(context.state)
-    h.callbacks.before_model(context, user_request("Me cobraron dos veces en OXXO"))
-    ref = session.ref_for("TXN-D1-006")
-    h.toolkit.get_transaction_evidence(context, ref)
-    h.callbacks.before_model(context, user_request("mmm"))
-    assert session.turn_lane == "confirm"
-    result = h.callbacks.before_tool(tool("open_dispute"), {"transaction_ref": ref}, context)
+    h.callbacks.before_model(context, user_request("hola"))
+    assert session.turn_lane == "clarify"
+    result = h.callbacks.before_tool(
+        tool("open_dispute"), {"transaction_ref": "T1", "reason": "x"}, context
+    )
     assert result["reason"] == "not_allowed_for_turn_lane"
-    assert "Turn lane: confirm" in result["instruction"]
+    assert "Turn lane: clarify" in result["instruction"]
 
 
 def test_turn_level_handoff_has_the_policy_open_questions(make_harness, context):

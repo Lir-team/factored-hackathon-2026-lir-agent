@@ -5,14 +5,14 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.5.0-synthetic
+version: 0.6.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
   intent: intencion
   wants_human: pide_humano
   theft_suspected: sospecha_robo
-  confirms: confirma
+  rejects_explanation: rechaza_explicacion
   merchant: comercio
 
 # Turn-level routing, from the typed decisions on the customer's message (before any lookup).
@@ -37,18 +37,16 @@ turn_rules:
     lane: escalate
     reason: Customer explicitly asks for a person
     when: {wants_human_p: {gte: 0.50}}
-  - id: T2_confirmation_received
-    lane: proceed
-    reason: Customer confirmed the pending dispute
-    when: {confirmed_now: {eq: true}}
   - id: T3_theft_suspected
     lane: escalate
     reason: Possible card theft or cloning, handled by the fraud team
     when: {theft_suspected_p: {gte: 0.30}}
-  - id: T3b_awaiting_confirmation
-    lane: confirm
-    reason: A dispute is pending the customer's explicit confirmation
-    when: {awaiting_confirmation: {eq: true}}
+  - id: T3c_explanation_rejected
+    lane: review
+    reason: >-
+      The customer still does not recognize the charge after the explanation: restate the
+      dispute and ask the customer to approve or reject it
+    when: {rejects_explanation_p: {gte: 0.50}}
   - id: T4_uncertain_intent
     lane: clarify
     reason: The customer's need is unclear
@@ -116,13 +114,14 @@ case_rules:
 
 # Which tools each turn lane may call. Enforced in before_tool_callback, not in the prompt.
 tools_by_turn_lane:
-  proceed: [get_my_customer_profile, find_candidate_transactions, get_transaction_evidence, open_dispute,
-            request_human_handoff]
+  proceed: [get_my_customer_profile, find_candidate_transactions, get_transaction_evidence,
+            open_dispute, request_human_handoff]
   clarify: [get_my_customer_profile, find_candidate_transactions, request_human_handoff]
-  confirm: [get_my_customer_profile, get_transaction_evidence, request_human_handoff]
   # Escalated turns may still look up the charge the customer described (read-only), so it
   # reaches the specialist in the handoff packet. Disputes stay out of this lane.
   escalate: [find_candidate_transactions, get_transaction_evidence, request_human_handoff]
+  # The customer rejects an explanation: the agent may only ask them to approve a dispute.
+  review: [get_transaction_evidence, open_dispute, request_human_handoff]
   out_of_scope: [get_my_customer_profile, request_human_handoff]
 
 # What the specialist still has to resolve, per rule that sends the case to a human
@@ -169,8 +168,15 @@ search:
   max_candidates: 5
   merchant_min_probability: 0.50
 
-confirmation:
-  min_probability: 0.80
+# Human in the loop (domain/approvals.py). A tool listed here is an important action taken on
+# the customer's behalf: calling it creates an approval request instead of running, the people
+# below decide it in order on a surface (Telegram, web, ...), and only the last approval runs it.
+# Handoffs to a human are not listed on purpose: an escalation (theft, a person asked for)
+# must never wait for an approval.
+approvals:
+  ttl_minutes: 60
+  actions:
+    open_dispute: [customer]
 
 # Data minimization for external model requests (Bases, data boundaries; data/AGENTS.md rule 3).
 # Tool results sent to the LLM include only these fields. Internal ids, risk scores and country

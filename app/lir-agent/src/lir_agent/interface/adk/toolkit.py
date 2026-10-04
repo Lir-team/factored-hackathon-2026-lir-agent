@@ -15,7 +15,6 @@ from lir_agent.application.use_cases import (
     FindCandidateTransactions,
     GatherTransactionEvidence,
     GetCustomerProfile,
-    OpenDispute,
     RequestHandoff,
     SearchCriteria,
 )
@@ -31,14 +30,12 @@ class ChargeInvestigationToolkit:
         get_profile: GetCustomerProfile,
         find_candidates: FindCandidateTransactions,
         gather_evidence: GatherTransactionEvidence,
-        open_dispute: OpenDispute,
         request_handoff: RequestHandoff,
     ) -> None:
         """Keep the use cases the tools delegate to."""
         self._get_profile = get_profile
         self._find_candidates = find_candidates
         self._gather_evidence = gather_evidence
-        self._open_dispute = open_dispute
         self._request_handoff = request_handoff
 
     def tools(self) -> list[Callable[..., dict]]:
@@ -117,20 +114,24 @@ class ChargeInvestigationToolkit:
         return result
 
     def open_dispute(
-        self, tool_context: ToolContext, transaction_ref: str, reason: str
+        self,
+        tool_context: ToolContext,  # noqa: ARG002 - the tool guard answers this call
+        transaction_ref: str,  # noqa: ARG002
+        reason: str,  # noqa: ARG002
     ) -> dict:
-        """Opens a dispute for a transaction.
+        """Asks the customer to approve opening a dispute for a transaction.
 
-        Only allowed when the policy lane is 'dispute' and the customer explicitly confirmed
-        it in a previous message.
+        It does NOT open the dispute: the customer approves or rejects it with the buttons
+        the bank shows next to your reply. Only when the policy lane is 'dispute', or when
+        the customer still rejects a charge you explained.
 
         Args:
             transaction_ref: Reference of the disputed transaction (e.g. "T1").
-            reason: Short description of why the customer disputes it.
+            reason: One sentence with the customer's reason for disputing it.
         """
-        return self._open_dispute.execute(
-            SessionState(tool_context.state), transaction_ref, reason
-        )
+        # The tool guard turns this call into an approval request (policy `approvals`); if
+        # it ever got here, the action must still not run.
+        return {"status": "blocked", "reason": "approval_required"}
 
     def request_human_handoff(
         self, tool_context: ToolContext, summary: str, open_questions: list[str]

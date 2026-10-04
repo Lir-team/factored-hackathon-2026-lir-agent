@@ -48,7 +48,6 @@ class AgentFactory:
             c.get_profile,
             c.find_candidates,
             c.gather_evidence,
-            c.open_dispute,
             c.request_handoff,
         )
         tools = toolkit.tools()
@@ -57,7 +56,7 @@ class AgentFactory:
             settings=c.settings,
             policy=c.policy,
             route_turn=c.route_turn,
-            dispute_guard=c.dispute_guard,
+            approval_gate=c.request_action_approval,
             guidance=TurnGuidance(
                 c.resources.load_mapping(c.settings.turn_guidance_path)
             ),

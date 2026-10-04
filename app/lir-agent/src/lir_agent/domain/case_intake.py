@@ -114,6 +114,9 @@ class CaseReport(BaseModel):
     freeze_card_requested: bool
     card_in_possession: str | None = None
     shared_credentials: str | None = None
+    # The case this conversation works: replies decided later (e.g. a dispute review) reach
+    # the customer's chat through it.
+    case_id: str | None = None
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "CaseReport":
@@ -125,6 +128,7 @@ class CaseReport(BaseModel):
             freeze_card_requested=payload["freeze_card_requested"],
             card_in_possession=incident.get("card_in_possession"),
             shared_credentials=incident.get("shared_credentials"),
+            case_id=payload.get("case_id"),
         )
 
     def facts(self) -> dict[str, bool]:

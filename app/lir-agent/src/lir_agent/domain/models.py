@@ -14,8 +14,9 @@ class Lane(StrEnum):
     # Turn lanes
     PROCEED = "proceed"
     CLARIFY = "clarify"
-    CONFIRM = "confirm"
     OUT_OF_SCOPE = "out_of_scope"
+    # The customer rejects an explanation: they may approve a dispute (human in the loop).
+    REVIEW = "review"
     # Case lanes
     EXPLAIN = "explain"
     DISPUTE = "dispute"

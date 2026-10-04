@@ -8,9 +8,9 @@ from lir_agent.domain.models import Lane
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.domain.session import SessionState
 
-CONFIRMATION_NEXT_STEP = (
-    "Explain why this looks like an error and ask the customer to confirm explicitly that they want a "
-    "dispute opened. Call open_dispute only after they confirm in their next message."
+DISPUTE_NEXT_STEP = (
+    "Explain why this looks like an error and call open_dispute. It does not open the dispute: "
+    "the customer approves or rejects it with the buttons the bank shows next to your reply."
 )
 
 
@@ -31,7 +31,7 @@ class GatherTransactionEvidence:
         self._presenter = presenter
 
     def execute(self, session: SessionState, transaction_ref: str) -> dict:
-        """Build the evidence, decide the case lane and register a pending confirmation."""
+        """Build the evidence and decide the case lane."""
         transaction_id = session.resolve_ref(transaction_ref)
         history = self._repository.list_transactions(session.require_customer_id())
         txn = next((t for t in history if t.transaction_id == transaction_id), None)
@@ -45,19 +45,17 @@ class GatherTransactionEvidence:
         session.upsert_evidence(evidence)
         session.case_outcome = outcome
 
-        # The confirmation request is registered in code, so the next customer message is checked
-        # for an explicit "yes" regardless of what the model says or does.
         is_dispute = outcome.lane == Lane.DISPUTE
-        if is_dispute:
-            session.pending_confirmation = transaction_id
-        elif session.pending_confirmation == transaction_id:
-            session.pending_confirmation = None
+        # An explained charge the customer may still reject (then they may approve a dispute).
+        session.explained_transaction = (
+            transaction_id if outcome.lane == Lane.EXPLAIN else None
+        )
 
         return {
             "status": "ok",
             "transaction_ref": transaction_ref,
             "evidence": self._presenter.evidence(session, evidence),
             "outcome": self._presenter.outcome(outcome),
-            "next_step": CONFIRMATION_NEXT_STEP if is_dispute else None,
+            "next_step": DISPUTE_NEXT_STEP if is_dispute else None,
             "note": DATA_NOT_INSTRUCTIONS,
         }

@@ -31,9 +31,10 @@ class _Key(StrEnum):
     TRANSACTION_REFS = "transaction_refs"
     PSEUDONYMS = "pseudonyms"
     CASE_REPORT = "case_report"
+    EXPLAINED_TRANSACTION = "explained_transaction"
+    REVIEW_TRANSACTION = "review_transaction"
     EVIDENCE = "evidence"
-    PENDING_CONFIRMATION = "pending_confirmation"
-    CONFIRMED_TRANSACTION = "confirmed_transaction"
+    APPROVAL_IDS = "approval_ids"
     ACTIONS = "actions"
     HANDOFF_ID = "handoff_id"
 
@@ -166,6 +167,25 @@ class SessionState:
         """Internal id for a reference issued in this session, or None."""
         return (self._raw.get(_Key.TRANSACTION_REFS) or {}).get(ref or "")
 
+    # ---- explanation rejected: dispute under human review ------------------------------
+    @property
+    def explained_transaction(self) -> str | None:
+        """The last charge the agent explained (case lane `explain`)."""
+        return self._raw.get(_Key.EXPLAINED_TRANSACTION)
+
+    @explained_transaction.setter
+    def explained_transaction(self, transaction_id: str | None) -> None:
+        self._raw[_Key.EXPLAINED_TRANSACTION] = transaction_id
+
+    @property
+    def review_transaction(self) -> str | None:
+        """The explained charge the customer rejected: it may go to a person as a dispute."""
+        return self._raw.get(_Key.REVIEW_TRANSACTION)
+
+    @review_transaction.setter
+    def review_transaction(self, transaction_id: str | None) -> None:
+        self._raw[_Key.REVIEW_TRANSACTION] = transaction_id
+
     # ---- what the customer reported in the web form ------------------------------------
     @property
     def case_report(self) -> CaseReport | None:
@@ -187,7 +207,7 @@ class SessionState:
     def pseudonyms(self, table: dict[str, str]) -> None:
         self._raw[_Key.PSEUDONYMS] = table
 
-    # ---- evidence, confirmation and actions ----------------------------------------------
+    # ---- evidence, approvals and actions ------------------------------------------------
     @property
     def evidence(self) -> list[Evidence]:
         """Evidence gathered in this session."""
@@ -212,22 +232,13 @@ class SessionState:
         )
 
     @property
-    def pending_confirmation(self) -> str | None:
-        """Transaction whose dispute awaits the customer's explicit confirmation."""
-        return self._raw.get(_Key.PENDING_CONFIRMATION)
+    def approval_ids(self) -> list[str]:
+        """Approval requests created in this session, oldest first."""
+        return list(self._raw.get(_Key.APPROVAL_IDS) or [])
 
-    @pending_confirmation.setter
-    def pending_confirmation(self, transaction_id: str | None) -> None:
-        self._raw[_Key.PENDING_CONFIRMATION] = transaction_id
-
-    @property
-    def confirmed_transaction(self) -> str | None:
-        """Transaction the customer explicitly confirmed for a dispute."""
-        return self._raw.get(_Key.CONFIRMED_TRANSACTION)
-
-    @confirmed_transaction.setter
-    def confirmed_transaction(self, transaction_id: str | None) -> None:
-        self._raw[_Key.CONFIRMED_TRANSACTION] = transaction_id
+    @approval_ids.setter
+    def approval_ids(self, approval_ids: list[str]) -> None:
+        self._raw[_Key.APPROVAL_IDS] = approval_ids
 
     @property
     def actions(self) -> list[dict]:

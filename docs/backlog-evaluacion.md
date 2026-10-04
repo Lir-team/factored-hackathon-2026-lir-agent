@@ -21,7 +21,7 @@ seguridad, legal, operación).
 | [SEC-02](#sec-02) | Datos bancarios enviados al LLM externo | agent | P0 | Data boundaries | Hecho (#36, #37, #38) |
 | [BUG-01](#bug-01) | País desconocido cuenta como "local" y apaga la regla C2 | agent | P0 | §3 | En revisión (#40) |
 | [BUG-02](#bug-02) | El formulario pide congelar la tarjeta y nadie lo hace | agent, web | P0 | §3 | Pendiente |
-| [PROD-01](#prod-01) | El lane `explain` puede desalentar un reclamo legítimo | agent | P0 | §3 | Pendiente |
+| [PROD-01](#prod-01) | El lane `explain` puede desalentar un reclamo legítimo | agent | P0 | §3 | En revisión (aprobación del cliente) |
 | [EVAL-03](#eval-03) | Held-out de escenarios e intervalos de confianza | agent | P1 | §5 | Pendiente |
 | [EVAL-04](#eval-04) | Escenarios de falla que piden las bases y no existen | agent | P1 | §5 | Pendiente |
 | [SEC-03](#sec-03) | API de operador sin control de acceso por cliente ni por caso | agent | P1 | §3 | Pendiente |
@@ -278,6 +278,11 @@ seguridad, legal, operación).
 ### PROD-01
 
 **El lane `explain` puede desalentar un reclamo legítimo** · P0 · agent · Bases §3
+
+- **Decisión del equipo:** human in the loop del propio cliente. Ninguna acción importante se
+  ejecuta desde la conversación: el agente crea una solicitud y el cliente la aprueba o
+  rechaza con un componente (Telegram, web), con trazabilidad. Si el cliente rechaza una
+  explicación, el agente le pone la disputa a su aprobación. No interviene un especialista.
 
 - **Problema:** la regla C9 (al menos 2 pagos previos al comercio → explicar, sin disputa)
   asume que un comercio habitual implica un cargo autorizado. No es así: una suscripción

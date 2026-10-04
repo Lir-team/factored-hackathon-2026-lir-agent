@@ -1,0 +1,14 @@
+# Labels of the approval card a person reads before deciding (domain/approvals.py).
+# Rendered once, when the request is created, so the content hash covers exactly what is shown.
+es:
+  open_dispute: "Abrir una disputa por este cargo"
+  merchant: "Comercio"
+  date: "Fecha"
+  amount: "Monto"
+  reason: "Motivo"
+pt:
+  open_dispute: "Abrir uma contestação desta cobrança"
+  merchant: "Estabelecimento"
+  date: "Data"
+  amount: "Valor"
+  reason: "Motivo"

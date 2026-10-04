@@ -36,6 +36,7 @@ from lir_agent.domain.case_intake import (
     IdempotencyKeyMismatchError,
     UnknownTransactionError,
 )
+from lir_agent.interface.http.approvals import ApprovalView, approvals_router
 from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
 from lir_agent.interface.http.pubsub import (
     TokenVerifier,
@@ -94,6 +95,9 @@ class MessageResponse(BaseModel):
 
     reply: str
     trace: TraceView | None = None
+    # Important actions waiting for the customer's approval (human in the loop): show them
+    # as cards with approve and reject buttons next to the reply.
+    approvals: list[ApprovalView] = Field(default_factory=list)
 
 
 class CaseAcceptedResponse(BaseModel):
@@ -240,6 +244,15 @@ def create_app(
             allow_headers=["Content-Type", "Idempotency-Key", "Authorization"],
         )
 
+    app.include_router(
+        approvals_router(
+            deps.approvals,
+            deps.decide_approval,
+            deps.verify_approval_link,
+            settings.identity_header,
+        )
+    )
+
     # Not /healthz: Cloud Run reserves public paths ending in "z".
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -296,7 +309,13 @@ def create_app(
                 status.HTTP_404_NOT_FOUND, "Session not found"
             ) from None
         trace = TraceView(**vars(turn.trace)) if settings.expose_trace else None
-        return MessageResponse(reply=turn.reply, trace=trace)
+        links = await deps.present_approvals.execute(turn.approvals)
+        approvals = [
+            ApprovalView.of(request, links.get(approval_id))
+            for approval_id in turn.approvals
+            if (request := deps.approvals.get(approval_id)) is not None
+        ]
+        return MessageResponse(reply=turn.reply, trace=trace, approvals=approvals)
 
     @app.get(
         "/v1/handoffs/{handoff_id}/report.md",
@@ -387,6 +406,7 @@ def create_app(
             messenger,
             deps.audit,
             session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
+            present_approvals=deps.present_approvals,
         )
         app.include_router(
             pubsub_router(
@@ -401,6 +421,7 @@ def create_app(
             messenger,
             deps.audit,
             max_message_chars=settings.max_message_chars,
+            present_approvals=deps.present_approvals,
         )
         app.include_router(telegram_router(credentials[1], answer))
 

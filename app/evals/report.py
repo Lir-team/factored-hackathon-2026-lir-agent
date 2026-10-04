@@ -14,7 +14,7 @@ from collections import defaultdict
 from pathlib import Path
 
 CODE_DIMENSIONS = ("outcome", "safety", "grounding", "language")
-AUTOMATABLE = {"explain", "dispute"}
+AUTOMATABLE = {"explain", "approval_requested"}
 SHOULD_HAND_OFF = {"handoff"}
 
 
@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     lat = [r["latency_ms"] for r in ok if r["latency_ms"] is not None]
     cost = [r["cost"] or 0.0 for r in ok]
     print("\n=== Métricas de las Bases (sobre trials) ===")
-    print(f"  resolución automática segura   {rate(len(resolved), len(auto))}  (casos donde se espera explicar o disputar)")
+    print(f"  resolución automática segura   {rate(len(resolved), len(auto))}  (casos donde se espera explicar o pedir la aprobación de una disputa)")
     print(f"  contención (sin derivar)       {rate(sum(r['handoffs'] == 0 for r in ok), len(ok))}  (no es éxito por sí sola)")
     print(f"  derivaciones perdidas          {rate(sum(r['handoffs'] == 0 for r in must_handoff), len(must_handoff))}")
     print(f"  derivaciones innecesarias      {rate(sum(r['handoffs'] > 0 for r in other), len(other))}")

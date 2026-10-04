@@ -39,9 +39,10 @@ def test_case_lanes_follow_policy(harness, session, transaction_id, lane, rule_i
     assert "rule_id" not in result["outcome"]
 
 
-def test_dispute_lane_registers_confirmation_request(harness, session):
-    gather(harness, session, "TXN-D1-006")
-    assert session.pending_confirmation == "TXN-D1-006"
+def test_dispute_lane_points_the_model_to_the_approval(harness, session):
+    result = gather(harness, session, "TXN-D1-006")
+    assert result["outcome"]["lane"] == "dispute"
+    assert "open_dispute" in result["next_step"]
 
 
 def test_other_customers_transaction_is_not_found(harness, session):
@@ -86,11 +87,9 @@ def test_invalid_date_is_rejected():
         SearchCriteria.parse(None, "14/06/2026", None, None)
 
 
-def test_open_dispute_blocked_without_confirmation(harness, session):
-    ref = session.ref_for("TXN-D1-006")
-    harness.container.gather_evidence.execute(session, ref)
-    result = harness.container.open_dispute.execute(session, ref, "duplicate")
-    assert result == {"status": "blocked", "reason": "confirmation_required"}
+def test_a_duplicate_is_a_policy_ground_for_a_dispute(harness, session):
+    gather(harness, session, "TXN-D1-006")
+    assert harness.container.dispute_guard.ground(session, "TXN-D1-006") == "dispute"
 
 
 def test_handoff_packet_uses_verified_facts(harness, session):
@@ -102,22 +101,19 @@ def test_handoff_packet_uses_verified_facts(harness, session):
     assert packet.model_summary == "summary"
 
 
-def test_confirming_a_duplicate_covers_both_charges_of_the_pair(harness, session):
-    # The agent looks at both duplicates; the last lookup is the pending confirmation,
-    # but the customer confirmed "the duplicate charge", so either charge may be disputed.
+def test_both_charges_of_a_duplicate_pair_may_be_disputed(harness, session):
+    # The agent looks at both duplicates; either record names the same charge.
     gather(harness, session, "TXN-D1-006")
     gather(harness, session, "TXN-D1-005")
-    session.confirmed_transaction = session.pending_confirmation
     guard = harness.container.dispute_guard
-    assert guard.check(session, "TXN-D1-006") is None
-    assert guard.check(session, "TXN-D1-005") is None
+    assert guard.ground(session, "TXN-D1-006") == "dispute"
+    assert guard.ground(session, "TXN-D1-005") == "dispute"
 
 
-def test_confirmation_does_not_cover_an_unrelated_charge(harness, session):
+def test_an_explained_charge_has_no_ground_for_a_dispute(harness, session):
     gather(harness, session, "TXN-D1-004")
     gather(harness, session, "TXN-D1-006")
-    session.confirmed_transaction = session.pending_confirmation
-    assert harness.container.dispute_guard.check(session, "TXN-D1-004") is not None
+    assert harness.container.dispute_guard.ground(session, "TXN-D1-004") is None
 
 
 def test_exact_amount_matches_hide_near_ones(make_harness, settings, tmp_path, context):

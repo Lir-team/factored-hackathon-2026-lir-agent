@@ -15,7 +15,7 @@ written to an audit log.
    with `resources/policy.yaml` (`proceed`, `clarify`, `confirm`, `out_of_scope`,
    `escalate`). Escalations create the human handoff deterministically.
 4. `before_tool` denies tools without a valid session, tools not allowed in the turn lane,
-   and `open_dispute` without the `dispute` case lane and an explicit customer confirmation.
+   and turns calls to important actions (policy `approvals.actions`) into approval requests.
 5. Tools read only the session customer's records. Results sent to the LLM contain only
    allowlisted fields and opaque transaction references (`T1`, `T2`). The fields in
    `llm_exposure.pseudonymized_fields` (name, merchant, amount, dates) leave as placeholders
@@ -29,6 +29,43 @@ written to an audit log.
    refunds or ask for credentials. `before_tool` resolves the placeholders the model passes
    to a tool, so tools and the handoff packet work on real values.
 
+### Human in the loop: important actions need the customer's approval
+
+The agent never takes an important action on the customer's behalf from the conversation.
+Which tools are important actions, and who approves them, is declared in the policy:
+
+```yaml
+approvals:
+  ttl_minutes: 60
+  actions:
+    open_dispute: [customer]   # approvers in order; only the last approval runs the action
+```
+
+1. `before_tool` intercepts a call to a listed tool. The action's adapter (`ApprovalAction`:
+   `describe` + `execute`, e.g. `OpenDisputeAction`) builds what the approver reads (merchant,
+   date, amount, reason, in their language); the core stores an `ApprovalRequest` with a
+   content hash and an expiry. The tool itself never runs; the model gets
+   `approval_requested`.
+2. After the agent's reply, the request is presented on every **surface** that serves its
+   approver (port `ApprovalSurface`: `present` + `report`). Customers also get a single-use web
+   link when `APPROVAL_LINK_TEMPLATE` is set. Chat replies over the API carry the requests in
+   `approvals`.
+3. A person decides on a surface. Every surface authenticates the actor its own way (a web
+   link token, a linked Telegram chat, IAP) and calls the same `DecideApproval`: right role,
+   their own request, the content they saw, still pending, not expired, one decision only.
+   Approval runs the action and reads it back; rejection runs nothing. Who, when, through
+   which surface, what they saw and the result go to the audit log (`approval_decided`).
+4. A typed "yes" never approves anything: the agent points the customer to the buttons.
+
+When the policy only *explains* a charge (e.g. a merchant paid before), the explanation ends
+by telling the customer they can still dispute it. If they still reject it
+(`rechaza_explicacion`, rule `T3c_explanation_rejected`, lane `review`), the agent puts the
+dispute to their approval. Handoffs to a human are not approval actions on purpose: an
+escalation (theft, a person asked for) must never wait.
+
+Adding an important action (e.g. freezing a card) is an adapter plus one policy line; adding a
+surface (Telegram buttons, the `lir-web` card, a back-office page) is an `ApprovalSurface`.
+
 ## Tools
 
 | Tool | What it does |
@@ -36,7 +73,7 @@ written to an audit log.
 | `get_my_customer_profile` | Minimal profile of the signed-in customer (no arguments, allowlisted fields) |
 | `find_candidate_transactions` | Matches the customer's description (amount, dates, merchant) |
 | `get_transaction_evidence` | Verifiable facts and the policy lane: explain, dispute, propose or escalate |
-| `open_dispute` | Only with the `dispute` lane and a prior explicit confirmation; read back before reporting |
+| `open_dispute` | Never opens a dispute: the tool guard turns the call into a request for the customer's approval. Only with a ground: the `dispute` case lane, or an explained charge the customer still rejects |
 | `request_human_handoff` | Case file built from session state, not from model prose |
 
 ## Layout
@@ -103,6 +140,10 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
+| `GET` | `/v1/approvals/{approval_id}?token=...` | - | The approval card behind a customer's single-use link (web surface) |
+| `POST` | `/v1/approvals/{approval_id}/decision` | `{"decision": "approve" \| "reject", "token": "...", "content_hash": "..."}` | The customer decides from the web card. `404` wrong or spent link, `409` already decided or content changed, `410` expired |
+| `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required) |
+| `POST` | `/v1/approvals/{approval_id}/review` | `{"decision": ..., "content_hash": ..., "note": ...}` | A specialist decides a request that waits for one (IAP identity required, never a local fallback) |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 | `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
@@ -285,7 +326,11 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 
 ## Known limitations
 
-- `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
+- Disputes, handoffs and approval requests are in-memory mocks with documented contracts; no
+  money moves.
+- Approval surfaces: the API (web link and chat replies) ships here; the Telegram buttons, the
+  `lir-web` card and exposing the customer routes on API Gateway are follow-up work. Until the
+  Telegram surface lands, a customer on Telegram cannot approve a dispute.
 - ADK sessions are in memory: on Cloud Run this means one instance (`max-instances=1`) so a
   session's messages reach the instance that holds it, and a restart ends open
   conversations. Case state (start tokens, chat links, case conversations, waiting replies)

@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     turn_guidance_path: Path = RESOURCES_DIR / "prompts" / "turn_guidance.yaml"
     customer_messages_path: Path = RESOURCES_DIR / "prompts" / "customer_messages.yaml"
     handoff_report_path: Path = RESOURCES_DIR / "reports" / "handoff_report.yaml"
+    approval_labels_path: Path = RESOURCES_DIR / "approvals.yaml"
+    # Web link to an approval card, e.g. "https://lir-web.example/aprobar.html?id={approval_id}&t={token}".
+    # Unset: no web link is issued (surfaces such as Telegram still present the request).
+    approval_link_template: str | None = None
     # Language of the handoff report when the request does not ask for one.
     report_default_language: str = "es"
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
