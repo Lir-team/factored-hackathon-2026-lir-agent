@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from lir_agent.domain.case_intake import CaseReceipt, CaseStart
+from lir_agent.domain.case_intake import CaseConversation, CaseReceipt, CaseStart
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 from lir_agent.domain.telegram import ChatLink
 
@@ -105,12 +105,30 @@ class Conversations(Protocol):
 
 
 class CaseInbox(Protocol):
-    """Where accepted cases land for the agent (the `cases-inbox` bucket in production)."""
+    """Archive of accepted cases (the `cases-inbox` bucket in production)."""
 
     def put(
         self, case_id: str, payload: dict[str, Any], attributes: dict[str, str]
     ) -> None:
         """Store the case payload unchanged, with its routing attributes as metadata."""
+        ...
+
+
+class CasePublishError(Exception):
+    """The case could not be handed to the agent; the client may retry with the same key."""
+
+
+class CasePublisher(Protocol):
+    """Hands accepted cases to the agent (the `lir-cases` Pub/Sub topic in production)."""
+
+    def publish(
+        self, payload: dict[str, Any], attributes: dict[str, str], ordering_key: str
+    ) -> None:
+        """Publish the payload unchanged and wait until it is accepted.
+
+        Raises:
+            CasePublishError: If the message was not accepted.
+        """
         ...
 
 
@@ -123,7 +141,11 @@ class StoredReceipt:
 
 
 class CaseStore(Protocol):
-    """Intake state that must outlive the request: answers, start tokens and chat links."""
+    """Case state that must outlive the request.
+
+    Answers, start tokens, chat links, each case's conversation and the agent's replies
+    waiting for a chat.
+    """
 
     def get_receipt(self, idempotency_key: str) -> StoredReceipt | None:
         """Return the answer stored for this key, or None."""
@@ -144,11 +166,37 @@ class CaseStore(Protocol):
         ...
 
     def link_chat(self, chat_id: int, link: ChatLink) -> None:
-        """Bind a Telegram chat to a case conversation, replacing any previous link."""
+        """Bind a Telegram chat to a case, replacing the chat's previous link."""
         ...
 
     def get_chat_link(self, chat_id: int) -> ChatLink | None:
         """Return the chat's current link, or None."""
+        ...
+
+    def get_case_chat(self, case_id: str) -> int | None:
+        """Return the chat last linked to the case, or None."""
+        ...
+
+    def add_conversation(self, conversation: CaseConversation) -> bool:
+        """Keep the case's conversation unless it has one; False when it already had one.
+
+        Must be atomic: it is what makes a redelivered case answered only once.
+        """
+        ...
+
+    def get_conversation(self, case_id: str) -> CaseConversation | None:
+        """Return the case's conversation, or None while the case was not worked."""
+        ...
+
+    def queue_reply(self, case_id: str, text: str) -> None:
+        """Keep an agent reply until a chat is linked to the case (repeats allowed)."""
+        ...
+
+    def pop_replies(self, case_id: str) -> list[str]:
+        """Remove and return the case's queued replies, oldest first.
+
+        Must be atomic: two callers never get the same reply.
+        """
         ...
 
 

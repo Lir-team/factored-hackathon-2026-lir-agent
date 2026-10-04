@@ -18,6 +18,7 @@ from decision_layer import (
 from lir_agent.application.ports import (
     AuditSink,
     CaseInbox,
+    CasePublisher,
     CaseRepository,
     CaseStore,
     TransactionRepository,
@@ -44,6 +45,10 @@ from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
     DuckDbTransactionRepository,
     FixtureTransactionRepository,
+)
+from lir_agent.infrastructure.publishing import (
+    InMemoryCasePublisher,
+    PubSubCasePublisher,
 )
 from lir_agent.infrastructure.resources import ResourceLoader
 
@@ -100,6 +105,15 @@ def build_case_inbox(settings: Settings) -> CaseInbox:
     return LocalCaseInbox(settings.cases_local_dir)
 
 
+def build_case_publisher(settings: Settings) -> CasePublisher:
+    """The case publisher chosen by `CASES_PUBLISHER`."""
+    if settings.cases_publisher == "pubsub":
+        if not settings.google_cloud_project:
+            raise ValueError("CASES_PUBLISHER=pubsub needs GOOGLE_CLOUD_PROJECT")
+        return PubSubCasePublisher(settings.google_cloud_project, settings.cases_topic)
+    return InMemoryCasePublisher()
+
+
 def build_decisions(
     settings: Settings, completion: Callable[..., Any] | None = None
 ) -> DecisionModel:
@@ -145,6 +159,7 @@ def build_container(
     audit: AuditSink | None = None,
     decisions: DecisionModel | None = None,
     case_inbox: CaseInbox | None = None,
+    case_publisher: CasePublisher | None = None,
     case_store: CaseStore | None = None,
     today: Callable[[], date] | None = None,
 ) -> Container:
@@ -193,6 +208,7 @@ def build_container(
         submit_case=SubmitCase(
             repository,
             case_inbox or build_case_inbox(settings),
+            case_publisher or build_case_publisher(settings),
             case_store,
             audit,
             telegram_bot_username=settings.telegram_bot_username,

@@ -1,4 +1,4 @@
-"""CaseInbox on Cloud Storage: the bucket notification hands each new case to the agent."""
+"""CaseInbox on Cloud Storage: the archive of every accepted case (Pub/Sub carries it to the agent)."""
 
 import json
 from typing import Any

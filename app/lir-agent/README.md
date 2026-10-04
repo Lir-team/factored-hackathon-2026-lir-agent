@@ -95,6 +95,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
+| `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
 
 `POST /v1/cases` is the web form's entry point and does not use IAP: API Gateway verifies the
 customer's JWT and forwards its claims in `X-Apigateway-Api-Userinfo` (missing or unreadable:
@@ -103,18 +104,21 @@ copied from `lir-web`: field errors return `422 {"errors": {"<form field>": "<co
 errors without a form field return `400`. `customer.customer_id` must be the JWT's customer
 (`403`) and exist (`404`); every transaction must be theirs (`422 transaction_ids: unknown`).
 The `Idempotency-Key` must equal `case_id` (`400`), and repeating it replays the first `202`.
-Accepted cases go to the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`, attributes as
-object metadata). `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
+Accepted cases are archived in the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`,
+attributes as object metadata) and published to the agent (see below) before the `202`; if
+publishing fails the answer is `503` and nothing is kept, so a retry with the same key
+publishes again. `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
 when the customer chose Telegram and `TELEGRAM_BOT_USERNAME` is set, otherwise `null`.
 
 ### Telegram channel
 
 The customer taps the start link and Telegram sends `/start <token>` to the webhook. The
-token is single-use: it opens a conversation for the case (owner `case:<case_id>`, valid for
-`CASE_SESSION_TTL_MINUTES`, 7 days by default), links the chat to it (a later link replaces
-it), confirms the case folio and runs the agent's first turn from the case description and
-reported charges. Later messages from that chat go to the same conversation and the reply is
-sent back (split at Telegram's 4096 characters). Messages longer than `MAX_MESSAGE_CHARS`
+token is single-use: it links the chat to the case (a later link replaces it), confirms the
+case folio and sends the agent's replies already waiting for the case. It never starts a
+conversation: the agent works the case as soon as it is delivered (next section), and if
+that is still in flight its reply arrives on its own. Later messages from that chat go to
+the case's conversation and the reply is sent back (split at Telegram's 4096 characters);
+before the case is worked, the chat is asked to wait. Messages longer than `MAX_MESSAGE_CHARS`
 are refused with a short note; unlinked chats are asked to use the link from the form; used
 or expired links and lost conversations get a short message in Spanish or Portuguese. Only
 text from private chats is read, and repeated updates are handled once.
@@ -133,6 +137,35 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
 Telegram only calls HTTPS URLs: locally, expose the API with a tunnel (e.g.
 `ngrok http 8080`) and register its URL. The bot token is part of every Bot API URL, so
 keep `LOG_LEVEL` above `DEBUG` outside local runs: at `DEBUG`, `httpx` logs request URLs.
+
+### Case processing (Pub/Sub)
+
+With `CASES_PUBLISHER=pubsub`, `POST /v1/cases` publishes each accepted case to `CASES_TOPIC`
+(`lir-cases`) in `GOOGLE_CLOUD_PROJECT`: the payload JSON unchanged as data, the case
+attributes as message attributes, the customer id as ordering key. A push subscription
+delivers it to `POST /pubsub/push`, which starts the case's conversation (owner
+`case:<case_id>`, auth method `case_intake`, valid for `CASE_SESSION_TTL_MINUTES`, 7 days by
+default) and runs the agent's first turn from the case description and reported charges.
+The reply goes to the linked Telegram chat, or waits until `/start` links one. Pub/Sub
+delivers at least once: a case already worked is acknowledged without new work. Messages
+that are not a valid case are acknowledged and audited as `case_rejected`; agent failures
+answer `500` so Pub/Sub retries. Audit events: `case_processed`, `case_reply_queued`,
+`case_reply_sent` (never the message text).
+
+The push subscription must sign its calls (OIDC) with audience `PUBSUB_PUSH_AUDIENCE`; set
+`PUBSUB_PUSH_SERVICE_ACCOUNT` to accept only its service account. Without an audience the
+route is absent. With the default `CASES_PUBLISHER=none` cases are accepted but never worked.
+
+Locally, with the Pub/Sub emulator (`scripts/pubsub-emulator.sh` at the repository root
+starts it, creates topic `lir-cases` and a push subscription to
+`http://<host>:8080/pubsub/push`). The emulator sends no token, so turn verification off
+for this run only:
+
+```bash
+PUBSUB_EMULATOR_HOST=localhost:8085 GOOGLE_CLOUD_PROJECT=lir-local \
+CASES_PUBLISHER=pubsub PUBSUB_VERIFY_TOKEN=false REQUIRE_IDENTITY=false \
+uv run lir-agent-api
+```
 
 Locally, without IAP:
 
@@ -182,8 +215,8 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 ## Known limitations
 
 - `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
-- Sessions, start tokens and Telegram chat links are in memory; production needs a
-  persistent store (Firestore). The
+- Sessions, start tokens, Telegram chat links, case conversations and waiting replies are
+  in memory; production needs a persistent store (Firestore). The
   audit log is a local JSONL file, or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`). On Cloud Run this means
   one instance (`max-instances=1`) so a session's messages reach the instance that holds it.
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP

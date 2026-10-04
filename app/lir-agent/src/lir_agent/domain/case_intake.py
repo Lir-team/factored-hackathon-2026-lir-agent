@@ -27,13 +27,22 @@ class CaseReceipt:
 
 @dataclass(frozen=True)
 class CaseStart:
-    """What a Telegram start token opens: the case, its customer and the agent's first turn."""
+    """What a Telegram start token links a chat to: the case, its folio and language."""
 
     case_id: str
-    customer_id: str
     folio: str
     language: str
-    summary: str
+
+
+@dataclass(frozen=True)
+class CaseConversation:
+    """The agent's conversation about a case, started when the case is delivered to it."""
+
+    case_id: str
+    folio: str
+    language: str
+    owner: str
+    session_id: str
 
 
 class IdempotencyKeyMismatchError(DomainError):

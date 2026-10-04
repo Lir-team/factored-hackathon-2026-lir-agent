@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import UTC, datetime, timedelta
 
@@ -13,6 +14,7 @@ from lir_agent.interface.http import create_app
 from tests.interface.test_cases_api import (
     BOT,
     CASE_ID,
+    PAYLOAD,
     RecordingInbox,
     case,
     headers,
@@ -26,9 +28,13 @@ BOT_TOKEN = "123456:bot-token"
 CHAT = 7001
 FOLIO = "LB-2026-6F1C2D"
 SUMMARY = (
-    "No reconozco este cargo.\nCargos que reporto: SPOTIFY, 179.0 MXN, 2026-03-14."
+    "No reconozco este cargo de Spotify en mi tarjeta.\n"
+    "Cargos que reporto: SPOTIFY P1A2B3, 179.0 MXN, 2026-03-14."
 )
 OWNER = f"case:{CASE_ID}"
+AUDIENCE = "https://lir-agent.example/pubsub/push"
+PUSHER = "pubsub-push@lir.iam.gserviceaccount.com"
+GOOD_TOKEN = "good-oidc-token"
 
 
 class RecordingMessenger:
@@ -39,8 +45,24 @@ class RecordingMessenger:
         self.sent.append((chat_id, text))
 
 
+def fake_verifier(token: str) -> dict:
+    """Stands in for Google's OIDC check: only GOOD_TOKEN is valid, issued to PUSHER."""
+    if token != GOOD_TOKEN:
+        raise ValueError("invalid token")
+    return {"aud": AUDIENCE, "email": PUSHER, "email_verified": True}
+
+
+def envelope(payload: object, message_id: str = "m-1") -> dict:
+    """A Pub/Sub push body carrying `payload` as base64 JSON."""
+    data = base64.b64encode(json.dumps(payload).encode()).decode()
+    return {
+        "message": {"data": data, "attributes": {}, "messageId": message_id},
+        "subscription": "projects/lir/subscriptions/lir-cases-push",
+    }
+
+
 class Bot:
-    """The app with the Telegram channel on, recording what the bot says."""
+    """The app with the Telegram channel and the Pub/Sub push on, recording what the bot says."""
 
     def __init__(self, settings) -> None:
         self.store = InMemoryCaseStore()
@@ -59,12 +81,13 @@ class Bot:
                 conversations=self.conversations,
                 container=container,
                 messenger=self.messenger,
+                push_token_verifier=fake_verifier,
             )
         )
         self._next_update = 1
 
     def issue(self, token: str = "tok-1", language: str = "es") -> str:
-        start = CaseStart(CASE_ID, "CLI-DEMO-001", FOLIO, language, SUMMARY)
+        start = CaseStart(CASE_ID, FOLIO, language)
         self.store.add_start_token(
             token, start, datetime.now(UTC) + timedelta(minutes=5)
         )
@@ -84,16 +107,26 @@ class Bot:
             "/channels/telegram", json=body, headers=request_headers
         )
 
+    def push(self, body: dict | None = None, token: str | None = GOOD_TOKEN):
+        """Deliver a case as Pub/Sub would (the default case when `body` is None)."""
+        request_headers = {} if token is None else {"Authorization": f"Bearer {token}"}
+        return self.client.post(
+            "/pubsub/push",
+            json=envelope(PAYLOAD) if body is None else body,
+            headers=request_headers,
+        )
+
     def texts(self) -> list[str]:
         return [text for _, text in self.messenger.sent]
 
 
 def telegram_on(settings, **changes):
-    """Settings with the Telegram channel configured (`model_copy` does not validate)."""
+    """Settings with Telegram and the push route configured (`model_copy` does not validate)."""
     return settings.model_copy(
         update={
             "telegram_bot_token": SecretStr(BOT_TOKEN),
             "telegram_webhook_secret": SecretStr(SECRET),
+            "pubsub_push_audience": AUDIENCE,
             **changes,
         }
     )
@@ -118,21 +151,38 @@ def test_the_route_is_absent_when_the_channel_is_not_configured(settings):
     assert response.status_code == 404
 
 
-def test_start_links_the_chat_and_runs_the_first_turn(bot):
+def test_start_links_the_chat_without_starting_a_conversation(bot):
     response = bot.say(f"/start {bot.issue()}")
 
     assert response.status_code == 200
-    session_id, (owner, customer) = next(iter(bot.conversations.sessions.items()))
-    assert (owner, customer) == (OWNER, "CLI-DEMO-001")
-    assert bot.conversations.policies[session_id] == (
-        timedelta(days=7),
-        "telegram_case_link",
-    )
-    assert bot.conversations.messages == [(OWNER, session_id, SUMMARY)]
+    assert bot.conversations.sessions == {}
+    assert bot.conversations.messages == []
+    [confirmation] = bot.texts()
+    assert FOLIO in confirmation
+    assert bot.messenger.sent[0][0] == CHAT
+
+
+def test_start_delivers_the_replies_queued_by_the_case(bot):
+    bot.push()
+    assert bot.messenger.sent == []
+
+    bot.say(f"/start {bot.issue()}")
+
     confirmation, first_turn = bot.texts()
     assert FOLIO in confirmation
     assert first_turn == f"echo: {SUMMARY}"
-    assert {chat for chat, _ in bot.messenger.sent} == {CHAT}
+    assert len(bot.conversations.sessions) == 1
+    assert bot.store.pop_replies(CASE_ID) == []
+
+
+def test_the_case_reply_is_sent_at_once_to_a_linked_chat(bot):
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
+
+    bot.push()
+
+    assert bot.messenger.sent == [(CHAT, f"echo: {SUMMARY}")]
+    assert "case_reply_sent" in bot.audit.events()
 
 
 def test_linking_is_audited_without_the_token(bot):
@@ -153,7 +203,6 @@ def test_a_start_token_works_once(bot):
 
     [reply] = bot.texts()
     assert "expiró o ya fue usado" in reply
-    assert len(bot.conversations.sessions) == 1
 
 
 def test_an_unknown_token_is_refused(bot):
@@ -161,11 +210,11 @@ def test_an_unknown_token_is_refused(bot):
 
     [reply] = bot.texts()
     assert "expiró o ya fue usado" in reply
-    assert bot.conversations.sessions == {}
+    assert bot.store.get_chat_link(CHAT) is None
 
 
 def test_an_expired_token_is_refused(bot):
-    start = CaseStart(CASE_ID, "CLI-DEMO-001", FOLIO, "es", SUMMARY)
+    start = CaseStart(CASE_ID, FOLIO, "es")
     bot.store.add_start_token("old", start, datetime.now(UTC) - timedelta(seconds=1))
 
     bot.say("/start old")
@@ -189,6 +238,7 @@ def test_an_unlinked_chat_is_asked_to_use_the_form_link(bot, text):
 
 
 def test_a_linked_chat_talks_to_its_case_conversation(bot):
+    bot.push()
     bot.say(f"/start {bot.issue()}")
     session_id = next(iter(bot.conversations.sessions))
     bot.messenger.sent.clear()
@@ -199,17 +249,19 @@ def test_a_linked_chat_talks_to_its_case_conversation(bot):
     assert bot.messenger.sent == [(CHAT, "echo: Sí, fue ayer")]
 
 
-def test_a_new_start_link_relinks_the_chat(bot):
-    bot.say(f"/start {bot.issue('tok-1')}")
-    bot.say(f"/start {bot.issue('tok-2')}")
-    latest = list(bot.conversations.sessions)[-1]
+def test_a_chat_linked_before_the_case_is_worked_is_asked_to_wait(bot):
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
 
     bot.say("hola")
 
-    assert bot.conversations.messages[-1] == (OWNER, latest, "hola")
+    [reply] = bot.texts()
+    assert FOLIO in reply
+    assert bot.conversations.messages == []
 
 
 def test_a_lost_conversation_is_reported(bot):
+    bot.push()
     bot.say(f"/start {bot.issue()}")
     bot.conversations.sessions.clear()
     bot.messenger.sent.clear()
@@ -222,6 +274,7 @@ def test_a_lost_conversation_is_reported(bot):
 
 def test_a_too_long_message_is_refused_politely(settings):
     bot = Bot(telegram_on(settings, max_message_chars=10))
+    bot.push()
     bot.say(f"/start {bot.issue()}")
     sent = len(bot.conversations.messages)
     bot.messenger.sent.clear()
@@ -277,14 +330,15 @@ def test_other_updates_are_acknowledged_and_ignored(bot, body):
     assert bot.messenger.sent == []
 
 
-def test_a_case_filed_on_the_web_links_on_telegram(settings):
+def test_a_case_filed_on_the_web_is_answered_on_telegram(settings):
     bot = Bot(telegram_on(settings, telegram_bot_username=BOT))
     accepted = bot.client.post("/v1/cases", json=case(), headers=headers())
     token = start_token(accepted.json()["telegram_start_url"])
+    bot.push()
 
     bot.say(f"/start {token}")
 
     assert bot.store.get_chat_link(CHAT) is not None
-    assert FOLIO in bot.texts()[0]
-    [(_, _, first_turn)] = bot.conversations.messages
-    assert first_turn.startswith(case()["description"])
+    confirmation, first_turn = bot.texts()
+    assert FOLIO in confirmation
+    assert first_turn.startswith(f"echo: {case()['description']}")
