@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     instruction_path: Path = RESOURCES_DIR / "prompts" / "instruction.md"
     turn_guidance_path: Path = RESOURCES_DIR / "prompts" / "turn_guidance.yaml"
     customer_messages_path: Path = RESOURCES_DIR / "prompts" / "customer_messages.yaml"
+    handoff_report_path: Path = RESOURCES_DIR / "reports" / "handoff_report.yaml"
+    # Language of the handoff report when the request does not ask for one.
+    report_default_language: str = "es"
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
     # Where audit entries go: a local JSONL file, or stdout as structured JSON (Cloud Run
     # forwards it to Cloud Logging).
@@ -108,8 +111,16 @@ class Settings(BaseSettings):
     http_auth_method: str = "iap_operator"
     # Upper bound on one customer message, to cap cost and abuse.
     max_message_chars: int = Field(default=2000, gt=0)
+    # Return how each turn was decided (decision model, probabilities, lanes, tools, cost)
+    # with the reply. Only for the operator API behind IAP, never for customer channels.
+    expose_trace: bool = False
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
+    # Shown in the API docs and in validation errors: what a customer id looks like, and one
+    # that exists in the configured data (the demo fixture locally, real data on Cloud Run).
+    customer_id_format: str = "the bank customer id, e.g. CLI-0A1B2C3D4E5F (not a name)"
+    api_example_customer_id: str = "CLI-DEMO-001"
+    api_example_message: str = "No reconozco un cargo de 245.50 en OXXO"
     # Comma-separated browser origins allowed to call the API (CORS). Empty: CORS off,
     # as on Cloud Run where API Gateway answers it. Set it for local runs with lir-web.
     cors_origins: str = ""

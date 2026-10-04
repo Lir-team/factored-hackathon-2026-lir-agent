@@ -103,6 +103,9 @@ class NoConversations:
     async def send(self, *args, **kwargs):
         raise AssertionError("not used")
 
+    async def converse(self, *args, **kwargs):
+        raise AssertionError("not used")
+
 
 class Intake:
     """The app with recording adapters, plus handles to inspect them."""

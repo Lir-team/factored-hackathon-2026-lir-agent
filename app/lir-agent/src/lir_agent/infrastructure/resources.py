@@ -1,6 +1,7 @@
 """Loads versioned resource files (policy, reference data, prompts) into typed objects."""
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -28,6 +29,13 @@ class ResourceLoader:
     def load_mapping(self, path: Path) -> dict[str, str]:
         """Read a flat YAML mapping of text templates."""
         return _read_yaml(path)
+
+    def load_labels(self, path: Path) -> dict[str, dict[str, Any]]:
+        """Read report labels keyed by language (values may be lists, e.g. column names)."""
+        mapping = _read_yaml(path)
+        if not all(isinstance(labels, dict) for labels in mapping.values()):
+            raise ValueError(f"{path.name}: expected labels keyed by language")
+        return mapping
 
     def load_localized_mapping(self, path: Path) -> dict[str, dict[str, str]]:
         """Read texts keyed by situation, then language; every entry needs the default."""

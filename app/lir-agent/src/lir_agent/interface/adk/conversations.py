@@ -7,8 +7,11 @@ model.
 """
 
 import logging
+import time
 import uuid
+from collections.abc import Callable
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from google.adk.runners import InMemoryRunner, Runner
 from google.genai import types
@@ -19,9 +22,17 @@ from lir_agent.application.ports import (
     CustomerNotFoundError,
     StartedConversation,
     TransactionRepository,
+    Turn,
+    TurnTrace,
 )
 from lir_agent.config.settings import Settings
 from lir_agent.domain.session import SessionState
+
+if TYPE_CHECKING:
+    from lir_agent.container import Container
+
+# (model, input tokens, output tokens) -> USD, or None when the price is unknown.
+type CostFunction = Callable[[str, int, int], float | None]
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +48,15 @@ class AdkConversations:
         *,
         customers: TransactionRepository,
         audit: AuditSink,
+        llm_model: str,
+        cost: CostFunction | None = None,
     ) -> None:
-        """Keep the runner, the customer lookup and the audit sink."""
+        """Keep the runner, the customer lookup, the audit sink and how turns are priced."""
         self._runner = runner
         self._customers = customers
         self._audit = audit
+        self._llm_model = llm_model
+        self._cost = cost
 
     @property
     def app_name(self) -> str:
@@ -75,6 +90,17 @@ class AdkConversations:
         Raises:
             ConversationNotFoundError: If `owner` has no session with this id.
         """
+        return (await self.converse(owner, session_id, text)).reply
+
+    async def converse(self, owner: str, session_id: str, text: str) -> Turn:
+        """Send one customer message; return the reply and how the turn was decided.
+
+        Every turn is audited as `turn_completed`, so analytics (BigQuery) get one row per
+        turn with its lanes, decision model, latency and cost.
+
+        Raises:
+            ConversationNotFoundError: If `owner` has no session with this id.
+        """
         session = await self._runner.session_service.get_session(
             app_name=self.app_name, user_id=owner, session_id=session_id
         )
@@ -82,23 +108,87 @@ class AdkConversations:
             raise ConversationNotFoundError(session_id)
         content = types.Content(role="user", parts=[types.Part(text=text)])
         reply: list[str] = []
+        tools: list[str] = []
+        input_tokens = output_tokens = 0
+        started = time.perf_counter()
         async for event in self._runner.run_async(
             user_id=owner, session_id=session_id, new_message=content
         ):
+            tools.extend(call.name for call in event.get_function_calls() if call.name)
+            usage = event.usage_metadata
+            if usage:
+                input_tokens += usage.prompt_token_count or 0
+                output_tokens += usage.candidates_token_count or 0
             if event.is_final_response() and event.content and event.content.parts:
                 reply.extend(part.text for part in event.content.parts if part.text)
+        latency_ms = round((time.perf_counter() - started) * 1000, 1)
         if not reply:
             logger.warning("Agent returned no text for session %s", session_id)
-        return "".join(reply)
+        trace = await self._trace(
+            owner, session_id, tools, latency_ms, input_tokens, output_tokens
+        )
+        self._audit.record("turn_completed", session_id, **vars(trace))
+        return Turn(reply="".join(reply), trace=trace)
+
+    async def _trace(
+        self,
+        owner: str,
+        session_id: str,
+        tools: list[str],
+        latency_ms: float,
+        input_tokens: int,
+        output_tokens: int,
+    ) -> TurnTrace:
+        """Read the turn's decisions and lanes back from the session state."""
+        session = await self._runner.session_service.get_session(
+            app_name=self.app_name, user_id=owner, session_id=session_id
+        )
+        state = SessionState(session.state if session else {})
+        meta = state.decision_meta or {}
+        turn, case = state.turn_outcome, state.case_outcome
+        outcome = turn or case
+        cost = (
+            self._cost(self._llm_model, input_tokens, output_tokens)
+            if self._cost
+            else None
+        )
+        return TurnTrace(
+            decision_model=meta.get("model"),
+            decision_fallback=meta.get("fallback"),
+            decisions=state.decisions,
+            turn_lane=turn.lane.value if turn else None,
+            turn_rule=turn.rule_id if turn else None,
+            case_lane=case.lane.value if case else None,
+            case_rule=case.rule_id if case else None,
+            policy_version=outcome.policy_version if outcome else None,
+            tools=tools,
+            handoff_id=state.handoff_id,
+            llm_model=self._llm_model,
+            latency_ms=latency_ms,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost,
+        )
 
 
-def build_conversations(settings: Settings) -> AdkConversations:
-    """Wire the real agent behind an in-memory ADK runner, sharing one container."""
+def build_conversations(
+    settings: Settings, container: "Container | None" = None
+) -> AdkConversations:
+    """Wire the real agent behind an in-memory ADK runner.
+
+    Pass the app container so the agent and the HTTP routes share one case store (the
+    handoff report reads the handoffs the agent creates).
+    """
     from lir_agent.container import build_container  # heavy imports, only when serving
+    from lir_agent.infrastructure.llm import litellm_cost
     from lir_agent.interface.adk.factory import build_agent
 
-    container = build_container(settings)
+    container = container or build_container(settings)
     runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
     return AdkConversations(
-        runner, customers=container.repository, audit=container.audit
+        runner,
+        customers=container.repository,
+        audit=container.audit,
+        llm_model=settings.llm_model,
+        cost=litellm_cost,
     )

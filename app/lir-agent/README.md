@@ -92,7 +92,8 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 |---|---|---|---|
 | `GET` | `/health` | - | `{"status": "ok"}` |
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
-| `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
+| `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
+| `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 | `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
@@ -213,6 +214,12 @@ docker build -f app/lir-agent/Dockerfile -t lir-agent app/
 The image runs as a non-root user, reads data from `DATA_DIR=/mnt/data` (the Cloud Storage
 bucket mounted by Cloud Run) and gets its keys from Secret Manager as environment variables. With `AUDIT_SINK=stdout`
 (set in the image) every audit entry is a structured JSON line in Cloud Logging.
+
+Every turn is also audited as `turn_completed`, one entry per turn with the decision model
+that answered (Jev, keyword baseline or LLM) and any fallback, the typed decisions with their
+probabilities, the turn and case lanes and rules, the tools called, latency, tokens and USD
+cost (LiteLLM price list). With `EXPOSE_TRACE=true` the same trace is returned with each reply,
+for demos and operators; it is never sent to customer channels.
 
 ## Try it (demo fixture)
 
