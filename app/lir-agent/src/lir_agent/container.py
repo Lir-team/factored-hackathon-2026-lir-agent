@@ -3,7 +3,7 @@
 Tests pass overrides instead of patching globals.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
@@ -18,6 +18,8 @@ from google.cloud import firestore
 
 from lir_agent.application.handoff_report import HandoffReportRenderer
 from lir_agent.application.ports import (
+    ApprovalRepository,
+    ApprovalSurface,
     AuditSink,
     CaseInbox,
     CasePublisher,
@@ -28,18 +30,24 @@ from lir_agent.application.ports import (
 )
 from lir_agent.application.presenter import LlmPresenter
 from lir_agent.application.use_cases import (
+    DecideApproval,
     FindCandidateTransactions,
     GatherTransactionEvidence,
     GetCustomerProfile,
-    OpenDispute,
+    OpenDisputeAction,
+    PresentApprovals,
+    RequestActionApproval,
+    RequestApproval,
     RequestHandoff,
     RouteTurn,
     SubmitCase,
+    VerifyApprovalLink,
 )
 from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
+from lir_agent.infrastructure.approvals import InMemoryApprovalRepository
 from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
 from lir_agent.infrastructure.case_store import FirestoreCaseStore, InMemoryCaseStore
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
@@ -74,7 +82,11 @@ class Container:
     get_profile: GetCustomerProfile
     find_candidates: FindCandidateTransactions
     gather_evidence: GatherTransactionEvidence
-    open_dispute: OpenDispute
+    approvals: ApprovalRepository
+    request_action_approval: RequestActionApproval
+    present_approvals: PresentApprovals
+    decide_approval: DecideApproval
+    verify_approval_link: VerifyApprovalLink
     request_handoff: RequestHandoff
     route_turn: RouteTurn
     case_store: CaseStore
@@ -192,6 +204,8 @@ def build_container(
     case_publisher: CasePublisher | None = None,
     case_store: CaseStore | None = None,
     today: Callable[[], date] | None = None,
+    approvals: ApprovalRepository | None = None,
+    approval_surfaces: Iterable[ApprovalSurface] = (),
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
@@ -210,6 +224,12 @@ def build_container(
     dispute_guard = DisputeGuard()
     request_handoff = RequestHandoff(cases, policy.config, build_notifier(settings))
     case_store = case_store or build_case_store(settings)
+    approvals = approvals or InMemoryApprovalRepository()
+    surfaces = list(approval_surfaces)
+    actions = {"open_dispute": OpenDisputeAction(cases, dispute_guard)}
+    present_approvals = PresentApprovals(
+        approvals, surfaces, audit, settings.approval_link_template
+    )
     return Container(
         settings=settings,
         resources=resources,
@@ -235,7 +255,18 @@ def build_container(
         gather_evidence=GatherTransactionEvidence(
             repository, evidence_builder, policy, presenter
         ),
-        open_dispute=OpenDispute(cases, dispute_guard),
+        approvals=approvals,
+        request_action_approval=RequestActionApproval(
+            RequestApproval(
+                approvals, audit, timedelta(minutes=policy.config.approvals.ttl_minutes)
+            ),
+            actions,
+            policy.config.approvals.actions,
+            resources.load_labels(settings.approval_labels_path),
+        ),
+        present_approvals=present_approvals,
+        decide_approval=DecideApproval(approvals, actions, present_approvals, surfaces, audit),
+        verify_approval_link=VerifyApprovalLink(approvals),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
         case_store=case_store,

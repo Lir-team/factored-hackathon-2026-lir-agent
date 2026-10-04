@@ -145,13 +145,13 @@ def test_an_agent_failure_is_retried(bot):
     async def broken(*args, **kwargs):
         raise RuntimeError("model down")
 
-    bot.conversations.send = broken  # type: ignore[method-assign]
+    bot.conversations.converse = broken  # type: ignore[method-assign]
     bot.client = TestClient(bot.client.app, raise_server_exceptions=False)
 
     assert bot.push().status_code == 500
     assert bot.store.get_conversation(CASE_ID) is None
 
-    del bot.conversations.send  # back to the class method
+    del bot.conversations.converse  # back to the class method
     assert bot.push().status_code == 204
     assert bot.store.get_conversation(CASE_ID) is not None
 
@@ -166,4 +166,5 @@ def test_the_form_answers_reach_the_conversation(bot):
         freeze_card_requested=False,
         card_in_possession="yes",
         shared_credentials="no",
+        case_id=CASE_ID,
     )

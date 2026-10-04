@@ -9,10 +9,6 @@ proceed: >-
 clarify: >-
   Turn lane: clarify ({rule_id}: {reason}). Ask ONE short question to identify the charge
   (amount, approximate date or merchant). Do not guess and do not list account data unprompted.
-confirm: >-
-  Turn lane: confirm ({rule_id}: {reason}). The customer has not explicitly confirmed yet. Restate the
-  charge (merchant, date, amount) and ask them to reply clearly, for example "confirmo" / "confirmo, pode abrir",
-  if they want the dispute opened. Do not call open_dispute in this turn.
 out_of_scope: >-
   Turn lane: out_of_scope ({rule_id}: {reason}). Explain that this assistant only helps with charges
   the customer does not recognize, and suggest contacting the bank through its usual channels.
@@ -22,6 +18,11 @@ escalate: >-
   and get_transaction_evidence so it is attached to the handoff for the specialist; do not ask for more
   details just to look it up. Then tell the customer a specialist will follow up. Do not open disputes or
   promise any outcome.
+review: >-
+  Turn lane: review ({rule_id}: {reason}). Restate the dispute in one or two short lines (merchant, date,
+  amount and the customer's reason) and call open_dispute. The customer approves or rejects
+  it themselves, with the buttons or the link the bank shows next to your reply. Nothing is opened until
+  they approve: never say the dispute is open and never promise the outcome.
 session_expired: >-
   The customer's session expired. Ask them to sign in again in the bank app. Do not reveal any account data.
 session_not_authenticated: >-

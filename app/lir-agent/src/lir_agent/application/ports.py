@@ -4,11 +4,17 @@ Infrastructure adapters implement them; use cases depend only on these contracts
 The decision model port is `decision_layer.DecisionModel`.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+from lir_agent.domain.approvals import (
+    ApprovalDraft,
+    ApprovalRequest,
+    ApprovalStatus,
+    Approver,
+)
 from lir_agent.domain.case_intake import (
     CaseConversation,
     CaseReceipt,
@@ -16,6 +22,7 @@ from lir_agent.domain.case_intake import (
     CaseStart,
 )
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
+from lir_agent.domain.session import SessionState
 from lir_agent.domain.telegram import ChatLink
 
 
@@ -115,6 +122,8 @@ class Turn:
 
     reply: str
     trace: TurnTrace
+    # Approval requests the agent created in this turn: the caller presents them.
+    approvals: tuple[str, ...] = ()
 
 
 class Conversations(Protocol):
@@ -304,5 +313,70 @@ class Messenger(Protocol):
         Raises:
             MessageNotSentError: If it was not delivered (a long text split in parts may
                 have been delivered in part).
+        """
+        ...
+
+
+# ---- human in the loop -------------------------------------------------------------------
+class ApprovalRepository(Protocol):
+    """Approval requests and their decisions."""
+
+    def save(self, request: ApprovalRequest) -> None:
+        """Store a request (insert or replace by id)."""
+        ...
+
+    def get(self, approval_id: str) -> ApprovalRequest | None:
+        """Return a request, or None."""
+        ...
+
+    def list(
+        self, status: ApprovalStatus | None = None, approver: Approver | None = None
+    ) -> list[ApprovalRequest]:
+        """Requests, newest first, optionally filtered."""
+        ...
+
+
+class ApprovalSurface(Protocol):
+    """Where a person sees an approval request and decides it (Telegram, web, back office).
+
+    A surface only shows requests and reports outcomes. Its decisions enter through
+    `DecideApproval`, with the actor the surface authenticated: the rules and the audit
+    trail stay in one place, whatever the surface.
+    """
+
+    name: str
+
+    async def present(self, request: ApprovalRequest, link: str | None) -> bool:
+        """Show the request to its approver; False when it is not this surface's to show.
+
+        `link` is a single-use web link to the request, when one was issued.
+        """
+        ...
+
+    async def report(self, request: ApprovalRequest) -> None:
+        """Tell the people involved how a request was decided (and what ran)."""
+        ...
+
+
+class ApprovalAction(Protocol):
+    """Adapter of an important action: runs only after its last approval.
+
+    Which tools are important actions, and who approves them, is in the policy
+    (`approvals.actions`); the tool guard turns their calls into approval requests.
+    """
+
+    name: str
+
+    def describe(
+        self, session: SessionState, args: Mapping[str, Any], labels: Mapping[str, Any]
+    ) -> ApprovalDraft | None:
+        """What the approver reads and what will run; None when the action is not allowed."""
+        ...
+
+    def execute(self, request: ApprovalRequest) -> dict:
+        """Run the action and read it back; the result is kept with the request.
+
+        Raises:
+            ApprovalError: `action_not_verified` when the result could not be read back.
         """
         ...

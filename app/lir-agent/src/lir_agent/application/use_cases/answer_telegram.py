@@ -12,6 +12,7 @@ from lir_agent.application.ports import (
     MessageNotSentError,
     Messenger,
 )
+from lir_agent.application.use_cases.approvals import PresentApprovals
 from lir_agent.application.use_cases.process_case import deliver_replies
 from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.telegram import (
@@ -42,14 +43,16 @@ class AnswerTelegramMessage:
         *,
         max_message_chars: int,
         now: Callable[[], datetime] | None = None,
+        present_approvals: PresentApprovals | None = None,
     ) -> None:
-        """Keep the adapters and the message size cap."""
+        """Keep the adapters, the message size cap and the approval presenter."""
         self._conversations = conversations
         self._store = store
         self._messenger = messenger
         self._audit = audit
         self._max_chars = max_message_chars
         self._now = now or (lambda: datetime.now(UTC))
+        self._present_approvals = present_approvals
 
     async def execute(self, chat_id: int, text: str) -> None:
         """Answer `text` from a private chat. Never logs or audits tokens or chat text."""
@@ -88,21 +91,27 @@ class AnswerTelegramMessage:
             await self._say(chat_id, link.language, "processing", folio=link.folio)
             return
         try:
-            reply = await self._conversations.send(
+            turn = await self._conversations.converse(
                 conversation.owner, conversation.session_id, text
             )
         except ConversationNotFoundError:
             await self._say(chat_id, link.language, "conversation_expired")
             return
+        await self._send_reply(chat_id, link.case_id, turn.reply)
+        # Approval requests go after the reply that explains them.
+        if self._present_approvals and turn.approvals:
+            await self._present_approvals.execute(turn.approvals)
+
+    async def _send_reply(self, chat_id: int, case_id: str, reply: str) -> None:
         if not reply.strip():
             return
-        if not await self._deliver(link.case_id):  # earlier replies first, in order
-            self._store.queue_reply(link.case_id, reply)
+        if not await self._deliver(case_id):  # earlier replies first, in order
+            self._store.queue_reply(case_id, reply)
             return
         try:
             await self._messenger.send(chat_id, reply)
         except MessageNotSentError:
-            self._store.queue_reply(link.case_id, reply)
+            self._store.queue_reply(case_id, reply)
 
     async def _deliver(self, case_id: str) -> bool:
         """Send the case's waiting replies; False when one could not be sent (kept queued)."""

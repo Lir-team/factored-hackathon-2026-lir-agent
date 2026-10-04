@@ -57,6 +57,18 @@ KEYWORDS: dict[str, dict[str, list[str]]] = {
             "abra a disputa", "abrir a contestacao",
         ]
     },
+    # Asked only after the agent explained a charge: does the customer still reject it?
+    # A miss keeps the explanation (the customer can still ask for a person); a false hit
+    # only drafts a dispute that the customer must confirm and a person must approve.
+    "rechaza_explicacion": {
+        "true": [
+            "no lo reconozco", "sigo sin reconocer", "no reconozco", "no fui yo", "no lo hice",
+            "yo no compre", "nunca compre", "nunca fui", "no es mio", "no es mia",
+            "no estoy de acuerdo", "quiero disputar", "quiero reclamar", "quiero que lo revisen",
+            "nao reconheco", "continuo sem reconhecer", "nao fui eu", "nao fiz", "nunca comprei",
+            "nao e meu", "nao e minha", "nao concordo", "quero contestar", "quero reclamar",
+        ]
+    },
 }
 
 

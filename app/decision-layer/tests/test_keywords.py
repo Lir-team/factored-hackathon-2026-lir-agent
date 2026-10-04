@@ -73,3 +73,27 @@ def test_a_short_plain_yes_confirms(model, reply):
 )
 def test_a_yes_with_anything_else_does_not_confirm(model, reply):
     assert model.decide(reply, CONFIRMA).answers["confirma"].value is False
+
+
+REJECTS = {
+    "rechaza_explicacion": Noul(
+        "Does the customer still reject the charge?", true="Yes", false="No"
+    )
+}
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Igual no lo reconozco, yo nunca compré ahí",
+        "No estoy de acuerdo, quiero disputar ese cargo",
+        "Continuo sem reconhecer, não fui eu",
+    ],
+)
+def test_a_customer_who_still_rejects_the_charge(model, reply):
+    assert model.decide(reply, REJECTS).answers["rechaza_explicacion"].value is True
+
+
+@pytest.mark.parametrize("reply", ["Ah, ya me acordé, gracias", "Ok, era mi suscripción"])
+def test_a_customer_who_accepts_the_explanation(model, reply):
+    assert model.decide(reply, REJECTS).answers["rechaza_explicacion"].value is False

@@ -11,6 +11,7 @@ from lir_agent.application.ports import (
     MessageNotSentError,
     Messenger,
 )
+from lir_agent.application.use_cases.approvals import PresentApprovals
 from lir_agent.domain.case_intake import (
     CaseConversation,
     CaseReport,
@@ -34,6 +35,7 @@ class ProcessCase:
         audit: AuditSink,
         *,
         session_ttl: timedelta,
+        present_approvals: PresentApprovals | None = None,
     ) -> None:
         """Keep the adapters; without a messenger, replies wait in the store."""
         self._conversations = conversations
@@ -41,6 +43,7 @@ class ProcessCase:
         self._messenger = messenger
         self._audit = audit
         self._session_ttl = session_ttl
+        self._present_approvals = present_approvals
 
     async def execute(self, payload: dict[str, Any]) -> None:
         """Work a schema-valid case; a case already worked only sends its waiting replies.
@@ -68,9 +71,10 @@ class ProcessCase:
                 "case_rejected", None, case_id=case_id, reason="unknown_customer"
             )
             return
-        reply = await self._conversations.send(
+        turn = await self._conversations.converse(
             owner, started.session_id, case_summary(payload, started.transaction_refs)
         )
+        reply = turn.reply
         conversation = CaseConversation(
             case_id=case_id,
             folio=folio_for(case_id, payload["submitted_at"]),
@@ -85,6 +89,9 @@ class ProcessCase:
             self._store.queue_reply(case_id, reply)
             self._audit.record("case_reply_queued", started.session_id, case_id=case_id)
         await deliver_replies(self._store, self._messenger, self._audit, case_id)
+        # Approval requests go after the reply that explains them.
+        if self._present_approvals and turn.approvals:
+            await self._present_approvals.execute(turn.approvals)
 
 
 async def deliver_replies(

@@ -9,7 +9,7 @@ from harness import scenario_turns
 
 SCENARIOS = sorted((Path(__file__).resolve().parents[1] / "scenarios").glob("*.yaml"))
 OUTCOMES = {
-    "explain", "dispute", "confirm_pending", "handoff", "clarify",
+    "explain", "approval_requested", "handoff", "clarify",
     "ask_which", "out_of_scope", "no_action", "refuse_session",
 }
 TASKS = [(path.name, task) for path in SCENARIOS for task in yaml.safe_load(path.read_text(encoding="utf-8"))]

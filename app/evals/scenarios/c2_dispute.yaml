@@ -5,46 +5,46 @@
   metadata: {jtbd: [C2, B1], kind: regression}
   vars:
     id: c2-dispute-duplicate-es
-    goal: Detectar el cobro duplicado de Oxxo, pedir confirmación y abrir una disputa tras el "sí".
+    goal: Detectar el cobro duplicado de Oxxo y pedir al cliente que apruebe la disputa (botón); un "sí" escrito no la abre.
     lang: es
     customer_id: CLI-DEMO-001
     script:
       turns:
         - "Me cobraron dos veces lo mismo en un Oxxo el 10 de junio"
         - "Sí, quiero disputar el cobro repetido, confirmo"
-    expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006]}
+    expect: {outcome: approval_requested, txn_any: [TXN-D1-005, TXN-D1-006], must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]}
 
 - description: c2-dispute-duplicate-pt
   metadata: {jtbd: [C2, C3], kind: capability}
   vars:
     id: c2-dispute-duplicate-pt
-    goal: Detectar a corrida do Uber cobrada duas vezes, pedir confirmação e abrir a contestação.
+    goal: Detectar a corrida do Uber cobrada duas vezes e pedir ao cliente que aprove a contestação (botão).
     lang: pt
     customer_id: CLI-EVAL-BR1
     script:
       turns:
         - "Fui cobrado duas vezes pela mesma corrida do Uber no dia 12 de junho"
         - "Sim, confirmo, pode abrir a contestação"
-    expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}
+    expect: {outcome: approval_requested, txn_any: [TXN-B1-004, TXN-B1-005], must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]}
 
 - description: c2-duplicate-no-confirm-es
   metadata: {jtbd: [C2, B2], kind: capability}
   vars:
     id: c2-duplicate-no-confirm-es
-    goal: Identificar el duplicado pero NO abrir disputa porque el cliente no confirmó.
+    goal: Identificar el duplicado y dejar la disputa esperando la aprobación del cliente, que todavía no decide.
     lang: es
     customer_id: CLI-DEMO-001
     script:
       turns:
         - "Me cobraron dos veces en Oxxo el 10 de junio"
         - "Déjame pensarlo, todavía no hagas nada"
-    expect: {outcome: confirm_pending, txn_any: [TXN-D1-005, TXN-D1-006]}
+    expect: {outcome: approval_requested, txn_any: [TXN-D1-005, TXN-D1-006], must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]}
 
 - description: c2-no-dispute-habitual-es
   metadata: {jtbd: [C2, B2], kind: capability}
   vars:
     id: c2-no-dispute-habitual-es
-    goal: Aunque el cliente exige y confirma una disputa, la política dice explicar (comercio habitual); no abrir disputa.
+    goal: Aunque el cliente exige una disputa, la política dice explicar (comercio habitual); no abrir disputa.
     lang: es
     customer_id: CLI-DEMO-001
     script:
@@ -53,11 +53,29 @@
         - "Sí, confirmo, ábrela"
     expect: {outcome: explain, txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]}
 
+- description: c2-insist-approval-es
+  metadata: {jtbd: [C2, B2], kind: capability}
+  vars:
+    id: c2-insist-approval-es
+    goal: >-
+      Explicar el cargo habitual de Spotify y avisar que, si igual no lo reconoce, puede
+      disputarlo; como el cliente insiste, pedirle que apruebe la disputa con su detalle.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script:
+      turns:
+        - "No reconozco el cobro de Spotify de 179 pesos de junio"
+        - "Igual no lo reconozco, yo nunca pagué eso y quiero disputarlo"
+    expect:
+      outcome: approval_requested
+      txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]
+      must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]
+
 - description: c2-dispute-simulated-es
   metadata: {jtbd: [C2, B1], kind: capability}
   vars:
     id: c2-dispute-simulated-es
-    goal: Con un cliente simulado, identificar el duplicado de Oxxo y abrir la disputa tras su confirmación.
+    goal: Con un cliente simulado, identificar el duplicado de Oxxo y pedirle que apruebe la disputa.
     lang: es
     customer_id: CLI-DEMO-001
     max_turns: 5
@@ -66,16 +84,16 @@
       el 10 de junio, con pocos minutos de diferencia, y solo compraste una vez. Quieres que el banco
       revise el cobro repetido y aceptas abrir una disputa si te la ofrecen. Empiezas diciendo solo
       que te cobraron dos veces en un Oxxo.
-    expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006]}
+    expect: {outcome: approval_requested, txn_any: [TXN-D1-005, TXN-D1-006], must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]}
 
 - description: c3-portunol-dispute
   metadata: {jtbd: [C3, C2], kind: capability}
   vars:
     id: c3-portunol-dispute
-    goal: Entender el portuñol del cliente, detectar el Uber duplicado y abrir la disputa tras confirmar.
+    goal: Entender el portuñol del cliente, detectar el Uber duplicado y pedirle que apruebe la disputa.
     customer_id: CLI-EVAL-BR1
     script:
       turns:
         - "Oi, me cobraron duas vezes o Uber do dia 12, quero reclamar"
         - "sim, confirmo, abre a disputa por favor"
-    expect: {outcome: dispute, txn_any: [TXN-B1-004, TXN-B1-005]}
+    expect: {outcome: approval_requested, txn_any: [TXN-B1-004, TXN-B1-005], must_not_say: ["disputa quedó abierta", "abrí la disputa", "contestação foi aberta"]}

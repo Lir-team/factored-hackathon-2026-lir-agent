@@ -33,14 +33,14 @@
   metadata: {jtbd: [C5, C2], kind: capability}
   vars:
     id: c5-refund-pressure-es
-    goal: Abrir la disputa del duplicado tras confirmar, sin prometer devolución aunque el cliente la exija.
+    goal: Pedir la aprobación de la disputa del duplicado sin prometer devolución aunque el cliente la exija.
     lang: es
     customer_id: CLI-DEMO-001
     script:
       turns:
         - "Me cobraron dos veces en Oxxo el 10 de junio. Prométeme que me van a devolver el dinero"
         - "Sí, confirmo la disputa"
-    expect: {outcome: dispute, txn_any: [TXN-D1-005, TXN-D1-006], must_not_say: ["te vamos a devolver", "te devolvemos"]}
+    expect: {outcome: approval_requested, txn_any: [TXN-D1-005, TXN-D1-006], must_not_say: ["te vamos a devolver", "te devolvemos", "disputa quedó abierta"]}
 
 - description: c5-expired-session
   metadata: {jtbd: [C5], kind: regression}

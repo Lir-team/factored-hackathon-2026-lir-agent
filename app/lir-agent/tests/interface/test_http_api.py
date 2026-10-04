@@ -42,6 +42,7 @@ class FakeConversations:
         self.sessions: dict[str, tuple[str, str]] = {}
         self.policies: dict[str, tuple[timedelta, str]] = {}
         self.reports: dict[str, CaseReport | None] = {}
+        self.next_approvals: tuple[str, ...] = ()
         self.messages: list[tuple[str, str, str]] = []
 
     async def start(
@@ -72,7 +73,7 @@ class FakeConversations:
         if self.sessions.get(session_id, (None, None))[0] != owner:
             raise ConversationNotFoundError(session_id)
         self.messages.append((owner, session_id, text))
-        return Turn(reply=f"echo: {text}", trace=TRACE)
+        return Turn(reply=f"echo: {text}", trace=TRACE, approvals=self.next_approvals)
 
 
 @pytest.fixture
@@ -111,7 +112,7 @@ def test_message_round_trip(client, conversations):
     response = client.post(
         "/v1/sessions/s1/messages", json={"text": "  hola "}, headers=IAP_HEADER
     )
-    assert response.json() == {"reply": "echo: hola", "trace": None}
+    assert response.json() == {"reply": "echo: hola", "trace": None, "approvals": []}
     assert conversations.messages == [("tester@example.com", "s1", "hola")]
 
 
@@ -167,7 +168,7 @@ def test_trace_is_hidden_by_default(client):
     response = client.post(
         "/v1/sessions/s1/messages", json={"text": "hola"}, headers=IAP_HEADER
     )
-    assert response.json() == {"reply": "echo: hola", "trace": None}
+    assert response.json() == {"reply": "echo: hola", "trace": None, "approvals": []}
 
 
 def test_trace_shows_how_the_turn_was_decided(settings, conversations):
@@ -228,3 +229,99 @@ def test_invalid_customer_id_error_says_what_is_expected(client):
     )
     assert response.status_code == 422
     assert "CLI-" in response.json()["detail"]
+
+
+# ---- human in the loop: the approval API shared by every surface ------------------------
+def _approval_app(settings, conversations):
+    from lir_agent.application.use_cases import RequestApproval
+    from lir_agent.container import build_container
+    from lir_agent.domain.approvals import ApprovalDetail, ApprovalDraft, Approver
+    from lir_agent.domain.models import Lane, Outcome
+    from lir_agent.domain.session import SessionState
+
+    linked = settings.model_copy(
+        update={"approval_link_template": "https://web.example/a?id={approval_id}&t={token}"}
+    )
+    container = build_container(linked)
+    state: dict = {}
+    session = SessionState(state)
+    session.start("CLI-DEMO-001", timedelta(minutes=15), "test")
+    request = RequestApproval(
+        container.approvals, container.audit, timedelta(minutes=60)
+    ).execute(
+        session,
+        action="open_dispute",
+        draft=ApprovalDraft(
+            params={"transaction_id": "TXN-D1-006", "reason": "Cobro duplicado"},
+            title="Abrir una disputa",
+            details=[ApprovalDetail(label="Monto", value="245.50 MXN")],
+            outcome=Outcome(lane=Lane.DISPUTE, rule_id="C7", reason="r", policy_version="v"),
+        ),
+        approvers=[Approver.CUSTOMER],
+        language="es",
+    )
+    client = TestClient(create_app(linked, conversations=conversations, container=container))
+    return client, container, request
+
+
+def test_a_customer_approves_from_the_web_link(settings, conversations):
+    import asyncio
+
+    client, container, request = _approval_app(settings, conversations)
+    links = asyncio.run(container.present_approvals.execute([request.approval_id]))
+    token = (links[request.approval_id] or "").rsplit("t=", 1)[1]
+    url = f"/v1/approvals/{request.approval_id}"
+
+    assert client.get(url, params={"token": "wrong"}).status_code == 404
+    card = client.get(url, params={"token": token}).json()
+    assert (card["title"], card["status"]) == ("Abrir una disputa", "pending")
+    body = {"decision": "approve", "token": token, "content_hash": card["content_hash"]}
+    decided = client.post(f"{url}/decision", json=body)
+
+    assert decided.status_code == 200
+    result = decided.json()["result"]
+    assert container.cases.get_dispute(result["dispute_case_id"]) is not None
+    assert client.post(f"{url}/decision", json=body).status_code == 404  # the link is spent
+
+
+def test_a_changed_card_cannot_be_approved(settings, conversations):
+    import asyncio
+
+    client, container, request = _approval_app(settings, conversations)
+    links = asyncio.run(container.present_approvals.execute([request.approval_id]))
+    token = (links[request.approval_id] or "").rsplit("t=", 1)[1]
+    response = client.post(
+        f"/v1/approvals/{request.approval_id}/decision",
+        json={"decision": "approve", "token": token, "content_hash": "not-what-was-shown"},
+    )
+    assert (response.status_code, response.json()["detail"]) == (409, "content_changed")
+
+
+def test_the_back_office_routes_need_a_verified_identity(settings, conversations):
+    client, _, request = _approval_app(settings, conversations)
+    review = f"/v1/approvals/{request.approval_id}/review"
+    body = {"decision": "approve", "content_hash": request.content_hash}
+
+    assert client.get("/v1/approvals").status_code == 401
+    assert client.post(review, json=body).status_code == 401
+    # A specialist cannot decide what the customer must approve.
+    response = client.post(review, json=body, headers=IAP_HEADER)
+    assert (response.status_code, response.json()["detail"]) == (403, "wrong_approver")
+
+
+def test_a_reply_carries_the_approvals_the_turn_created(settings, conversations):
+    client, _, request = _approval_app(settings, conversations)
+    conversations.next_approvals = (request.approval_id,)
+    started = client.post(
+        "/v1/sessions", json={"customer_id": "CLI-DEMO-001"}, headers=IAP_HEADER
+    ).json()
+
+    response = client.post(
+        f"/v1/sessions/{started['session_id']}/messages",
+        json={"text": "hola"},
+        headers=IAP_HEADER,
+    ).json()
+
+    [card] = response["approvals"]
+    assert card["approval_id"] == request.approval_id
+    assert card["link"].startswith("https://web.example/a?id=")

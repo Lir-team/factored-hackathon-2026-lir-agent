@@ -347,11 +347,11 @@ def test_an_update_that_failed_is_answered_when_telegram_retries_it(bot):
     async def broken(*args, **kwargs):
         raise RuntimeError("model down")
 
-    bot.conversations.send = broken  # type: ignore[method-assign]
+    bot.conversations.converse = broken  # type: ignore[method-assign]
     bot.client = TestClient(bot.client.app, raise_server_exceptions=False)
     assert bot.post(body).status_code == 500
 
-    del bot.conversations.send  # back to the class method
+    del bot.conversations.converse  # back to the class method
     assert bot.post(body).status_code == 200
     assert bot.messenger.sent == [(CHAT, "echo: hola")]
 
