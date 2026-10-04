@@ -54,6 +54,7 @@ no bot token or webhook secret means no `/channels/telegram`.
 |---|---|---|
 | Accepted case (full payload) | Cases inbox: Cloud Storage `cases/<case_id>.json` (`CASES_INBOX=gcs`) or a local folder | Archive only; the agent reads the case from the Pub/Sub message |
 | Idempotent `202` replies | Case store | Keyed by `Idempotency-Key` (= `case_id`); bound to the customer |
+| Idempotency-key claims | Case store | Taken atomically before archiving; a concurrent duplicate gets `409`; released on failure, expire after 5 minutes |
 | Start tokens | Case store | Stored as SHA-256, single use, expire after `START_TOKEN_TTL_MINUTES` |
 | Chat ↔ case links | Case store | Latest `/start` wins for a chat |
 | Case conversation (owner, session) | Case store | Created once per case: duplicates from Pub/Sub are dropped |

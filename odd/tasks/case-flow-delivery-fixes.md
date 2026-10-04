@@ -31,7 +31,7 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
   Telegram retry, and the dedupe drops it. Fix: mark seen only after success (or
   answer the customer with a short "try again" and return 200). Check: test where
   the agent raises once, then the redelivered update is answered.
-- [ ] **T3 Idempotency race on `POST /v1/cases`** — `application/use_cases/submit_case.py`
+- [x] **T3 Idempotency race on `POST /v1/cases`** — `application/use_cases/submit_case.py`
   reads the receipt, writes inbox, publishes, then saves the receipt, so two
   concurrent requests with the same key both go through. Fix: claim the key
   atomically (create-if-absent on `CaseStore`, memory + Firestore) before side
@@ -52,3 +52,11 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
   (retry got 200 but nothing was sent). Fix: `_RecentUpdates.remember` runs only after
   `execute()` succeeds. GREEN: 294 passed, 12 skipped; ruff and pyright clean.
   Commit: `fix(agent): retry a Telegram update whose handling failed`.
+- T3 done (delegated writer). RED: `tests/application/test_submit_case.py::test_a_concurrent_duplicate_is_refused_and_the_case_published_once`
+  (DID NOT RAISE `CaseInProgressError`), plus the new `claim_key` contract tests and
+  `tests/interface/test_cases_api.py::test_a_key_still_being_accepted_is_a_conflict`.
+  Fix: `CaseStore.claim_key`/`release_key` (memory: lock; Firestore: `.create()`, expired
+  claims taken over in a transaction), claimed in `SubmitCase` before any side effect and
+  released on failure; `409` for a key still in flight. GREEN: 300 passed, 16 skipped;
+  `test_case_store.py` 34 passed against the Firestore emulator; ruff and pyright clean.
+  Commit: `fix(agent): claim the idempotency key before accepting a case`.

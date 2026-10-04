@@ -12,8 +12,9 @@ class InMemoryCaseStore:
     """CaseStore kept in process memory; lost when the process restarts."""
 
     def __init__(self) -> None:
-        """Start empty; a lock keeps tokens, conversations and replies race-free."""
+        """Start empty; a lock keeps claims, tokens, conversations and replies race-free."""
         self._receipts: dict[str, StoredReceipt] = {}
+        self._claims: dict[str, datetime] = {}
         self._tokens: dict[str, tuple[CaseStart, datetime]] = {}
         self._chats: dict[int, ChatLink] = {}
         self._case_chats: dict[str, int] = {}
@@ -28,6 +29,22 @@ class InMemoryCaseStore:
     def save_receipt(self, idempotency_key: str, stored: StoredReceipt) -> None:
         """Keep a successful answer for replay."""
         self._receipts[idempotency_key] = stored
+
+    def claim_key(
+        self, idempotency_key: str, now: datetime, expires_at: datetime
+    ) -> bool:
+        """Claim the key until `expires_at`; False while another claim is still valid."""
+        with self._lock:
+            held = self._claims.get(idempotency_key)
+            if held is not None and now < held:
+                return False
+            self._claims[idempotency_key] = expires_at
+            return True
+
+    def release_key(self, idempotency_key: str) -> None:
+        """Drop the key's claim."""
+        with self._lock:
+            self._claims.pop(idempotency_key, None)
 
     def add_start_token(
         self, token: str, start: CaseStart, expires_at: datetime

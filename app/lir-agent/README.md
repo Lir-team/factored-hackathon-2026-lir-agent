@@ -93,7 +93,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `GET` | `/health` | - | `{"status": "ok"}` |
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
-| `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` |
+| `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 | `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
 
@@ -104,9 +104,11 @@ copied from `lir-web`: field errors return `422 {"errors": {"<form field>": "<co
 errors without a form field return `400`. `customer.customer_id` must be the JWT's customer
 (`403`) and exist (`404`); every transaction must be theirs (`422 transaction_ids: unknown`).
 The `Idempotency-Key` must equal `case_id` (`400`), and repeating it replays the first `202`.
+The key is claimed before anything is archived or published, so a concurrent request with
+the same key gets `409` and changes nothing; the client retries it and gets the replay.
 Accepted cases are archived in the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`,
 attributes as object metadata) and published to the agent (see below) before the `202`; if
-publishing fails the answer is `503` and nothing is kept, so a retry with the same key
+publishing fails the answer is `503` and the claim is released, so a retry with the same key
 publishes again. `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
 when the customer chose Telegram and `TELEGRAM_BOT_USERNAME` is set, otherwise `null`.
 
@@ -174,7 +176,7 @@ Idempotent receipts, Telegram start tokens, chat links, case conversations and r
 waiting for a chat live in the case store. The default `CASE_STORE=memory` loses them on
 restart and does not share them between instances; `CASE_STORE=firestore` keeps them in
 Firestore (`GOOGLE_CLOUD_PROJECT`, database `FIRESTORE_DATABASE`, collections named
-`FIRESTORE_COLLECTION_PREFIX` + `receipts`, `start_tokens`, `chats`, `case_chats`,
+`FIRESTORE_COLLECTION_PREFIX` + `receipts`, `claims`, `start_tokens`, `chats`, `case_chats`,
 `conversations`, `replies`). Start tokens are stored as their SHA-256 hash only.
 
 Locally, with the Firestore emulator (`scripts/firestore-emulator.sh up` at the repository

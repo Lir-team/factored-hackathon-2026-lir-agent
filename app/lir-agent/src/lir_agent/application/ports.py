@@ -118,6 +118,10 @@ class CasePublishError(Exception):
     """The case could not be handed to the agent; the client may retry with the same key."""
 
 
+class CaseInProgressError(Exception):
+    """Another request with the same key is still being accepted; the client may retry."""
+
+
 class CasePublisher(Protocol):
     """Hands accepted cases to the agent (the `lir-cases` Pub/Sub topic in production)."""
 
@@ -153,6 +157,21 @@ class CaseStore(Protocol):
 
     def save_receipt(self, idempotency_key: str, stored: StoredReceipt) -> None:
         """Keep a successful answer for replay."""
+        ...
+
+    def claim_key(
+        self, idempotency_key: str, now: datetime, expires_at: datetime
+    ) -> bool:
+        """Claim the key until `expires_at`; False while another claim is still valid.
+
+        Must be atomic: it is what makes concurrent requests with one key accept it once.
+        A claim is never cleared on success (the receipt then answers); an expired one can
+        be taken over, so a request that died mid-way does not block the key forever.
+        """
+        ...
+
+    def release_key(self, idempotency_key: str) -> None:
+        """Drop the key's claim, so a retry can accept the case."""
         ...
 
     def add_start_token(
