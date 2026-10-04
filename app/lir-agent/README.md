@@ -253,6 +253,7 @@ Variables*); the values come from `terraform output` in `lir-infra`:
 | `AR_REPO`        | Artifact Registry repository (`lir`)                                       |
 | `BUILD_SA`       | Cloud Build service account email (`lir-build@<project>.iam.gserviceaccount.com`) |
 | `BUILD_BUCKET`   | Build source bucket (`<project>-build-source`)                             |
+| `DEPLOY_CASES_SERVICE` | `true` once `lir-agent-cases` exists; `false` skips its rollout |
 
 To build by hand, see the command at the top of `cloudbuild.yaml`.
 

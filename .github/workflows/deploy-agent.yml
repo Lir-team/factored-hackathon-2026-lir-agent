@@ -54,7 +54,10 @@ jobs:
             --region "${{ vars.GCP_REGION }}" \
             --image "${IMAGE}"
 
+      # The case flow service exists only once lir-infra has applied it; until then the
+      # repository variable DEPLOY_CASES_SERVICE stays "false" and this step is skipped.
       - name: Deploy the cases service
+        if: vars.DEPLOY_CASES_SERVICE == 'true'
         run: |
           gcloud run deploy lir-agent-cases \
             --project "${{ vars.GCP_PROJECT_ID }}" \
