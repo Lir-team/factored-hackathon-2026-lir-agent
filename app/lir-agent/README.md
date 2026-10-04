@@ -167,6 +167,30 @@ CASES_PUBLISHER=pubsub PUBSUB_VERIFY_TOKEN=false REQUIRE_IDENTITY=false \
 uv run lir-agent-api
 ```
 
+### Case store (Firestore)
+
+Idempotent receipts, Telegram start tokens, chat links, case conversations and replies
+waiting for a chat live in the case store. The default `CASE_STORE=memory` loses them on
+restart and does not share them between instances; `CASE_STORE=firestore` keeps them in
+Firestore (`GOOGLE_CLOUD_PROJECT`, database `FIRESTORE_DATABASE`, collections named
+`FIRESTORE_COLLECTION_PREFIX` + `receipts`, `start_tokens`, `chats`, `case_chats`,
+`conversations`, `replies`). Start tokens are stored as their SHA-256 hash only.
+
+Locally, with the Firestore emulator (`scripts/firestore-emulator.sh up` at the repository
+root; it listens on `localhost:8086`, project `lir-local`):
+
+```bash
+FIRESTORE_EMULATOR_HOST=localhost:8086 GOOGLE_CLOUD_PROJECT=lir-local \
+CASE_STORE=firestore REQUIRE_IDENTITY=false uv run lir-agent-api
+```
+
+The case store tests run against both adapters; the Firestore ones only when
+`FIRESTORE_EMULATOR_HOST` is set (otherwise skipped):
+
+```bash
+FIRESTORE_EMULATOR_HOST=localhost:8086 GOOGLE_CLOUD_PROJECT=lir-local uv run pytest -q
+```
+
 Locally, without IAP:
 
 ```bash
@@ -215,10 +239,11 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 ## Known limitations
 
 - `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
-- Sessions, start tokens, Telegram chat links, case conversations and waiting replies are
-  in memory; production needs a persistent store (Firestore). The
-  audit log is a local JSONL file, or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`). On Cloud Run this means
-  one instance (`max-instances=1`) so a session's messages reach the instance that holds it.
+- ADK sessions are in memory: on Cloud Run this means one instance (`max-instances=1`) so a
+  session's messages reach the instance that holds it, and a restart ends open
+  conversations. Case state (start tokens, chat links, case conversations, waiting replies)
+  survives restarts only with `CASE_STORE=firestore`. The audit log is a local JSONL file,
+  or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`).
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
   (Cloud Run ingress and IAP settings, managed in `lir-infra`).
 - The keyword baseline misses a bare "sí" as a confirmation; Jev is expected to handle it.

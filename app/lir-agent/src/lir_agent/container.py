@@ -14,6 +14,7 @@ from decision_layer import (
     JevClient,
     KeywordDecisionModel,
 )
+from google.cloud import firestore
 
 from lir_agent.application.ports import (
     AuditSink,
@@ -38,7 +39,7 @@ from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
-from lir_agent.infrastructure.case_store import InMemoryCaseStore
+from lir_agent.infrastructure.case_store import FirestoreCaseStore, InMemoryCaseStore
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
 from lir_agent.infrastructure.cases_inbox import GcsCaseInbox, LocalCaseInbox
 from lir_agent.infrastructure.decisions import LlmDecisionModel
@@ -114,6 +115,19 @@ def build_case_publisher(settings: Settings) -> CasePublisher:
     return InMemoryCasePublisher()
 
 
+def build_case_store(settings: Settings) -> CaseStore:
+    """The case store chosen by `CASE_STORE`."""
+    if settings.case_store == "firestore":
+        if not settings.google_cloud_project:
+            raise ValueError("CASE_STORE=firestore needs GOOGLE_CLOUD_PROJECT")
+        client = firestore.Client(
+            project=settings.google_cloud_project,
+            database=settings.firestore_database,
+        )
+        return FirestoreCaseStore(client, settings.firestore_collection_prefix)
+    return InMemoryCaseStore()
+
+
 def build_decisions(
     settings: Settings, completion: Callable[..., Any] | None = None
 ) -> DecisionModel:
@@ -179,7 +193,7 @@ def build_container(
     )
     dispute_guard = DisputeGuard()
     request_handoff = RequestHandoff(cases, policy.config)
-    case_store = case_store or InMemoryCaseStore()
+    case_store = case_store or build_case_store(settings)
     return Container(
         settings=settings,
         resources=resources,
