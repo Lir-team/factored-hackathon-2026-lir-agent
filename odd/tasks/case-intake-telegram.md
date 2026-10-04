@@ -168,3 +168,10 @@ strategy applies: chain strategy to be chosen before the first PR.
   logs the bot token in URLs at DEBUG; a failing `conversations.start` burns the
   token and returns 500; once T4 runs the agent from Pub/Sub, `/start` must stop
   running the first turn.
+- 2026-10-04: user asked to finish T3 and T4 and prove the flow end to end with
+  the Pub/Sub emulator (Docker). Decision (user): `POST /v1/cases` publishes the
+  case directly to topic `lir-cases` (as the lir-web contract already says);
+  the Cloud Storage inbox stays as the case archive, and the GCS notification
+  path is dropped. Order: T4 on `feat/pubsub-case-processing`, then T3
+  (Firestore adapter for the final store interface, tested on the Firestore
+  emulator) on `feat/firestore-case-store`, then the end-to-end run.
