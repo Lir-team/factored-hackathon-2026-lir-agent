@@ -280,6 +280,14 @@ class MessageNotSentError(Exception):
     """A message did not reach the chat; the caller decides whether to retry or move on."""
 
 
+class HandoffNotifier(Protocol):
+    """Tells the bank team that a case was handed off (no customer data in the notice)."""
+
+    def notify(self, packet: HandoffPacket) -> None:
+        """Announce the handoff; raises on failure (the handoff itself is already stored)."""
+        ...
+
+
 class Messenger(Protocol):
     """Outbound messages to a customer's chat (Telegram today)."""
 

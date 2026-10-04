@@ -23,6 +23,7 @@ from lir_agent.application.ports import (
     CasePublisher,
     CaseRepository,
     CaseStore,
+    HandoffNotifier,
     TransactionRepository,
 )
 from lir_agent.application.presenter import LlmPresenter
@@ -130,6 +131,19 @@ def build_case_store(settings: Settings) -> CaseStore:
     return InMemoryCaseStore()
 
 
+def build_notifier(settings: Settings) -> HandoffNotifier | None:
+    """The Slack handoff notice when SLACK_WEBHOOK_URL is set."""
+    if not settings.slack_webhook_url:
+        return None
+    from lir_agent.infrastructure.messaging import SlackHandoffNotifier
+
+    return SlackHandoffNotifier(
+        settings.slack_webhook_url.get_secret_value(),
+        settings.slack_message_template,
+        settings.public_base_url,
+    )
+
+
 def build_decisions(
     settings: Settings, completion: Callable[..., Any] | None = None
 ) -> DecisionModel:
@@ -194,7 +208,7 @@ def build_container(
         ),
     )
     dispute_guard = DisputeGuard()
-    request_handoff = RequestHandoff(cases, policy.config)
+    request_handoff = RequestHandoff(cases, policy.config, build_notifier(settings))
     case_store = case_store or build_case_store(settings)
     return Container(
         settings=settings,

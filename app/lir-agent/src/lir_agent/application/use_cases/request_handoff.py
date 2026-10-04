@@ -1,22 +1,31 @@
 """Use case: transfer the case to a human with the verified facts gathered so far."""
 
+import logging
 import uuid
 
-from lir_agent.application.ports import CaseRepository
+from lir_agent.application.ports import CaseRepository, HandoffNotifier
 from lir_agent.domain.models import HandoffPacket
 from lir_agent.domain.policy import PolicyConfig
 from lir_agent.domain.session import SessionState, utc_now
 
 HANDOFF_ID_PREFIX = "HND-"
 
+logger = logging.getLogger(__name__)
+
 
 class RequestHandoff:
     """Use case: hand the case to a human with the verified facts gathered so far."""
 
-    def __init__(self, cases: CaseRepository, policy: PolicyConfig) -> None:
-        """Keep the case service that stores handoffs and the policy's open questions."""
+    def __init__(
+        self,
+        cases: CaseRepository,
+        policy: PolicyConfig,
+        notifier: HandoffNotifier | None = None,
+    ) -> None:
+        """Keep the case service, the policy's open questions and the team notifier."""
         self._cases = cases
         self._policy = policy
+        self._notifier = notifier
 
     def execute(
         self,
@@ -35,10 +44,18 @@ class RequestHandoff:
         session.record_action(
             {"action": "handoff", "handoff_id": packet.handoff_id, "verified": verified}
         )
+        if verified and self._notifier:
+            self._notify(packet)
         return {
             "status": "submitted" if verified else "unverified",
             "handoff_id": packet.handoff_id,
         }
+
+    def _notify(self, packet: HandoffPacket) -> None:
+        try:
+            self._notifier.notify(packet)  # type: ignore[union-attr]
+        except Exception:
+            logger.warning("Handoff %s stored but the team notice failed", packet.handoff_id)
 
     def attach_evidence(self, session: SessionState) -> None:
         """Add evidence gathered after the handoff (e.g. the charge a theft victim describes).
