@@ -214,14 +214,28 @@ class CaseStore(Protocol):
     def pop_replies(self, case_id: str) -> list[str]:
         """Remove and return the case's queued replies, oldest first.
 
-        Must be atomic: two callers never get the same reply.
+        Must be atomic: two callers never get the same reply. A caller that cannot send
+        them puts the unsent ones back with `requeue_replies`.
         """
         ...
+
+    def requeue_replies(self, case_id: str, texts: list[str]) -> None:
+        """Put popped replies that were not sent back, before any queued since."""
+        ...
+
+
+class MessageNotSentError(Exception):
+    """A message did not reach the chat; the caller decides whether to retry or move on."""
 
 
 class Messenger(Protocol):
     """Outbound messages to a customer's chat (Telegram today)."""
 
     async def send(self, chat_id: int, text: str) -> None:
-        """Deliver `text` to the chat; failures are logged, never raised."""
+        """Deliver `text` to the chat.
+
+        Raises:
+            MessageNotSentError: If it was not delivered (a long text split in parts may
+                have been delivered in part).
+        """
         ...

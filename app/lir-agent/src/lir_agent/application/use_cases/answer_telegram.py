@@ -1,6 +1,7 @@
 """Use case: answer one customer message received by the Lir Telegram bot."""
 
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 
 from lir_agent.application.ports import (
@@ -8,6 +9,7 @@ from lir_agent.application.ports import (
     CaseStore,
     ConversationNotFoundError,
     Conversations,
+    MessageNotSentError,
     Messenger,
 )
 from lir_agent.application.use_cases.process_case import deliver_replies
@@ -25,6 +27,10 @@ class AnswerTelegramMessage:
 
     The case's conversation is started when the case is delivered to the agent
     (`ProcessCase`), never here: linking only confirms and sends the replies waiting.
+
+    Sending never fails the update: Telegram would retry it, and a `/start` token is
+    already burned. Notices are best effort; an agent reply that could not be sent is
+    queued and goes out, with any other waiting reply, before the chat's next answer.
     """
 
     def __init__(
@@ -74,7 +80,7 @@ class AnswerTelegramMessage:
         self._store.link_chat(chat_id, link)
         self._audit.record("telegram_linked", None, case_id=start.case_id)
         await self._say(chat_id, link.language, "linked", folio=link.folio)
-        await deliver_replies(self._store, self._messenger, self._audit, start.case_id)
+        await self._deliver(start.case_id)
 
     async def _ask(self, chat_id: int, link: ChatLink, text: str) -> None:
         conversation = self._store.get_conversation(link.case_id)
@@ -88,10 +94,26 @@ class AnswerTelegramMessage:
         except ConversationNotFoundError:
             await self._say(chat_id, link.language, "conversation_expired")
             return
-        if reply.strip():
+        if not reply.strip():
+            return
+        if not await self._deliver(link.case_id):  # earlier replies first, in order
+            self._store.queue_reply(link.case_id, reply)
+            return
+        try:
             await self._messenger.send(chat_id, reply)
+        except MessageNotSentError:
+            self._store.queue_reply(link.case_id, reply)
+
+    async def _deliver(self, case_id: str) -> bool:
+        """Send the case's waiting replies; False when one could not be sent (kept queued)."""
+        try:
+            await deliver_replies(self._store, self._messenger, self._audit, case_id)
+        except MessageNotSentError:
+            return False
+        return True
 
     async def _say(
         self, chat_id: int, language: Language, key: str, **values: object
     ) -> None:
-        await self._messenger.send(chat_id, bot_message(key, language, **values))
+        with suppress(MessageNotSentError):  # best effort: the adapter logged it
+            await self._messenger.send(chat_id, bot_message(key, language, **values))

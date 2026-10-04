@@ -173,6 +173,17 @@ def test_queued_replies_pop_once_in_order_with_repeats(store):
     assert store.pop_replies("other") == ["elsewhere"]
 
 
+def test_requeued_replies_go_back_before_newer_ones(store):
+    store.queue_reply(CASE_ID, "one")
+    store.queue_reply(CASE_ID, "two")
+    unsent = store.pop_replies(CASE_ID)
+    store.queue_reply(CASE_ID, "three")
+
+    store.requeue_replies(CASE_ID, unsent)
+
+    assert store.pop_replies(CASE_ID) == ["one", "two", "three"]
+
+
 def test_popping_a_case_without_replies_returns_nothing(store):
     assert store.pop_replies(CASE_ID) == []
 

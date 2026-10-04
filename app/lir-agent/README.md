@@ -122,7 +122,9 @@ that is still in flight its reply arrives on its own. Later messages from that c
 the case's conversation and the reply is sent back (split at Telegram's 4096 characters);
 before the case is worked, the chat is asked to wait. Messages longer than `MAX_MESSAGE_CHARS`
 are refused with a short note; unlinked chats are asked to use the link from the form; used
-or expired links and lost conversations get a short message in Spanish or Portuguese. Only
+or expired links and lost conversations get a short message in Spanish or Portuguese. These
+notices are best effort; an agent reply Telegram did not accept stays queued and is sent
+before the chat's next answer. Only
 text from private chats is read, and repeated updates are handled once; an update whose
 handling failed answers `500`, so Telegram's retry is handled again.
 
@@ -150,9 +152,9 @@ delivers it to `POST /pubsub/push`, which starts the case's conversation (owner
 `case:<case_id>`, auth method `case_intake`, valid for `CASE_SESSION_TTL_MINUTES`, 7 days by
 default) and runs the agent's first turn from the case description and reported charges.
 The reply goes to the linked Telegram chat, or waits until `/start` links one. Pub/Sub
-delivers at least once: a case already worked is acknowledged without new work. Messages
-that are not a valid case are acknowledged and audited as `case_rejected`; agent failures
-answer `500` so Pub/Sub retries. Audit events: `case_processed`, `case_reply_queued`,
+delivers at least once: a case already worked only sends its replies still waiting.
+Messages that are not a valid case are acknowledged and audited as `case_rejected`; agent
+failures, and replies Telegram did not accept (kept queued), answer `500` so Pub/Sub retries. Audit events: `case_processed`, `case_reply_queued`,
 `case_reply_sent` (never the message text).
 
 The push subscription must sign its calls (OIDC) with audience `PUBSUB_PUSH_AUDIENCE`; set

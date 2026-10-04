@@ -4,6 +4,7 @@ import logging
 
 import httpx
 
+from lir_agent.application.ports import MessageNotSentError
 from lir_agent.domain.telegram import split_message
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,12 @@ class TelegramBotMessenger:
         self._client = client or httpx.AsyncClient(timeout=10.0)
 
     async def send(self, chat_id: int, text: str) -> None:
-        """Send `text`, split at Telegram's limit; a failure is logged and stops the rest."""
+        """Send `text`, split at Telegram's limit; a failure is logged and raised.
+
+        Raises:
+            MessageNotSentError: On a network error or an error status; the parts after
+                the failed one are not sent. It never carries the URL (it holds the token).
+        """
         for part in split_message(text):
             try:
                 response = await self._client.post(
@@ -28,10 +34,11 @@ class TelegramBotMessenger:
                 )
             except httpx.HTTPError as error:
                 # The exception message may contain the URL: log its type only.
-                logger.warning("Telegram sendMessage failed: %s", type(error).__name__)
-                return
+                reason = type(error).__name__
+                logger.warning("Telegram sendMessage failed: %s", reason)
+                raise MessageNotSentError(reason) from None
             if response.is_error:
                 logger.warning(
                     "Telegram sendMessage failed with status %s", response.status_code
                 )
-                return
+                raise MessageNotSentError(f"status {response.status_code}")

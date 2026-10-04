@@ -96,3 +96,8 @@ class InMemoryCaseStore:
         """Remove and return the case's queued replies, oldest first."""
         with self._lock:
             return self._replies.pop(case_id, [])
+
+    def requeue_replies(self, case_id: str, texts: list[str]) -> None:
+        """Put unsent replies back, before any queued since."""
+        with self._lock:
+            self._replies[case_id] = [*texts, *self._replies.get(case_id, [])]

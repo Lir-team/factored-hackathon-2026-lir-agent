@@ -8,6 +8,7 @@ from lir_agent.application.ports import (
     CaseStore,
     Conversations,
     CustomerNotFoundError,
+    MessageNotSentError,
     Messenger,
 )
 from lir_agent.domain.case_intake import CaseConversation, case_summary, folio_for
@@ -37,13 +38,15 @@ class ProcessCase:
         self._session_ttl = session_ttl
 
     async def execute(self, payload: dict[str, Any]) -> None:
-        """Work a schema-valid case; a case already worked is skipped (redelivery).
+        """Work a schema-valid case; a case already worked only sends its waiting replies.
 
-        Never audits message text. Agent failures propagate, so the delivery is retried:
-        nothing is kept until the first turn succeeded.
+        Never audits message text. Agent and send failures propagate, so the delivery is
+        retried: nothing is kept until the first turn succeeded, and a reply that could not
+        be sent stays queued for the retry.
         """
         case_id = payload["case_id"]
-        if self._store.get_conversation(case_id) is not None:
+        if self._store.get_conversation(case_id) is not None:  # a redelivery
+            await deliver_replies(self._store, self._messenger, self._audit, case_id)
             return
         owner = case_owner(case_id)
         try:
@@ -83,7 +86,11 @@ async def deliver_replies(
     """Send the case's queued replies to the chat linked to it, if any.
 
     Both the case worker and `/start` call this after their own write (reply queued, chat
-    linked); popping is atomic, so each reply is sent once whichever runs last.
+    linked); popping is atomic, so each reply is sent once whichever runs last. A reply
+    that could not be sent is put back with the ones after it, then the error propagates.
+
+    Raises:
+        MessageNotSentError: If a reply was not sent (it stays queued).
     """
     chat_id = store.get_case_chat(case_id)
     if chat_id is None or messenger is None:
@@ -92,7 +99,14 @@ async def deliver_replies(
     if link is None or link.case_id != case_id:  # the chat moved to another case
         return
     replies = store.pop_replies(case_id)
-    for reply in replies:
-        await messenger.send(chat_id, reply)
-    if replies:
-        audit.record("case_reply_sent", None, case_id=case_id, replies=len(replies))
+    sent = 0
+    try:
+        for reply in replies:
+            await messenger.send(chat_id, reply)
+            sent += 1
+    except MessageNotSentError:
+        store.requeue_replies(case_id, replies[sent:])
+        raise
+    finally:
+        if sent:
+            audit.record("case_reply_sent", None, case_id=case_id, replies=sent)

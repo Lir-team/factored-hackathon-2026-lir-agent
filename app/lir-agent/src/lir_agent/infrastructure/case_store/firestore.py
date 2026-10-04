@@ -77,6 +77,17 @@ def _append(
 
 
 @firestore.transactional
+def _prepend(
+    transaction: firestore.Transaction,
+    ref: firestore.DocumentReference,
+    texts: list[str],
+) -> None:
+    snapshot = ref.get(transaction=transaction)
+    queued = (snapshot.to_dict() or {}).get("texts", []) if snapshot.exists else []
+    transaction.set(ref, {"texts": [*texts, *queued]})
+
+
+@firestore.transactional
 def _pop(
     transaction: firestore.Transaction, ref: firestore.DocumentReference
 ) -> list[str]:
@@ -222,3 +233,9 @@ class FirestoreCaseStore:
     def pop_replies(self, case_id: str) -> list[str]:
         """Remove and return the case's queued replies, oldest first."""
         return _pop(self._client.transaction(), self._replies.document(case_id))
+
+    def requeue_replies(self, case_id: str, texts: list[str]) -> None:
+        """Put unsent replies back, before any queued since."""
+        if texts:
+            ref = self._replies.document(case_id)
+            _prepend(self._client.transaction(), ref, texts)
