@@ -1,5 +1,11 @@
 # Reference data. Country values in the dataset vary ("Mexico", "MX"); evidence compares ISO codes.
+# Every country in the data must be listed: a value that does not resolve leaves the evidence
+# with `country_resolved: false`, and the policy sends relevant amounts to a human (C2b).
+# Staged transactions (LATAM Bank v1.0.0) occur in MX, CO, AR, US, ES and BR.
 country_aliases:
   MX: [mexico, méxico, mx]
   CO: [colombia, co]
   AR: [argentina, ar]
+  US: [united states, united states of america, usa, us, estados unidos, eeuu, eua]
+  ES: [spain, españa, espana, es, espanha]
+  BR: [brazil, brasil, br]

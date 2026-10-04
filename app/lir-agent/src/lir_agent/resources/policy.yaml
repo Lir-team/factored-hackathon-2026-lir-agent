@@ -5,7 +5,7 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.3.0-synthetic
+version: 0.4.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
@@ -65,6 +65,11 @@ case_rules:
     lane: escalate
     reason: Relevant amount outside the customer's country
     when: {foreign: {eq: true}, amount_usd: {gte: 300}}
+  # Fail closed: an unknown country must not pass as a domestic charge.
+  - id: C2b_country_unverified
+    lane: escalate
+    reason: Relevant amount whose country could not be verified
+    when: {country_resolved: {eq: false}, amount_usd: {gte: 300}}
   - id: C3_pending
     lane: explain
     reason: Pending authorization, not a final charge yet
@@ -126,6 +131,8 @@ handoff_open_questions:
     - "Validar con el cliente si reconoce esta transacción de alto riesgo."
   C2_foreign_relevant_amount:
     - "¿El cliente estuvo en el país de la transacción o la autorizó?"
+  C2b_country_unverified:
+    - "Verificar dónde ocurrió la transacción: el país no se pudo resolver."
   C6_duplicate_high_amount:
     - "Confirmar el duplicado y decidir la disputa: el monto supera el límite de automatización."
   C8_high_amount:

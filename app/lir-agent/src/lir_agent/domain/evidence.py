@@ -75,5 +75,6 @@ class EvidenceBuilder:
             transaction_country=where,
             customer_country=home,
             foreign=bool(home and where and home != where),
+            country_resolved=bool(home and where),
             fraud_score=txn.fraud_score,
         )
