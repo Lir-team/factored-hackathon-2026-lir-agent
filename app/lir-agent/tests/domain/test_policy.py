@@ -118,3 +118,30 @@ def test_open_questions_must_name_existing_rules(settings):
     raw["handoff_open_questions"] = {"T99_typo": ["?"]}
     with pytest.raises(ValidationError, match="T99_typo"):
         PolicyConfig.model_validate(raw)
+
+
+CASE = {
+    "fraud_score": 5.0,
+    "foreign": False,
+    "country_resolved": True,
+    "amount_usd": 450.0,
+    "status": "Approved",
+    "has_duplicate": False,
+    "merchant_prior_count": 0,
+}
+
+
+def test_an_unverified_country_with_a_relevant_amount_escalates(policy):
+    outcome = policy.decide_case({**CASE, "country_resolved": False})
+    assert (outcome.rule_id, outcome.lane) == ("C2b_country_unverified", Lane.ESCALATE)
+
+
+def test_an_unverified_country_with_a_small_amount_follows_the_usual_rules(policy):
+    outcome = policy.decide_case(
+        {**CASE, "country_resolved": False, "amount_usd": 20.0, "merchant_prior_count": 3}
+    )
+    assert outcome.rule_id == "C9_habitual_merchant"
+
+
+def test_a_verified_domestic_charge_is_not_escalated_for_its_country(policy):
+    assert policy.decide_case(CASE).rule_id != "C2b_country_unverified"

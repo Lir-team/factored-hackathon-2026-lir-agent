@@ -33,6 +33,7 @@ def packet(**overrides) -> HandoffPacket:
         transaction_country="AR",
         customer_country="MX",
         foreign=True,
+        country_resolved=True,
         fraud_score=0.91,
     )
     fields = {

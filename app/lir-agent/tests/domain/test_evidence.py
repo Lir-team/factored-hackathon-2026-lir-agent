@@ -49,3 +49,37 @@ def test_foreign_country_uses_iso_codes(builder, repository):
 def test_evidence_carries_transaction_type_and_channel(builder, repository):
     evidence = evidence_for(builder, repository, "TXN-D1-001")
     assert (evidence.transaction_type, evidence.channel) == ("Purchase", "Web")
+
+
+@pytest.mark.parametrize(
+    ("value", "code"),
+    [("BR", "BR"), ("Brasil", "BR"), ("US", "US"), ("Estados Unidos", "US"), ("ES", "ES")],
+)
+def test_every_country_in_the_staged_data_resolves(settings, value, code):
+    resolver = ResourceLoader().load_country_resolver(settings.reference_path)
+    assert resolver.code(value) == code
+
+
+def test_a_charge_abroad_is_foreign(builder, repository):
+    history = repository.list_transactions(CUSTOMER)
+    txn = next(t for t in history if t.transaction_id == "TXN-D1-008")
+    abroad = txn.model_copy(update={"transaction_country": "Brazil"})
+
+    evidence = builder.build(abroad, history, repository.get_customer(CUSTOMER))
+
+    assert (evidence.transaction_country, evidence.foreign, evidence.country_resolved) == (
+        "BR",
+        True,
+        True,
+    )
+
+
+@pytest.mark.parametrize("country", ["Atlantis", None])
+def test_an_unknown_country_is_not_taken_for_a_domestic_one(builder, repository, country):
+    history = repository.list_transactions(CUSTOMER)
+    txn = next(t for t in history if t.transaction_id == "TXN-D1-008")
+    unknown = txn.model_copy(update={"transaction_country": country})
+
+    evidence = builder.build(unknown, history, repository.get_customer(CUSTOMER))
+
+    assert (evidence.foreign, evidence.country_resolved) == (False, False)

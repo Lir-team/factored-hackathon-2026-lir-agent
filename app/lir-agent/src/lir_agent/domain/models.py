@@ -87,6 +87,8 @@ class Evidence(_Frozen):
     transaction_country: str | None
     customer_country: str | None
     foreign: bool
+    # False when either country is missing or unknown: `foreign` cannot be trusted then.
+    country_resolved: bool
     fraud_score: float | None
 
     @property
