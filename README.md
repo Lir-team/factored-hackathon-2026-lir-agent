@@ -1,5 +1,7 @@
 # Lir Agent
 
+<p align="center"><img src="docs/assets/lir-rana.gif" alt="Lir" width="160"></p>
+
 Factored AI & Data Hackathon 2026 entry: a banking customer-service agent for the
 synthetic LATAM Bank dataset (v1.0.0).
 
