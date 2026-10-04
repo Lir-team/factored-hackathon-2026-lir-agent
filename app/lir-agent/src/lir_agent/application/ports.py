@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+from lir_agent.domain.case_intake import CaseReceipt
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 
 
@@ -99,4 +100,42 @@ class Conversations(Protocol):
         Raises:
             ConversationNotFoundError: If `owner` has no conversation with this id.
         """
+        ...
+
+
+class CaseInbox(Protocol):
+    """Where accepted cases land for the agent (the `cases-inbox` bucket in production)."""
+
+    def put(
+        self, case_id: str, payload: dict[str, Any], attributes: dict[str, str]
+    ) -> None:
+        """Store the case payload unchanged, with its routing attributes as metadata."""
+        ...
+
+
+@dataclass(frozen=True)
+class StoredReceipt:
+    """An accepted case's answer and the customer who filed it."""
+
+    customer_id: str
+    receipt: CaseReceipt
+
+
+class CaseStore(Protocol):
+    """Intake state that must outlive the request: idempotent answers and start tokens."""
+
+    def get_receipt(self, idempotency_key: str) -> StoredReceipt | None:
+        """Return the answer stored for this key, or None."""
+        ...
+
+    def save_receipt(self, idempotency_key: str, stored: StoredReceipt) -> None:
+        """Keep a successful answer for replay."""
+        ...
+
+    def add_start_token(self, token: str, case_id: str, expires_at: datetime) -> None:
+        """Bind a single-use Telegram start token to a case until `expires_at`."""
+        ...
+
+    def consume_start_token(self, token: str, now: datetime) -> str | None:
+        """Burn the token and return its case id; None when unknown, used or expired."""
         ...

@@ -93,6 +93,18 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `GET` | `/health` | - | `{"status": "ok"}` |
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
+| `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` |
+
+`POST /v1/cases` is the web form's entry point and does not use IAP: API Gateway verifies the
+customer's JWT and forwards its claims in `X-Apigateway-Api-Userinfo` (missing or unreadable:
+`401`). The payload is validated against `src/lir_agent/resources/schemas/case.schema.json`,
+copied from `lir-web`: field errors return `422 {"errors": {"<form field>": "<code>"}}`, and
+errors without a form field return `400`. `customer.customer_id` must be the JWT's customer
+(`403`) and exist (`404`); every transaction must be theirs (`422 transaction_ids: unknown`).
+The `Idempotency-Key` must equal `case_id` (`400`), and repeating it replays the first `202`.
+Accepted cases go to the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`, attributes as
+object metadata). `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
+when the customer chose Telegram and `TELEGRAM_BOT_USERNAME` is set, otherwise `null`.
 
 Locally, without IAP:
 

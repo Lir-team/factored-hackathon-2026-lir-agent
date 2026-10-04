@@ -111,6 +111,23 @@ class Settings(BaseSettings):
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
 
+    # ---- Case intake (`POST /v1/cases`) --------------------------------------------------
+    # API Gateway verifies the customer JWT and forwards its claims in this header
+    # (base64url JSON). Without it, `require_identity` decides: 401, or (local runs only)
+    # the payload's `customer.customer_id` is trusted.
+    customer_identity_header: str = "X-Apigateway-Api-Userinfo"
+    # JWT claim holding the customer id.
+    customer_claim: str = "sub"
+    # Where accepted cases are stored: a local directory, or the Cloud Storage bucket whose
+    # notification feeds the agent.
+    cases_inbox: Literal["local", "gcs"] = "local"
+    cases_bucket: str = "cases-inbox"
+    cases_local_dir: Path = APP_DIR / ".cases"
+    # Bot behind the Telegram start link (without "@"). Empty: no link is issued.
+    telegram_bot_username: str | None = None
+    # How long a Telegram start link stays usable.
+    start_token_ttl_minutes: int = Field(default=1440, gt=0)
+
     @field_validator("reference_date", mode="before")
     @classmethod
     def _empty_reference_date_is_today(cls, value: object) -> object:
