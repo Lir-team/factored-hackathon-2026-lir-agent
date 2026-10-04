@@ -132,3 +132,8 @@ strategy applies: chain strategy to be chosen before the first PR.
   ruff check clean, ruff format clean on touched files (6 untouched base files
   were already unformatted). Audit field `operator` renamed to `owner` on
   `session_started`.
+- 2026-10-04: T1 review granted and approved (one reliability lens, receipt
+  acknowledged). Non-blocking follow-ups: audit field rename `operator` ->
+  `owner` (warning), removed public exports from `interface/http`, TTL passed
+  to `start` is not validated. Separate change: `.env.example` completed on
+  branch `chore/complete-env-template` (`f2975c2`).
