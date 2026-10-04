@@ -114,6 +114,14 @@ class Settings(BaseSettings):
     # Return how each turn was decided (decision model, probabilities, lanes, tools, cost)
     # with the reply. Only for the operator API behind IAP, never for customer channels.
     expose_trace: bool = False
+    # Team notice for each handoff (Slack incoming webhook); empty: no notice. The notice
+    # carries the handoff id, rule and lane, never customer data.
+    slack_webhook_url: SecretStr | None = None
+    # Public URL of this service, for the case file link in the notice.
+    public_base_url: str | None = None
+    slack_message_template: str = (
+        "Nuevo caso {handoff_id} · regla {rule} · carril {lane}\n{report_url}"
+    )
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
     # Shown in the API docs and in validation errors: what a customer id looks like, and one
