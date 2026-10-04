@@ -58,10 +58,10 @@ class ChargeInvestigationToolkit:
         session. Never ask the user for a customer ID, and never mention one.
 
         Returns:
-            `found` set to True and a minimal, non-sensitive profile under `customer` (first
-            name, segment, account status, registration date, country and marketing opt-in),
-            or `found` set to False. Contact details, identity documents and financial data
-            are never available.
+            `found` set to True and a minimal, non-sensitive profile under `customer`
+            (segment, account status, registration date, country and marketing opt-in),
+            or `found` set to False. Names, contact details, identity documents and
+            financial data are never available.
         """
         return self._get_profile.execute(SessionState(tool_context.state))
 

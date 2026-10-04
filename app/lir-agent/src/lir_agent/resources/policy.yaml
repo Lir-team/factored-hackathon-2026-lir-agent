@@ -153,7 +153,7 @@ confirmation:
 # signals stay in code: the LLM sees session-scoped references (T1, T2, ...) and the policy lane.
 llm_exposure:
   # Identity documents, contact data, address, demographics, financials and the customer id are absent.
-  customer_fields: [first_name, segment, customer_status, registration_date, country, accepts_marketing]
+  customer_fields: [segment, customer_status, registration_date, country, accepts_marketing]
   candidate_fields: [transaction_date, amount, currency, merchant_name, merchant_category, transaction_status,
                     transaction_type, channel]
   evidence_fields: [date, amount, currency, merchant_name, merchant_category, status,
