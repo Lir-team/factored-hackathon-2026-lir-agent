@@ -105,4 +105,5 @@ class RequestHandoff:
             decisions=session.decisions or {},
             open_questions=open_questions,
             model_summary=summary,
+            case_report=session.case_report,
         )

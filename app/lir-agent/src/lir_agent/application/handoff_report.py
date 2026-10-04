@@ -38,6 +38,7 @@ class HandoffReportRenderer:
             f"- **{t['created_at']}:** {packet.created_at.isoformat(timespec='seconds')}",
             f"- **{t['customer_id']}:** {packet.customer_id}",
             f"- **{t['customer_request']}:** {_cell(packet.customer_request, none)}",
+            f"- **{t['case_report']}:** {_case_report(packet, none)}",
             "",
             f"## {t['policy']}",
             "",
@@ -134,6 +135,14 @@ def _decision_table(decisions: dict, t: Labels) -> list[str]:
             f"{_cell(shown, t['none'])} |"
         )
     return rows
+
+
+def _case_report(packet: HandoffPacket, none: str) -> str:
+    """The form's structured answers (`key=value`), e.g. a requested card freeze."""
+    report = packet.case_report
+    if report is None:
+        return none
+    return ", ".join(f"{key}={value}" for key, value in report.model_dump().items())
 
 
 def _action(action: dict) -> str:

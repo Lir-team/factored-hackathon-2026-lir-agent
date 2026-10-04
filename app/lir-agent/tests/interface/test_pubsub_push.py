@@ -4,6 +4,7 @@ from datetime import timedelta
 import pytest
 from fastapi.testclient import TestClient
 
+from lir_agent.domain.case_intake import CaseReport
 from tests.interface.test_cases_api import CASE_ID, CUSTOMER, PAYLOAD, case
 from tests.interface.test_telegram_webhook import (
     CHAT,
@@ -153,3 +154,16 @@ def test_an_agent_failure_is_retried(bot):
     del bot.conversations.send  # back to the class method
     assert bot.push().status_code == 204
     assert bot.store.get_conversation(CASE_ID) is not None
+
+
+def test_the_form_answers_reach_the_conversation(bot):
+    bot.push()
+
+    session_id = next(iter(bot.conversations.sessions))
+    assert bot.conversations.reports[session_id] == CaseReport(
+        category="unrecognized_charge",
+        fraud_suspected=True,
+        freeze_card_requested=False,
+        card_in_possession="yes",
+        shared_credentials="no",
+    )

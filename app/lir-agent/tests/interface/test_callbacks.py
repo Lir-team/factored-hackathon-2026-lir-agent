@@ -4,6 +4,7 @@ from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 from lir_agent.container import build_container
+from lir_agent.domain.case_intake import CaseReport
 from lir_agent.domain.session import SessionState
 from lir_agent.infrastructure.audit import InMemoryAuditSink
 from tests.support import (
@@ -308,3 +309,30 @@ def test_tools_receive_real_values(harness, context):
         "summary": "Cliente no reconoce OXXO LAS AGUILAS por 245.50 MXN",
         "open_questions": ["¿Estuvo en OXXO LAS AGUILAS?"],
     }
+
+
+# ---- what the customer answered in the web form ------------------------------------------
+def test_a_requested_freeze_goes_first_to_a_specialist_with_the_form_answers(harness, context):
+    session = SessionState(context.state)
+    session.case_report = CaseReport(
+        category="card_lost_stolen",
+        fraud_suspected=True,
+        freeze_card_requested=True,
+        card_in_possession="no",
+        shared_credentials="no",
+    )
+
+    harness.callbacks.before_model(context, user_request("Perdí mi tarjeta"))
+
+    assert outcome_rule(session) == "T0b_card_freeze_requested"
+    packet = harness.container.cases.get_handoff(session.handoff_id or "")
+    assert packet is not None
+    assert packet.open_questions[0].startswith("PRIORIDAD: bloquear la tarjeta")
+    report = harness.container.handoff_report.markdown(packet, "es")
+    assert "freeze_card_requested=True" in report
+    assert "card_in_possession=no" in report
+
+
+def test_a_chat_without_a_form_is_routed_as_before(harness, context):
+    harness.callbacks.before_model(context, user_request("No reconozco un cargo de 179"))
+    assert outcome_rule(SessionState(context.state)) == "T9_in_scope"

@@ -11,7 +11,12 @@ from lir_agent.application.ports import (
     MessageNotSentError,
     Messenger,
 )
-from lir_agent.domain.case_intake import CaseConversation, case_summary, folio_for
+from lir_agent.domain.case_intake import (
+    CaseConversation,
+    CaseReport,
+    case_summary,
+    folio_for,
+)
 from lir_agent.domain.telegram import case_owner
 
 # How conversations opened from a delivered case are authenticated (session state and audit).
@@ -56,6 +61,7 @@ class ProcessCase:
                 ttl=self._session_ttl,
                 auth_method=AUTH_METHOD,
                 transaction_ids=[t["transaction_id"] for t in payload["transactions"]],
+                case_report=CaseReport.from_payload(payload),
             )
         except CustomerNotFoundError:
             self._audit.record(

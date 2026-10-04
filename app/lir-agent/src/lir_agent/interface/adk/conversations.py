@@ -26,6 +26,7 @@ from lir_agent.application.ports import (
     TurnTrace,
 )
 from lir_agent.config.settings import Settings
+from lir_agent.domain.case_intake import CaseReport
 from lir_agent.domain.session import SessionState
 
 if TYPE_CHECKING:
@@ -71,6 +72,7 @@ class AdkConversations:
         ttl: timedelta,
         auth_method: str,
         transaction_ids: Sequence[str] = (),
+        case_report: CaseReport | None = None,
     ) -> StartedConversation:
         """Create a session for `customer_id`, owned by `owner` and valid for `ttl`.
 
@@ -84,6 +86,8 @@ class AdkConversations:
         state: dict = {}
         session = SessionState(state)
         expires_at = session.start(customer_id, ttl, auth_method)
+        if case_report is not None:
+            session.case_report = case_report
         refs: tuple[str, ...] = ()
         if transaction_ids:
             owned = {

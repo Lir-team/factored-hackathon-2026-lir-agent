@@ -11,6 +11,7 @@ from lir_agent.application.ports import (
     Turn,
     TurnTrace,
 )
+from lir_agent.domain.case_intake import CaseReport
 from lir_agent.interface.http import create_app
 
 IAP_HEADER = {
@@ -40,6 +41,7 @@ class FakeConversations:
     def __init__(self) -> None:
         self.sessions: dict[str, tuple[str, str]] = {}
         self.policies: dict[str, tuple[timedelta, str]] = {}
+        self.reports: dict[str, CaseReport | None] = {}
         self.messages: list[tuple[str, str, str]] = []
 
     async def start(
@@ -50,12 +52,14 @@ class FakeConversations:
         ttl: timedelta,
         auth_method: str,
         transaction_ids: Sequence[str] = (),
+        case_report: CaseReport | None = None,
     ) -> StartedConversation:
         if customer_id == "CLI-UNKNOWN":
             raise CustomerNotFoundError(customer_id)
         session_id = f"s{len(self.sessions) + 1}"
         self.sessions[session_id] = (owner, customer_id)
         self.policies[session_id] = (ttl, auth_method)
+        self.reports[session_id] = case_report
         refs = tuple(f"T{i}" for i, _ in enumerate(transaction_ids, start=1))
         return StartedConversation(
             session_id=session_id, expires_at=EXPIRES, transaction_refs=refs
