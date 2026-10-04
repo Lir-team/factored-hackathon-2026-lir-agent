@@ -231,6 +231,32 @@ for demos and operators; it is never sent to customer channels.
 | "Veo una compra de 38900 en Argentina" | hands off to a specialist without revealing why |
 | "Quiero hablar con una persona" / "Me clonaron la tarjeta" | immediate handoff |
 
+## Deploy
+
+`.github/workflows/deploy-agent.yml` runs on every push to `main` that touches
+`app/lir-agent/` or `app/decision-layer/` (or by hand, *Run workflow*). It signs in to
+GCP with Workload Identity Federation (no keys), builds the image with Cloud Build
+(`cloudbuild.yaml`, tagged with the commit SHA) and rolls it out to both Cloud Run
+services: `lir-agent` (operator API, behind IAP) and `lir-agent-cases` (case flow).
+It only changes the image: Terraform in `lir-infra` owns every other setting (env vars,
+secrets, IAM, scaling) and ignores the image, so a deploy never needs `terraform apply`.
+
+Set these GitHub repository variables (*Settings > Secrets and variables > Actions >
+Variables*); the values come from `terraform output` in `lir-infra`:
+
+| Variable         | Value                                                                      |
+| ---------------- | -------------------------------------------------------------------------- |
+| `GCP_PROJECT_ID` | GCP project ID                                                             |
+| `GCP_REGION`     | Region of Cloud Run and Artifact Registry                                  |
+| `WIF_PROVIDER`   | `projects/<number>/locations/global/workloadIdentityPools/github/providers/lir-team` |
+| `DEPLOY_SA`      | `lir-deploy@<project>.iam.gserviceaccount.com`                             |
+| `AR_REPO`        | Artifact Registry repository (`lir`)                                       |
+| `BUILD_SA`       | Cloud Build service account email (`lir-build@<project>.iam.gserviceaccount.com`) |
+| `BUILD_BUCKET`   | Build source bucket (`<project>-build-source`)                             |
+| `DEPLOY_CASES_SERVICE` | `true` once `lir-agent-cases` exists; `false` skips its rollout |
+
+To build by hand, see the command at the top of `cloudbuild.yaml`.
+
 ## Configuration
 
 Settings come from the environment, then `.env` (see `.env.example`). Thresholds, rules,
