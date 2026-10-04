@@ -6,12 +6,13 @@ owns the sessions it creates. The *customer* is chosen on session creation, stan
 the bank's identity check (biometric KYC, mocked).
 
 Cases filed from the web form (`POST /v1/cases`) come through API Gateway instead, which
-verifies the *customer's* JWT and forwards its claims.
+verifies the *customer's* JWT and forwards its claims. The customer then continues on
+Telegram (`POST /channels/telegram`, see `telegram.py`).
 """
 
 import re
 from datetime import timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
@@ -23,8 +24,9 @@ from lir_agent.application.ports import (
     ConversationNotFoundError,
     Conversations,
     CustomerNotFoundError,
+    Messenger,
 )
-from lir_agent.application.use_cases import SubmitCase
+from lir_agent.application.use_cases import AnswerTelegramMessage
 from lir_agent.config.settings import Settings
 from lir_agent.domain.case_intake import (
     ForeignCaseError,
@@ -32,6 +34,10 @@ from lir_agent.domain.case_intake import (
     UnknownTransactionError,
 )
 from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
+from lir_agent.interface.http.telegram import telegram_router
+
+if TYPE_CHECKING:
+    from lir_agent.container import Container
 
 # IAP prefixes the e-mail with the identity provider.
 _IAP_PREFIX = "accounts.google.com:"
@@ -78,11 +84,26 @@ def _field_errors(errors: dict[str, str]) -> JSONResponse:
     return JSONResponse({"errors": errors}, status.HTTP_422_UNPROCESSABLE_CONTENT)
 
 
-def _real_case_intake(settings: Settings) -> SubmitCase:
-    """Case intake wired from settings (local or Cloud Storage inbox)."""
+def _real_container(settings: Settings) -> "Container":
+    """Case intake and its store wired from settings (local or Cloud Storage inbox)."""
     from lir_agent.container import build_container
 
-    return build_container(settings).submit_case
+    return build_container(settings)
+
+
+def _real_messenger(bot_token: str) -> Messenger:
+    """The Telegram Bot API."""
+    from lir_agent.infrastructure.messaging import TelegramBotMessenger
+
+    return TelegramBotMessenger(bot_token)
+
+
+def _telegram_credentials(settings: Settings) -> tuple[str, str] | None:
+    """Bot token and webhook secret, or None when the channel is not configured."""
+    token, secret = settings.telegram_bot_token, settings.telegram_webhook_secret
+    if token and secret and token.get_secret_value() and secret.get_secret_value():
+        return token.get_secret_value(), secret.get_secret_value()
+    return None
 
 
 def _real_conversations(settings: Settings) -> Conversations:
@@ -95,11 +116,13 @@ def _real_conversations(settings: Settings) -> Conversations:
 def create_app(
     settings: Settings,
     conversations: Conversations | None = None,
-    submit_case: SubmitCase | None = None,
+    container: "Container | None" = None,
+    messenger: Messenger | None = None,
 ) -> FastAPI:
-    """Build the API; tests inject `conversations` and `submit_case`, else the real ones."""
+    """Build the API; tests inject `conversations`, `container` and `messenger`."""
     agent = conversations or _real_conversations(settings)
-    intake = submit_case or _real_case_intake(settings)
+    deps = container or _real_container(settings)
+    intake = deps.submit_case
     session_ttl = timedelta(minutes=settings.session_ttl_minutes)
     customer_id_pattern = re.compile(settings.customer_id_pattern)
 
@@ -226,5 +249,17 @@ def create_app(
             status=receipt.status,
             telegram_start_url=receipt.telegram_start_url,
         )
+
+    if credentials := _telegram_credentials(settings):
+        bot_token, secret = credentials
+        answer = AnswerTelegramMessage(
+            agent,
+            deps.case_store,
+            messenger or _real_messenger(bot_token),
+            deps.audit,
+            session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
+            max_message_chars=settings.max_message_chars,
+        )
+        app.include_router(telegram_router(secret, answer))
 
     return app

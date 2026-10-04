@@ -8,8 +8,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from lir_agent.domain.case_intake import CaseReceipt
+from lir_agent.domain.case_intake import CaseReceipt, CaseStart
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
+from lir_agent.domain.telegram import ChatLink
 
 
 class TransactionRepository(Protocol):
@@ -122,7 +123,7 @@ class StoredReceipt:
 
 
 class CaseStore(Protocol):
-    """Intake state that must outlive the request: idempotent answers and start tokens."""
+    """Intake state that must outlive the request: answers, start tokens and chat links."""
 
     def get_receipt(self, idempotency_key: str) -> StoredReceipt | None:
         """Return the answer stored for this key, or None."""
@@ -132,10 +133,28 @@ class CaseStore(Protocol):
         """Keep a successful answer for replay."""
         ...
 
-    def add_start_token(self, token: str, case_id: str, expires_at: datetime) -> None:
+    def add_start_token(
+        self, token: str, start: CaseStart, expires_at: datetime
+    ) -> None:
         """Bind a single-use Telegram start token to a case until `expires_at`."""
         ...
 
-    def consume_start_token(self, token: str, now: datetime) -> str | None:
-        """Burn the token and return its case id; None when unknown, used or expired."""
+    def consume_start_token(self, token: str, now: datetime) -> CaseStart | None:
+        """Burn the token and return its case; None when unknown, used or expired."""
+        ...
+
+    def link_chat(self, chat_id: int, link: ChatLink) -> None:
+        """Bind a Telegram chat to a case conversation, replacing any previous link."""
+        ...
+
+    def get_chat_link(self, chat_id: int) -> ChatLink | None:
+        """Return the chat's current link, or None."""
+        ...
+
+
+class Messenger(Protocol):
+    """Outbound messages to a customer's chat (Telegram today)."""
+
+    async def send(self, chat_id: int, text: str) -> None:
+        """Deliver `text` to the chat; failures are logged, never raised."""
         ...
