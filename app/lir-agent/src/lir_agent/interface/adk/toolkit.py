@@ -127,7 +127,9 @@ class ChargeInvestigationToolkit:
 
         Args:
             transaction_ref: Reference of the disputed transaction (e.g. "T1").
-            reason: One sentence with the customer's reason for disputing it.
+            reason: The customer reads it on the approval card: one short, neutral phrase in
+                their language, without "the customer" (e.g. "Cobro duplicado: dos cargos
+                iguales el mismo día").
         """
         # The tool guard turns this call into an approval request (policy `approvals`); if
         # it ever got here, the action must still not run.

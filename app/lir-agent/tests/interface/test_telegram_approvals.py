@@ -152,7 +152,7 @@ def test_the_bot_api_receives_inline_buttons():
     messenger = TelegramBotMessenger(
         "123:abc", httpx.AsyncClient(transport=httpx.MockTransport(handler))
     )
-    rows = [[InlineButton("✅ Aprobar", "apr:APR-1:a")], [InlineButton("Ver", url="https://x")]]
+    rows = [[InlineButton("Aprobar", "apr:APR-1:a")], [InlineButton("Ver", url="https://x")]]
 
     asyncio.run(messenger.send_buttons(7, "hola", rows))
     asyncio.run(messenger.send_buttons(7, "listo", []))
@@ -161,7 +161,7 @@ def test_the_bot_api_receives_inline_buttons():
     assert calls[0]["path"].endswith("/sendMessage")
     assert calls[0]["json"]["reply_markup"] == {
         "inline_keyboard": [
-            [{"text": "✅ Aprobar", "callback_data": "apr:APR-1:a"}],
+            [{"text": "Aprobar", "callback_data": "apr:APR-1:a"}],
             [{"text": "Ver", "url": "https://x"}],
         ]
     }
