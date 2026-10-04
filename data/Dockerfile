@@ -20,7 +20,9 @@ RUN pip install -r requirements-pipeline.txt
 COPY --chown=lir:lir . ./
 # Build contexts uploaded from Windows can arrive without write bits: the pipeline writes
 # its manifests, raw/ and outputs here, so the owner gets read-write on everything.
-RUN mkdir -p raw staging curated reports \n    && chown -R lir:lir /app/data \n    && chmod -R u+rwX /app/data
+RUN mkdir -p raw staging curated reports \
+    && chown -R lir:lir /app/data \
+    && chmod -R u+rwX /app/data
 USER lir
 
 CMD ["python", "-m", "job.run"]
