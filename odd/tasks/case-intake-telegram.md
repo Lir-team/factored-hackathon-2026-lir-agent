@@ -82,7 +82,7 @@ for the demo, and a lost session is rebuilt from the case record.
   `Idempotency-Key` replay of 2xx, `CaseInbox` port (GCS + local adapters),
   start token issued, 202 with `case_id`, `folio`, `status`,
   `telegram_start_url`. Route: delegated.
-- [ ] **T3 Case store.** Port for case record, start token, chat link and
+- [x] **T3 Case store.** Port for case record, start token, chat link and
   queued replies; Firestore + in-memory adapters. Route: delegated.
 - [x] **T4 `/pubsub/push`.** OIDC check, GCS notification parsing, load case,
   dedupe by `case_id`, case-bound session with long TTL, first agent turn,
@@ -184,3 +184,8 @@ strategy applies: chain strategy to be chosen before the first PR.
   `scripts/firestore-emulator.sh` (host network: ufw blocks docker0). RED: 4
   collection errors. Checks: pytest 284 passed, ruff clean, pyright 0 errors.
   Pending: lir-web `docs/case-contract.md` must go back to direct publishing.
+- 2026-10-04: T3 done (delegated writer). `FirestoreCaseStore` behind
+  `CASE_STORE=firestore`: tokens stored by sha256, transactional consume and
+  reply pop, first-writer-wins conversations. Same contract tests run against
+  both stores. RED: ImportError on `build_case_store`. Checks: pytest 293 passed
+  + 12 skipped without the emulator, 305 passed with it; ruff clean, pyright 0.

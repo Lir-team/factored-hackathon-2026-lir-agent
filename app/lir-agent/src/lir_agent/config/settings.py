@@ -154,6 +154,15 @@ class Settings(BaseSettings):
     # How long a case's conversation stays valid (7 days), counted from its delivery.
     case_session_ttl_minutes: int = Field(default=10080, gt=0)
 
+    # ---- Case store (receipts, start tokens, chat links, conversations, replies) ---------
+    # "memory" is lost on restart and not shared between instances (tests, single-instance
+    # local runs); "firestore" keeps it in Firestore (the emulator when
+    # FIRESTORE_EMULATOR_HOST is set) in project GOOGLE_CLOUD_PROJECT.
+    case_store: Literal["memory", "firestore"] = "memory"
+    firestore_database: str = "(default)"
+    # Start of every collection name, to keep environments apart in one database.
+    firestore_collection_prefix: str = "lir_"
+
     @field_validator("reference_date", mode="before")
     @classmethod
     def _empty_reference_date_is_today(cls, value: object) -> object:

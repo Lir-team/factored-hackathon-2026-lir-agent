@@ -1,12 +1,8 @@
 import json
-from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from lir_agent.application.ports import CasePublishError, StoredReceipt
-from lir_agent.domain.case_intake import CaseConversation, CaseReceipt, CaseStart
-from lir_agent.domain.telegram import ChatLink
-from lir_agent.infrastructure.case_store import InMemoryCaseStore
+from lir_agent.application.ports import CasePublishError
 from lir_agent.infrastructure.cases_inbox import GcsCaseInbox, LocalCaseInbox
 from lir_agent.infrastructure.publishing import PubSubCasePublisher
 
@@ -63,61 +59,6 @@ def test_local_inbox_writes_the_case_and_its_attributes(tmp_path):
     attributes_file = cases / f"{CASE_ID}.attributes.json"
     assert json.loads(case_file.read_text(encoding="utf-8")) == PAYLOAD
     assert json.loads(attributes_file.read_text(encoding="utf-8")) == ATTRIBUTES
-
-
-def test_store_keeps_receipts_by_idempotency_key():
-    store = InMemoryCaseStore()
-    stored = StoredReceipt("CLI-DEMO-001", CaseReceipt(CASE_ID, "LB-2026-6F1C2D", None))
-
-    assert store.get_receipt(CASE_ID) is None
-    store.save_receipt(CASE_ID, stored)
-    assert store.get_receipt(CASE_ID) == stored
-
-
-def test_start_tokens_are_single_use_and_expire():
-    store = InMemoryCaseStore()
-    now = datetime(2026, 10, 4, tzinfo=UTC)
-    start = CaseStart(CASE_ID, "LB-2026-6F1C2D", "es")
-    store.add_start_token("t1", start, now + timedelta(minutes=5))
-    store.add_start_token("t2", start, now + timedelta(minutes=5))
-
-    assert store.consume_start_token("t1", now) == start
-    assert store.consume_start_token("t1", now) is None
-    assert store.consume_start_token("t2", now + timedelta(minutes=5)) is None
-    assert store.consume_start_token("unknown", now) is None
-
-
-def test_a_chat_keeps_its_latest_link():
-    store = InMemoryCaseStore()
-    first = ChatLink(CASE_ID, "LB-2026-6F1C2D", "es")
-    latest = ChatLink("other", "LB-2026-000000", "pt")
-
-    assert store.get_chat_link(42) is None
-    store.link_chat(42, first)
-    store.link_chat(42, latest)
-    assert store.get_chat_link(42) == latest
-    assert store.get_case_chat("other") == 42
-
-
-def test_a_case_has_one_conversation():
-    store = InMemoryCaseStore()
-    first = CaseConversation(CASE_ID, "LB-2026-6F1C2D", "es", f"case:{CASE_ID}", "s1")
-    second = CaseConversation(CASE_ID, "LB-2026-6F1C2D", "es", f"case:{CASE_ID}", "s2")
-
-    assert store.get_conversation(CASE_ID) is None
-    assert store.add_conversation(first) is True
-    assert store.add_conversation(second) is False
-    assert store.get_conversation(CASE_ID) == first
-
-
-def test_queued_replies_are_popped_once_in_order():
-    store = InMemoryCaseStore()
-    store.queue_reply(CASE_ID, "one")
-    store.queue_reply(CASE_ID, "one")
-    store.queue_reply(CASE_ID, "two")
-
-    assert store.pop_replies(CASE_ID) == ["one", "one", "two"]
-    assert store.pop_replies(CASE_ID) == []
 
 
 class FakeFuture:
