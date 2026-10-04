@@ -198,3 +198,8 @@ strategy applies: chain strategy to be chosen before the first PR.
   popped reply is lost and `case_reply_sent` is still audited (follow-up).
   Pending: real Telegram delivery (needs a public URL or a polling bridge) and
   lir-web `docs/case-contract.md` back to direct publishing.
+- 2026-10-04: delivery as stacked PRs (merge in order, retarget after each
+  merge): #23 T1, #24 T2 + CORS, #25 T5, #26 T4 + emulator scripts, #27 T3,
+  #28 wiring doc (`docs/architecture/case-flow.md`). #29 `.env.example` is
+  independent. Slices over 400 lines request `size:exception` (cohesive
+  behavior + tests). lir-web: repo `Lir-team/lir-web` (private), PR #1 mock data.
