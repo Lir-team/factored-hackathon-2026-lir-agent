@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.models import Lane, Outcome
+from lir_agent.domain.pseudonyms import Kind
 
 OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
     "eq": operator.eq,
@@ -127,6 +128,9 @@ class LlmExposure(BaseModel):
     candidate_fields: list[str]
     evidence_fields: list[str]
     outcome_fields: list[str]
+    # Allowed fields that reach the LLM only as placeholders (`[[COMERCIO_1]]`), resolved
+    # inside the service before the reply reaches the customer.
+    pseudonymized_fields: dict[str, Kind] = Field(default_factory=dict)
 
 
 class PolicyConfig(BaseModel):

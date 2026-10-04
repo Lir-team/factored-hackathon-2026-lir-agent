@@ -31,6 +31,7 @@ from lir_agent.chat import APP_NAME, USER_ID
 from lir_agent.config.settings import Settings
 from lir_agent.container import build_container, build_decisions
 from lir_agent.domain.models import DisputeCase, HandoffPacket
+from lir_agent.domain.pseudonyms import Pseudonyms
 from lir_agent.domain.session import SessionState
 from lir_agent.infrastructure.audit import InMemoryAuditSink
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
@@ -180,6 +181,7 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
     latency_ms = (time.perf_counter() - t0) * 1000
 
     state = SessionState(_session_state(runner, session_id))
+    _resolve_placeholders(turns, Pseudonyms(state))
     events = audit.entries
     case_outcome = state.case_outcome
     return Trial(
@@ -204,6 +206,18 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
         latency_ms=round(latency_ms, 1),
         stopped_by=stopped_by,
     )
+
+
+def _resolve_placeholders(turns: list[Turn], pseudonyms: Pseudonyms) -> None:
+    """Tool calls and results as the customer would read them.
+
+    The model sees bank records as placeholders ([[MONTO_1]]); the replies it writes are
+    resolved before the customer reads them. Graders compare those replies with the tool
+    results, so both must speak in real values.
+    """
+    for turn in turns:
+        turn.tools = pseudonyms.reveal_value(turn.tools)
+        turn.tool_results = pseudonyms.reveal_value(turn.tool_results)
 
 
 def _start_session(runner: InMemoryRunner, customer_id: str | None, mode: str) -> str:

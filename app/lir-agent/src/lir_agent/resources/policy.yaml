@@ -5,7 +5,7 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.2.0-synthetic
+version: 0.3.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
@@ -160,6 +160,18 @@ llm_exposure:
                     transaction_type, channel, merchant_prior_count, merchant_last_seen, has_duplicate]
   # Rule ids stay in state and audit; they can reveal risk signals (e.g. a high fraud score).
   outcome_fields: [lane, reason]
+  # Bank records that identify the customer or their transactions leave only as
+  # placeholders ([[COMERCIO_1]], [[MONTO_2]], ...). The placeholder table stays in the session
+  # (our infrastructure) and replies are resolved in code before the customer reads them, so
+  # the LLM provider never receives the customer's name, merchants, amounts or dates.
+  pseudonymized_fields:
+    first_name: NOMBRE
+    registration_date: FECHA
+    merchant_name: COMERCIO
+    amount: MONTO
+    transaction_date: FECHA
+    date: FECHA
+    merchant_last_seen: FECHA
 
 # Deterministic output guard: a reply matching a pattern is replaced by `fallback_message`
 # in the customer's language (detected in code from their message).

@@ -47,7 +47,11 @@ How a case flows:
    Every step is written to the audit log in BigQuery.
 
 The LLM (OpenAI through LiteLLM, swappable by configuration) only receives
-minimized data: opaque transaction references and an allowlist of fields.
+minimized data: opaque transaction references and an allowlist of fields. Bank records
+(the customer's name, merchants, amounts and dates) leave only as placeholders such as
+`[[COMERCIO_1]]`, resolved inside the service before the customer reads the reply, and
+card, account, document and contact numbers are removed from the customer's messages
+before any model reads them.
 
 ## Repository structure
 
@@ -113,7 +117,8 @@ python -m pipelines               # skips the download (~1.5 min)
 - **Hardening:** the session guard refuses sessions without a valid signed-in customer
   (missing or expired) before the model runs; the customer ID lives in session state;
   tools take no customer ID; tools are allowed per turn lane; the model only sees
-  allowlisted fields and opaque transaction references; replies promising refunds or
+  allowlisted fields and opaque transaction references, with bank records as placeholders
+  and identifiers redacted from the customer's words; replies promising refunds or
   asking for credentials are replaced; every step is written to an audit log.
 - **Model backend:** any LiteLLM-supported provider (`LLM_MODEL`, `LLM_API_BASE`,
   `LLM_API_KEY`).

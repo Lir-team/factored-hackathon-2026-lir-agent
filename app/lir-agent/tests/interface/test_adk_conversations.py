@@ -157,3 +157,28 @@ def test_every_turn_is_audited_with_its_trace(conversations, audit):
     assert completed[0]["session_id"] == started.session_id
     assert completed[0]["llm_model"] == "openai/test-model"
     assert "CLI-DEMO-001" not in str(completed[0])
+
+
+def test_reported_charges_get_references_only_when_they_are_the_customers(
+    conversations, runner
+):
+    async def scenario() -> tuple[tuple[str, ...], dict]:
+        started = await conversations.start(
+            "case:1",
+            "CLI-DEMO-001",
+            ttl=TTL,
+            auth_method=AUTH,
+            transaction_ids=["TXN-D1-006", "TXN-D2-001", "TXN-D1-001"],
+        )
+        session = await runner.session_service.get_session(
+            app_name=conversations.app_name, user_id="case:1", session_id=started.session_id
+        )
+        assert session is not None
+        return started.transaction_refs, dict(session.state)
+
+    refs, state = asyncio.run(scenario())
+
+    assert refs == ("T1", "T2")  # TXN-D2-001 belongs to another customer
+    session = SessionState(state)
+    assert session.resolve_ref("T1") == "TXN-D1-006"
+    assert session.resolve_ref("T2") == "TXN-D1-001"

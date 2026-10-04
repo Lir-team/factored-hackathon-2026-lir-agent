@@ -5,6 +5,7 @@ rules assume it already passed that schema.
 """
 
 import secrets
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -80,20 +81,17 @@ _REPORTED_CHARGES = {"pt": "Cobranças que reporto"}
 _DEFAULT_REPORTED_CHARGES = "Cargos que reporto"
 
 
-def case_summary(payload: dict[str, Any]) -> str:
+def case_summary(payload: dict[str, Any], refs: Sequence[str] = ()) -> str:
     """The case as the customer's first message to the agent: description and charges.
 
-    Charges are described as the customer saw them (merchant, amount, date), never by
-    internal transaction id: the agent only sees opaque references to records.
+    Charges are named by their session references (T1, T2, ...), never by internal id nor
+    by merchant, amount or date: this message goes to the external model, and the bank's
+    records reach it only through the tools, as placeholders.
     """
-    charges = "; ".join(
-        f"{t['merchant']}, {t['amount']} {t['currency']}, {t['occurred_at'][:10]}"
-        for t in payload["transactions"]
-    )
-    if not charges:
+    if not refs:
         return payload["description"]
     label = _REPORTED_CHARGES.get(payload["language"], _DEFAULT_REPORTED_CHARGES)
-    return f"{payload['description']}\n{label}: {charges}."
+    return f"{payload['description']}\n{label}: {', '.join(refs)}."
 
 
 def new_start_token() -> str:

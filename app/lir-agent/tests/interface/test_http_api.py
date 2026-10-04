@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -42,14 +43,23 @@ class FakeConversations:
         self.messages: list[tuple[str, str, str]] = []
 
     async def start(
-        self, owner: str, customer_id: str, *, ttl: timedelta, auth_method: str
+        self,
+        owner: str,
+        customer_id: str,
+        *,
+        ttl: timedelta,
+        auth_method: str,
+        transaction_ids: Sequence[str] = (),
     ) -> StartedConversation:
         if customer_id == "CLI-UNKNOWN":
             raise CustomerNotFoundError(customer_id)
         session_id = f"s{len(self.sessions) + 1}"
         self.sessions[session_id] = (owner, customer_id)
         self.policies[session_id] = (ttl, auth_method)
-        return StartedConversation(session_id=session_id, expires_at=EXPIRES)
+        refs = tuple(f"T{i}" for i, _ in enumerate(transaction_ids, start=1))
+        return StartedConversation(
+            session_id=session_id, expires_at=EXPIRES, transaction_refs=refs
+        )
 
     async def send(self, owner: str, session_id: str, text: str) -> str:
         return (await self.converse(owner, session_id, text)).reply

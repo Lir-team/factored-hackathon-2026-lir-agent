@@ -31,28 +31,27 @@ PAYLOAD = {
 }
 
 
-def test_summary_is_the_description_and_the_reported_charges():
-    assert case_summary(PAYLOAD) == (
-        "No reconozco este cargo de Spotify en mi tarjeta.\n"
-        "Cargos que reporto: SPOTIFY P1A2B3, 179.0 MXN, 2026-03-14; "
-        "OXXO, 245.5 MXN, 2026-03-15."
+def test_summary_is_the_description_and_the_charge_references():
+    assert case_summary(PAYLOAD, ["T1", "T2"]) == (
+        "No reconozco este cargo de Spotify en mi tarjeta.\nCargos que reporto: T1, T2."
     )
 
 
-def test_summary_never_carries_internal_transaction_ids():
-    assert "TXN-" not in case_summary(PAYLOAD)
+def test_summary_never_carries_the_bank_records():
+    summary = case_summary(PAYLOAD, ["T1", "T2"])
+
+    for record in ("TXN-", "P1A2B3", "OXXO", "179", "245", "2026-03-1"):
+        assert record not in summary
 
 
 def test_summary_without_charges_is_the_description():
-    payload = {**PAYLOAD, "language": "pt", "transactions": []}
-
-    assert case_summary(payload) == PAYLOAD["description"]
+    assert case_summary(PAYLOAD) == PAYLOAD["description"]
 
 
 def test_portuguese_summary():
-    summary = case_summary({**PAYLOAD, "language": "pt"})
+    summary = case_summary({**PAYLOAD, "language": "pt"}, ["T1"])
 
-    assert "Cobranças que reporto: SPOTIFY P1A2B3" in summary
+    assert summary.endswith("Cobranças que reporto: T1.")
 
 
 @pytest.mark.parametrize(

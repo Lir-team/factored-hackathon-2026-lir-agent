@@ -17,8 +17,17 @@ written to an audit log.
 4. `before_tool` denies tools without a valid session, tools not allowed in the turn lane,
    and `open_dispute` without the `dispute` case lane and an explicit customer confirmation.
 5. Tools read only the session customer's records. Results sent to the LLM contain only
-   allowlisted fields and opaque transaction references (`T1`, `T2`).
-6. `after_model` replaces replies that promise refunds or ask for credentials.
+   allowlisted fields and opaque transaction references (`T1`, `T2`). The fields in
+   `llm_exposure.pseudonymized_fields` (name, merchant, amount, dates) leave as placeholders
+   (`[[COMERCIO_1]]`, `[[MONTO_1]]`); the placeholder table lives in the session state.
+6. Every model request is rebuilt by `before_model`: card, account, document and contact
+   numbers are removed from the customer's words (`[[DATO_PROTEGIDO]]`, only the count is
+   audited), and values the customer already read go back as placeholders. The decision
+   model receives the same protected text. Cases from the web form start with their charges
+   as references (`T1`), never as merchant, amount or date.
+7. `after_model` resolves placeholders for the customer, then replaces replies that promise
+   refunds or ask for credentials. `before_tool` resolves the placeholders the model passes
+   to a tool, so tools and the handoff packet work on real values.
 
 ## Tools
 
@@ -285,4 +294,9 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
   (Cloud Run ingress and IAP settings, managed in `lir-infra`).
 - The keyword baseline misses a bare "sí" as a confirmation; Jev is expected to handle it.
+- What the customer types still reaches the external models, without identifiers: the model
+  must understand it. Identifier redaction is pattern based (ten or more digits, e-mails,
+  CURP/RFC); an 8-digit DNI or cédula is indistinguishable from an amount and is kept. The
+  merchant decision (D4) reads candidate merchant names in clear (no amounts, dates or ids).
+  Closing these needs a model inside the perimeter (e.g. Vertex AI in-region or a local one).
 - `CLI-DEMO-001` exists only in the demo fixture; with DuckDB use a real customer id.

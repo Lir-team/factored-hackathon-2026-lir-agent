@@ -3,8 +3,18 @@ from datetime import date
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
+from lir_agent.container import build_container
 from lir_agent.domain.session import SessionState
-from tests.support import IN_SCOPE, make_context, outcome_rule, tool, user_request
+from lir_agent.infrastructure.audit import InMemoryAuditSink
+from tests.support import (
+    IN_SCOPE,
+    Harness,
+    ScriptedDecisions,
+    make_context,
+    outcome_rule,
+    tool,
+    user_request,
+)
 
 
 def test_unauthenticated_tool_call_denied(harness):
@@ -186,3 +196,115 @@ def test_escalate_lane_still_cannot_open_a_dispute(make_harness, context):
     h.callbacks.before_model(context, user_request("Me clonaron la tarjeta"))
     result = h.callbacks.before_tool(tool("open_dispute"), {"transaction_ref": "T1"}, context)
     assert result["reason"] == "not_allowed_for_turn_lane"
+
+
+# ---- bank records reach the external models only as placeholders -----------------------
+BANK_RECORDS = ("OXXO LAS AGUILAS", "245.5", "2026-06-10", "10/06/2026")
+
+
+def _privacy_harness(settings):
+    decisions = ScriptedDecisions(IN_SCOPE)
+    audit = InMemoryAuditSink()
+    container = build_container(settings, audit=audit, decisions=decisions)
+    return Harness(container, audit), decisions
+
+
+def _content_text(content: types.Content) -> str:
+    return " ".join(part.text or "" for part in content.parts or [])
+
+
+def _sent(request) -> str:
+    return " ".join(content.model_dump_json() for content in request.contents)
+
+
+def test_identifiers_never_reach_the_models(settings, context):
+    h, decisions = _privacy_harness(settings)
+    request = user_request("Mi tarjeta 4152 3138 0000 1234 tiene un cargo raro")
+
+    h.callbacks.before_model(context, request)
+
+    assert "4152" not in _sent(request)
+    assert all("4152" not in state for state, _ in decisions.calls)
+    redacted = [e for e in h.audit.entries if e["event"] == "identifiers_redacted"]
+    assert [e["count"] for e in redacted] == [1]
+    assert "4152" not in str(h.audit.entries)
+    # The customer's words stay whole inside the service (handoff, language detection).
+    assert "4152" in (SessionState(context.state).last_user_text or "")
+
+
+def test_tool_results_carry_placeholders_and_replies_are_resolved(harness, context):
+    session = SessionState(context.state)
+    harness.callbacks.before_model(context, user_request("Me cobraron dos veces"))
+    result = harness.toolkit.get_transaction_evidence(
+        context, session.ref_for("TXN-D1-006")
+    )
+
+    evidence = result["evidence"]
+    assert evidence["merchant_name"] == "[[COMERCIO_1]]"
+    assert evidence["amount"] == "[[MONTO_1]]"
+    assert evidence["date"] == "[[FECHA_1]]"
+    assert not any(record in str(result) for record in BANK_RECORDS)
+
+    reply = LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part(text="El cargo de [[MONTO_1]] MXN en [[COMERCIO_1]] del [[FECHA_1]].")],
+        )
+    )
+    resolved = harness.callbacks.after_model(context, reply)
+    assert resolved.content.parts[0].text == (
+        "El cargo de 245.50 MXN en OXXO LAS AGUILAS del 10/06/2026."
+    )
+
+
+def test_history_goes_back_to_the_model_as_placeholders(harness, context):
+    session = SessionState(context.state)
+    harness.callbacks.before_model(context, user_request("Me cobraron dos veces"))
+    result = harness.toolkit.get_transaction_evidence(
+        context, session.ref_for("TXN-D1-006")
+    )
+    history = [
+        types.Content(role="user", parts=[types.Part(text="Me cobraron dos veces")]),
+        types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    function_response=types.FunctionResponse(
+                        name="get_transaction_evidence", response=result
+                    )
+                )
+            ],
+        ),
+        # What the customer read: resolved values.
+        types.Content(
+            role="model",
+            parts=[types.Part(text="Es un cargo de 245.50 MXN en OXXO LAS AGUILAS del 10/06/2026.")],
+        ),
+        types.Content(role="user", parts=[types.Part(text="¿y el de OXXO LAS AGUILAS?")]),
+    ]
+    request = user_request("x")
+    request.contents = history
+
+    harness.callbacks.before_model(context, request)
+
+    assert not any(record in _sent(request) for record in BANK_RECORDS)
+    assert "[[COMERCIO_1]]" in _content_text(request.contents[-1])
+    # The session history itself is left untouched: the request got copies.
+    assert "OXXO LAS AGUILAS" in _content_text(history[2])
+
+
+def test_tools_receive_real_values(harness, context):
+    session = SessionState(context.state)
+    harness.callbacks.before_model(context, user_request("Me cobraron dos veces"))
+    harness.toolkit.get_transaction_evidence(context, session.ref_for("TXN-D1-006"))
+    args = {
+        "summary": "Cliente no reconoce [[COMERCIO_1]] por [[MONTO_1]] MXN",
+        "open_questions": ["¿Estuvo en [[COMERCIO_1]]?"],
+    }
+
+    harness.callbacks.before_tool(tool("request_human_handoff"), args, context)
+
+    assert args == {
+        "summary": "Cliente no reconoce OXXO LAS AGUILAS por 245.50 MXN",
+        "open_questions": ["¿Estuvo en OXXO LAS AGUILAS?"],
+    }

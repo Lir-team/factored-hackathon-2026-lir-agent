@@ -55,6 +55,7 @@ class ProcessCase:
                 payload["customer"]["customer_id"],
                 ttl=self._session_ttl,
                 auth_method=AUTH_METHOD,
+                transaction_ids=[t["transaction_id"] for t in payload["transactions"]],
             )
         except CustomerNotFoundError:
             self._audit.record(
@@ -62,7 +63,7 @@ class ProcessCase:
             )
             return
         reply = await self._conversations.send(
-            owner, started.session_id, case_summary(payload)
+            owner, started.session_id, case_summary(payload, started.transaction_refs)
         )
         conversation = CaseConversation(
             case_id=case_id,

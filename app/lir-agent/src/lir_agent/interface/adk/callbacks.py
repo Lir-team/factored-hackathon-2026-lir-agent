@@ -2,9 +2,12 @@
 
 - before_agent: seeds a labeled TEST session in local development only, then refuses any
   session without a valid signed-in customer before the agent (and model) run.
-- before_model: routes each new customer message (RouteTurn) and appends lane guidance.
-- before_tool: authentication, session expiry, tools allowed per turn lane, dispute confirmation.
-- after_tool / after_model: audit records and the deterministic output guard.
+- before_model: routes each new customer message (RouteTurn), appends lane guidance and
+  protects the request: identifiers redacted, bank records as placeholders.
+- before_tool: authentication, session expiry, tools allowed per turn lane, dispute confirmation,
+  and placeholders in the arguments resolved before the tool runs.
+- after_tool / after_model: audit records, placeholders resolved for the customer and the
+  deterministic output guard.
 """
 
 import logging
@@ -24,6 +27,7 @@ from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.errors import DisputeBlock
 from lir_agent.domain.language import detect_language
 from lir_agent.domain.policy import PolicyEngine
+from lir_agent.domain.pseudonyms import Pseudonyms, redact_identifiers
 from lir_agent.domain.session import SessionState
 from lir_agent.interface.adk.guidance import CustomerMessages, TurnGuidance
 
@@ -56,6 +60,29 @@ def _content_text(content: types.Content | None) -> str:
     if not content:
         return ""
     return " ".join(part.text for part in (content.parts or []) if part.text)
+
+
+def _protected_part(part: types.Part, role: str | None, pseudonyms: Pseudonyms) -> types.Part:
+    """A copy of a request part as the external model may read it.
+
+    Copies, never edits: the request's contents may share objects with the session history.
+    """
+    if part.text:
+        if role == "user":
+            return part.model_copy(update={"text": pseudonyms.protect_customer_text(part.text)})
+        # Replies the customer read hold resolved values; they go back as placeholders.
+        return part.model_copy(update={"text": pseudonyms.conceal(part.text)})
+    # Tool arguments and results echo the customer's words (e.g. `merchant_hint`).
+    call, result = part.function_call, part.function_response
+    if call and call.args:
+        args = pseudonyms.conceal_value(call.args)
+        return part.model_copy(update={"function_call": call.model_copy(update={"args": args})})
+    if result and result.response:
+        response = pseudonyms.conceal_value(result.response)
+        return part.model_copy(
+            update={"function_response": result.model_copy(update={"response": response})}
+        )
+    return part
 
 
 class AgentCallbacks:
@@ -129,6 +156,12 @@ class AgentCallbacks:
         text = _latest_user_text(llm_request)
         if text is not None:
             self._route_turn.execute(session, text, _session_id(callback_context))
+            removed = redact_identifiers(text)[1]
+            if removed:  # the count only: the identifiers themselves are never logged
+                self._audit.record(
+                    "identifiers_redacted", _session_id(callback_context), count=removed
+                )
+        self._protect(session, llm_request)
         llm_request.append_instructions(
             [
                 self._guidance.date_context(self._settings.today()),
@@ -137,15 +170,33 @@ class AgentCallbacks:
         )
         return None
 
+    @staticmethod
+    def _protect(session: SessionState, llm_request: LlmRequest) -> None:
+        """Rebuild the request contents with identifiers redacted and records as placeholders."""
+        pseudonyms = Pseudonyms(session)
+        llm_request.contents = [
+            content.model_copy(
+                update={
+                    "parts": [
+                        _protected_part(part, content.role, pseudonyms)
+                        for part in content.parts or []
+                    ]
+                }
+            )
+            for content in llm_request.contents
+        ]
+
     def after_model(
         self, callback_context: CallbackContext, llm_response: LlmResponse
     ) -> LlmResponse | None:
-        """Replace replies that promise refunds or ask for credentials."""
+        """Resolve placeholders, then replace replies that promise refunds or ask for credentials."""
+        revealed = self._reveal(callback_context, llm_response)
+        llm_response = revealed or llm_response
         text = _response_text(llm_response)
         guard = self._policy.config.output_guard
         violations = guard.violations(text) if text else []
         if not violations:
-            return None
+            return revealed
         self._audit.record(
             "output_blocked", _session_id(callback_context), patterns=violations
         )
@@ -154,6 +205,35 @@ class AgentCallbacks:
             content=types.Content(
                 role="model", parts=[types.Part(text=guard.fallback(language))]
             )
+        )
+
+    def _reveal(
+        self, callback_context: CallbackContext, llm_response: LlmResponse
+    ) -> LlmResponse | None:
+        """The reply with its placeholders resolved for the customer, or None if it has none."""
+        content = llm_response.content
+        if not content or not any(part.text for part in content.parts or []):
+            return None
+        pseudonyms = Pseudonyms(SessionState(callback_context.state))
+        parts: list[types.Part] = []
+        unknown: list[str] = []
+        changed = False
+        for part in content.parts or []:
+            if part.text:
+                text, missing = pseudonyms.reveal(part.text)
+                unknown += missing
+                if text != part.text:
+                    changed = True
+                    part = part.model_copy(update={"text": text})
+            parts.append(part)
+        if unknown:  # the model wrote a placeholder it was never given
+            self._audit.record(
+                "unknown_placeholder", _session_id(callback_context), placeholders=unknown
+            )
+        if not changed:
+            return None
+        return llm_response.model_copy(
+            update={"content": content.model_copy(update={"parts": parts})}
         )
 
     # ---- tools ---------------------------------------------------------------------------
@@ -189,6 +269,12 @@ class AgentCallbacks:
                 # does not improvise "contact support" after a block.
                 "instruction": self._guidance.for_turn(session),
             }
+
+        # Tools work on real values: resolve the placeholders the model passed. ADK hands the
+        # tool this same dict; the conversation history keeps the placeholders.
+        pseudonyms = Pseudonyms(session)
+        for key, value in args.items():
+            args[key] = pseudonyms.reveal_value(value)
 
         if tool.name == OPEN_DISPUTE_TOOL:
             denial = self._check_dispute(session, session_id, args)
