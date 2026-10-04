@@ -145,7 +145,7 @@ def test_unknown_customer_is_not_found(client, conversations):
         "/v1/sessions", json={"customer_id": "cli-unknown"}, headers=IAP_HEADER
     )
     assert response.status_code == 404
-    assert response.json() == {"detail": "Customer not found"}
+    assert response.json()["detail"].startswith("Customer not found: expected")
 
 
 def test_trace_is_hidden_by_default(client):
@@ -192,3 +192,25 @@ def test_handoff_report_needs_identity_and_an_existing_handoff(client):
     assert client.get("/v1/handoffs/HND-ABC/report.md").status_code == 401
     missing = client.get("/v1/handoffs/HND-NOPE/report.md", headers=IAP_HEADER)
     assert missing.status_code == 404
+
+
+def test_docs_explain_the_customer_id_format_with_an_example(settings, conversations):
+    documented = settings.model_copy(
+        update={"api_example_customer_id": "CLI-REAL-0001"}
+    )
+    client = TestClient(create_app(documented, conversations=conversations))
+    spec = client.get("/openapi.json").json()
+    schema = spec["components"]["schemas"]["SessionRequest"]["properties"]["customer_id"]
+    assert "CLI-" in schema["description"] and "not a name" in schema["description"]
+    assert schema["examples"] == ["CLI-REAL-0001"]
+    session_errors = spec["paths"]["/v1/sessions"]["post"]["responses"]
+    assert {"401", "404", "422"} <= set(session_errors)
+    assert "CLI-REAL-0001" in spec["info"]["description"]
+
+
+def test_invalid_customer_id_error_says_what_is_expected(client):
+    response = client.post(
+        "/v1/sessions", json={"customer_id": "colette smith"}, headers=IAP_HEADER
+    )
+    assert response.status_code == 422
+    assert "CLI-" in response.json()["detail"]
