@@ -31,6 +31,8 @@ class _Key(StrEnum):
     TRANSACTION_REFS = "transaction_refs"
     PSEUDONYMS = "pseudonyms"
     CASE_REPORT = "case_report"
+    EXPLAINED_TRANSACTION = "explained_transaction"
+    REVIEW_TRANSACTION = "review_transaction"
     EVIDENCE = "evidence"
     PENDING_CONFIRMATION = "pending_confirmation"
     CONFIRMED_TRANSACTION = "confirmed_transaction"
@@ -165,6 +167,25 @@ class SessionState:
     def resolve_ref(self, ref: str | None) -> str | None:
         """Internal id for a reference issued in this session, or None."""
         return (self._raw.get(_Key.TRANSACTION_REFS) or {}).get(ref or "")
+
+    # ---- explanation rejected: dispute under human review ------------------------------
+    @property
+    def explained_transaction(self) -> str | None:
+        """The last charge the agent explained (case lane `explain`)."""
+        return self._raw.get(_Key.EXPLAINED_TRANSACTION)
+
+    @explained_transaction.setter
+    def explained_transaction(self, transaction_id: str | None) -> None:
+        self._raw[_Key.EXPLAINED_TRANSACTION] = transaction_id
+
+    @property
+    def review_transaction(self) -> str | None:
+        """The explained charge the customer rejected: it may go to a person as a dispute."""
+        return self._raw.get(_Key.REVIEW_TRANSACTION)
+
+    @review_transaction.setter
+    def review_transaction(self, transaction_id: str | None) -> None:
+        self._raw[_Key.REVIEW_TRANSACTION] = transaction_id
 
     # ---- what the customer reported in the web form ------------------------------------
     @property

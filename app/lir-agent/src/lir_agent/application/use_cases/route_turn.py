@@ -6,7 +6,7 @@ from decision_layer import DecisionError, DecisionModel
 from decision_layer.questions import TURN_QUESTIONS
 
 from lir_agent.application.ports import AuditSink
-from lir_agent.application.questions import CONFIRMATION
+from lir_agent.application.questions import CONFIRMATION, REJECTS_EXPLANATION
 from lir_agent.application.use_cases.request_handoff import RequestHandoff
 from lir_agent.domain.models import Lane, Outcome
 from lir_agent.domain.policy import PolicyEngine
@@ -30,6 +30,7 @@ class RouteTurn:
         self._handoff = handoff
         self._audit = audit
         self._confirms_key = policy.config.decision_keys["confirms"]
+        self._rejects_key = policy.config.decision_keys["rejects_explanation"]
         self._confirm_min = policy.config.confirmation["min_probability"]
 
     def execute(
@@ -41,6 +42,8 @@ class RouteTurn:
         questions = dict(TURN_QUESTIONS)
         if pending:
             questions[self._confirms_key] = CONFIRMATION
+        elif session.explained_transaction:
+            questions[self._rejects_key] = REJECTS_EXPLANATION
         # The decision model may be external: it reads the message without identifiers
         # and with the bank's records (merchants, the customer's name) as placeholders.
         model_text = Pseudonyms(session).protect_customer_text(text)
@@ -54,6 +57,7 @@ class RouteTurn:
             **(session.case_report.facts() if session.case_report else {}),
             "confirmed_now": confirmed_now,
             "awaiting_confirmation": bool(pending) and not confirmed_now,
+            "review_requested": bool(session.review_transaction),
         }
         outcome = self._policy.route_turn(facts)
         session.decisions = decisions
@@ -65,6 +69,11 @@ class RouteTurn:
             decisions=decisions,
             confirmed_now=confirmed_now,
         )
+        if outcome.lane == Lane.REVIEW and not session.review_transaction:
+            # Registered in code: the next message is checked for an explicit "yes" to the
+            # dispute details, whatever the model says or does.
+            session.review_transaction = session.explained_transaction
+            session.pending_confirmation = session.explained_transaction
         if outcome.lane == Lane.ESCALATE and not session.handoff_id:
             result = self._handoff.execute(session)
             self._audit.record(

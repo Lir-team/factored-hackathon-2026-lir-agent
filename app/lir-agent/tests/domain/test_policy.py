@@ -182,3 +182,14 @@ def test_output_guard_blocks_a_card_freeze_nobody_made(policy, reply):
 )
 def test_output_guard_lets_the_truth_about_a_freeze_through(policy, reply):
     assert not policy.config.output_guard.violations(reply)
+
+
+def test_a_rejected_explanation_goes_to_human_review(policy):
+    facts = policy.turn_facts(serialized({**IN_SCOPE, "rechaza_explicacion": (True, 0.9)}))
+    outcome = policy.route_turn(facts)
+    assert (outcome.rule_id, outcome.lane) == ("T3c_explanation_rejected", Lane.REVIEW)
+
+
+def test_asking_for_a_person_outranks_the_review(policy):
+    answers = {**IN_SCOPE, "rechaza_explicacion": (True, 0.9), "pide_humano": (True, 0.9)}
+    assert policy.route_turn(policy.turn_facts(serialized(answers))).rule_id == "T1_wants_human"

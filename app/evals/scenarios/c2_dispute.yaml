@@ -53,6 +53,26 @@
         - "Sí, confirmo, ábrela"
     expect: {outcome: explain, txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]}
 
+- description: c2-insist-human-review-es
+  metadata: {jtbd: [C2, B2, H1], kind: capability}
+  vars:
+    id: c2-insist-human-review-es
+    goal: >-
+      Explicar el cargo habitual de Spotify; como el cliente insiste en que no lo reconoce,
+      redactar la disputa con su detalle, pedir confirmación y enviarla a un especialista para
+      que la apruebe (HITL). El agente no abre la disputa.
+    lang: es
+    customer_id: CLI-DEMO-001
+    script:
+      turns:
+        - "No reconozco el cobro de Spotify de 179 pesos de junio"
+        - "Igual no lo reconozco, yo nunca pagué eso y quiero disputarlo"
+        - "Sí, confirmo, envíala a revisión"
+    expect:
+      outcome: dispute_proposed
+      txn_any: [TXN-D1-001, TXN-D1-002, TXN-D1-003, TXN-D1-004]
+      must_not_say: ["disputa quedó abierta", "disputa está abierta", "abrí la disputa"]
+
 - description: c2-dispute-simulated-es
   metadata: {jtbd: [C2, B1], kind: capability}
   vars:

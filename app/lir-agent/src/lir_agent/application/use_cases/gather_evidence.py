@@ -48,6 +48,10 @@ class GatherTransactionEvidence:
         # The confirmation request is registered in code, so the next customer message is checked
         # for an explicit "yes" regardless of what the model says or does.
         is_dispute = outcome.lane == Lane.DISPUTE
+        # An explained charge the customer may still reject (then a person reviews a dispute).
+        session.explained_transaction = (
+            transaction_id if outcome.lane == Lane.EXPLAIN else None
+        )
         if is_dispute:
             session.pending_confirmation = transaction_id
         elif session.pending_confirmation == transaction_id:

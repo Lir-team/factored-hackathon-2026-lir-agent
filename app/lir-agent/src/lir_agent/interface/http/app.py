@@ -13,7 +13,7 @@ at once; the customer continues on Telegram (`POST /channels/telegram`, see `tel
 
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
@@ -29,7 +29,14 @@ from lir_agent.application.ports import (
     CustomerNotFoundError,
     Messenger,
 )
-from lir_agent.application.use_cases import AnswerTelegramMessage, ProcessCase
+from lir_agent.application.use_cases import (
+    AnswerTelegramMessage,
+    DisputeNotVerifiedError,
+    ProcessCase,
+    ProposalAlreadyDecidedError,
+    ProposalNotFoundError,
+    ReviewDispute,
+)
 from lir_agent.config.settings import Settings
 from lir_agent.domain.case_intake import (
     ForeignCaseError,
@@ -94,6 +101,23 @@ class MessageResponse(BaseModel):
 
     reply: str
     trace: TraceView | None = None
+
+
+class DisputeReviewRequest(BaseModel):
+    """Body of `POST /v1/handoffs/{handoff_id}/dispute-review`: a specialist's decision."""
+
+    decision: Literal["approve", "reject"]
+    note: str | None = Field(
+        default=None, max_length=500, description="Internal; never sent to the customer."
+    )
+
+
+class DisputeReviewResponse(BaseModel):
+    """The decision as recorded in the handoff packet."""
+
+    status: str
+    reviewer: str | None
+    dispute_case_id: str | None
 
 
 class CaseAcceptedResponse(BaseModel):
@@ -378,6 +402,44 @@ def create_app(
     credentials = _telegram_credentials(settings)
     if messenger is None and credentials:
         messenger = _real_messenger(credentials[0])
+
+    # Human in the loop: the IAP identity of the caller is the reviewer of record.
+    review = ReviewDispute(deps.cases, deps.audit, deps.case_store, messenger)
+
+    @app.post(
+        "/v1/handoffs/{handoff_id}/dispute-review",
+        responses={
+            **identity_error,
+            404: {"description": "No proposed dispute in this handoff"},
+            409: {"description": "The proposed dispute was already decided"},
+            503: {"description": "The dispute could not be verified; retry"},
+        },
+    )
+    async def dispute_review(
+        handoff_id: str,
+        body: DisputeReviewRequest,
+        caller: Annotated[str, Depends(operator)],
+    ) -> DisputeReviewResponse:
+        """Approve (opens the dispute) or reject a dispute the agent proposed."""
+        try:
+            decided = await review.execute(
+                handoff_id, caller, body.decision == "approve", body.note
+            )
+        except ProposalNotFoundError:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "No proposed dispute in this handoff"
+            ) from None
+        except ProposalAlreadyDecidedError:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Already decided") from None
+        except DisputeNotVerifiedError:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Dispute not verified, retry"
+            ) from None
+        return DisputeReviewResponse(
+            status=decided.status.value,
+            reviewer=decided.reviewer,
+            dispute_case_id=decided.dispute_case_id,
+        )
 
     push_on, verifier = _push_verifier(settings, push_token_verifier)
     if push_on:

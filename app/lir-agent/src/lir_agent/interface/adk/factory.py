@@ -50,6 +50,7 @@ class AgentFactory:
             c.gather_evidence,
             c.open_dispute,
             c.request_handoff,
+            c.propose_dispute,
         )
         tools = toolkit.tools()
         self._check_policy_tool_names({tool.__name__ for tool in tools})

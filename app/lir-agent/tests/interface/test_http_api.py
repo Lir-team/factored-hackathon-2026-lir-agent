@@ -228,3 +228,30 @@ def test_invalid_customer_id_error_says_what_is_expected(client):
     )
     assert response.status_code == 422
     assert "CLI-" in response.json()["detail"]
+
+
+def test_a_specialist_approves_a_proposed_dispute_once(settings, conversations):
+    from lir_agent.container import build_container
+    from lir_agent.domain.models import ProposedDispute
+    from tests.application.test_handoff_report import CREATED, packet
+
+    container = build_container(settings)
+    proposal = ProposedDispute(transaction_id="TX-1", reason="No lo reconoce", proposed_at=CREATED)
+    container.cases.submit_handoff(packet(proposed_dispute=proposal))
+    client = TestClient(create_app(settings, conversations=conversations, container=container))
+    url = "/v1/handoffs/HND-ABC/dispute-review"
+
+    assert client.post(url, json={"decision": "approve"}).status_code == 401
+    assert client.post(url, json={"decision": "maybe"}, headers=IAP_HEADER).status_code == 422
+    response = client.post(url, json={"decision": "approve"}, headers=IAP_HEADER)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["status"], body["reviewer"]) == ("approved", "tester@example.com")
+    assert container.cases.get_dispute(body["dispute_case_id"]) is not None
+    again = client.post(url, json={"decision": "reject"}, headers=IAP_HEADER)
+    assert again.status_code == 409
+    missing = client.post(
+        "/v1/handoffs/HND-NOPE/dispute-review", json={"decision": "approve"}, headers=IAP_HEADER
+    )
+    assert missing.status_code == 404

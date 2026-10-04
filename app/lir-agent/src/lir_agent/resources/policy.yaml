@@ -5,7 +5,7 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.5.0-synthetic
+version: 0.6.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
@@ -13,6 +13,7 @@ decision_keys:
   wants_human: pide_humano
   theft_suspected: sospecha_robo
   confirms: confirma
+  rejects_explanation: rechaza_explicacion
   merchant: comercio
 
 # Turn-level routing, from the typed decisions on the customer's message (before any lookup).
@@ -37,6 +38,13 @@ turn_rules:
     lane: escalate
     reason: Customer explicitly asks for a person
     when: {wants_human_p: {gte: 0.50}}
+  # Human in the loop: a dispute on an explained charge opens only if a specialist approves it.
+  - id: T2b_review_confirmed
+    lane: review
+    reason: >-
+      The customer confirmed the dispute details: call propose_dispute now to send it to a
+      specialist for approval
+    when: {confirmed_now: {eq: true}, review_requested: {eq: true}}
   - id: T2_confirmation_received
     lane: proceed
     reason: Customer confirmed the pending dispute
@@ -49,6 +57,12 @@ turn_rules:
     lane: confirm
     reason: A dispute is pending the customer's explicit confirmation
     when: {awaiting_confirmation: {eq: true}}
+  - id: T3c_explanation_rejected
+    lane: review
+    reason: >-
+      The customer still does not recognize the charge after the explanation: draft a dispute
+      for a specialist to approve and ask the customer to confirm its details
+    when: {rejects_explanation_p: {gte: 0.50}}
   - id: T4_uncertain_intent
     lane: clarify
     reason: The customer's need is unclear
@@ -123,6 +137,8 @@ tools_by_turn_lane:
   # Escalated turns may still look up the charge the customer described (read-only), so it
   # reaches the specialist in the handoff packet. Disputes stay out of this lane.
   escalate: [find_candidate_transactions, get_transaction_evidence, request_human_handoff]
+  # Human in the loop: the agent drafts the dispute; only a specialist can open it.
+  review: [get_transaction_evidence, propose_dispute, request_human_handoff]
   out_of_scope: [get_my_customer_profile, request_human_handoff]
 
 # What the specialist still has to resolve, per rule that sends the case to a human
@@ -139,6 +155,8 @@ handoff_open_questions:
     - "¿Hay otros movimientos que el cliente no reconoce?"
   T1_wants_human:
     - "Qué necesita el cliente: pidió una persona antes de detallar el caso."
+  T2b_review_confirmed:
+    - "Aprobar o rechazar la disputa propuesta: el cliente no reconoce el cargo pese a la explicación."
   T3_theft_suspected:
     - "¿La tarjeta sigue en poder del cliente? Bloquearla si corresponde."
     - "¿Hay otros movimientos que el cliente no reconoce?"

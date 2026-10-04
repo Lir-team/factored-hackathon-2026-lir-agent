@@ -308,6 +308,9 @@ def _handoff_view(packet: HandoffPacket) -> dict:
         "actions_taken": packet.actions_taken,
         "open_questions": packet.open_questions,
         "has_model_summary": bool(packet.model_summary),
+        "proposed_dispute": (
+            packet.proposed_dispute.model_dump(mode="json") if packet.proposed_dispute else None
+        ),
     }
 
 

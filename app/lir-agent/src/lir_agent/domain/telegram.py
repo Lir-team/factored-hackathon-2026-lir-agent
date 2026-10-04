@@ -35,6 +35,15 @@ _MESSAGES: dict[str, dict[Language, str]] = {
         "es": "Esta conversación expiró. Envía un nuevo reporte desde el formulario.",
         "pt": "Esta conversa expirou. Envie um novo relato pelo formulário.",
     },
+    # A specialist's decision on a dispute the customer asked for (human in the loop).
+    "dispute_approved": {
+        "es": "Un especialista aprobó tu disputa del caso {folio}. Quedó abierta con el número {case_id}.",
+        "pt": "Um especialista aprovou sua contestação do caso {folio}. Ela foi aberta com o número {case_id}.",
+    },
+    "dispute_rejected": {
+        "es": "Un especialista revisó tu solicitud del caso {folio} y no abrió la disputa. Si tienes más información sobre el cargo, respóndeme por aquí.",
+        "pt": "Um especialista analisou sua solicitação do caso {folio} e não abriu a contestação. Se tiver mais informações sobre a cobrança, responda por aqui.",
+    },
     "too_long": {
         "es": "Tu mensaje es muy largo. Envíalo en partes de hasta {limit} caracteres.",
         "pt": "Sua mensagem é muito longa. Envie em partes de até {limit} caracteres.",

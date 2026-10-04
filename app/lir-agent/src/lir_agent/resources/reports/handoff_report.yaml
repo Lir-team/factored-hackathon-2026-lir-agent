@@ -21,6 +21,8 @@ es:
   decisions: "Decisiones tipadas del último turno"
   decision_columns: ["Pregunta", "Respuesta", "Probabilidad"]
   open_questions: "Preguntas abiertas para el especialista"
+  proposed_dispute: "Disputa propuesta (requiere tu aprobación)"
+  proposed_dispute_how: "Decidir con `POST /v1/handoffs/{handoff_id}/dispute-review` y `{{\"decision\": \"approve\"}}` o `{{\"decision\": \"reject\"}}`."
   no_open_questions: "Sin preguntas abiertas."
   model_summary: "Resumen del modelo (generado por IA, no verificado)"
   no_model_summary: "El modelo no entregó resumen."
@@ -45,6 +47,8 @@ pt:
   decisions: "Decisões tipadas do último turno"
   decision_columns: ["Pergunta", "Resposta", "Probabilidade"]
   open_questions: "Perguntas em aberto para o especialista"
+  proposed_dispute: "Contestação proposta (requer sua aprovação)"
+  proposed_dispute_how: "Decidir com `POST /v1/handoffs/{handoff_id}/dispute-review` e `{{\"decision\": \"approve\"}}` ou `{{\"decision\": \"reject\"}}`."
   no_open_questions: "Sem perguntas em aberto."
   model_summary: "Resumo do modelo (gerado por IA, não verificado)"
   no_model_summary: "O modelo não forneceu resumo."

@@ -35,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 DEV_AUTH_METHOD = "dev_test_session"
 OPEN_DISPUTE_TOOL = "open_dispute"
+PROPOSE_DISPUTE_TOOL = "propose_dispute"
+CONFIRM_PROPOSAL = (
+    "Restate the dispute (merchant, date, amount and the customer's reason), say a bank "
+    "specialist must approve it before it is opened, and ask the customer to confirm "
+    "explicitly in their next message."
+)
 
 
 def _session_id(context: Any) -> str | None:
@@ -280,6 +286,10 @@ class AgentCallbacks:
             denial = self._check_dispute(session, session_id, args)
             if denial:
                 return denial
+        if tool.name == PROPOSE_DISPUTE_TOOL:
+            denial = self._check_proposal(session, session_id, args)
+            if denial:
+                return denial
 
         self._audit.record("tool_call", session_id, tool=tool.name, args=args)
         return None
@@ -298,6 +308,24 @@ class AgentCallbacks:
             tool=tool.name,
             status=(tool_response or {}).get("status"),
         )
+        return None
+
+    def _check_proposal(
+        self, session: SessionState, session_id: str | None, args: dict
+    ) -> dict | None:
+        transaction_id = session.resolve_ref(args.get("transaction_ref"))
+        block = self._dispute_guard.check_proposal(session, transaction_id)
+        if block is DisputeBlock.CONFIRMATION_REQUIRED:
+            session.pending_confirmation = transaction_id
+            self._audit.record(
+                "confirmation_requested", session_id, transaction_id=transaction_id
+            )
+            return {"status": "confirmation_required", "instruction": CONFIRM_PROPOSAL}
+        if block:
+            self._audit.record(
+                "tool_denied", session_id, tool=PROPOSE_DISPUTE_TOOL, reason=block.value
+            )
+            return {"status": "blocked", "reason": block.value}
         return None
 
     def _check_dispute(

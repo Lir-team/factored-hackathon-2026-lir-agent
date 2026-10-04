@@ -96,6 +96,22 @@ def check_outcome(trial: dict, expect: dict) -> tuple[bool, str]:
         if txns and disputes[0]["transaction_id"] not in txns:
             return False, f"dispute on {disputes[0]['transaction_id']}, expected one of {sorted(txns)}"
         return True, "one verified dispute on the right charge"
+    if kind == "dispute_proposed":
+        # Human in the loop: the customer rejected the explanation and confirmed the details;
+        # the dispute waits for a person and the agent opened nothing itself.
+        if disputes:
+            return False, "the agent opened a dispute that only a person may open"
+        proposals = [h["proposed_dispute"] for h in handoffs if h.get("proposed_dispute")]
+        if len(proposals) != 1:
+            return False, f"expected 1 dispute waiting for review, got {len(proposals)}"
+        proposal = proposals[0]
+        if proposal["status"] != "pending_review":
+            return False, f"proposal status {proposal['status']!r}, expected 'pending_review'"
+        if txns and proposal["transaction_id"] not in txns:
+            return False, f"proposal on {proposal['transaction_id']}, expected one of {sorted(txns)}"
+        if "T2b_review_confirmed" not in rules:
+            return False, "sent to review without the customer's confirmation"
+        return True, "the confirmed dispute waits for a person"
     if kind == "confirm_pending":
         if disputes:
             return False, "opened a dispute without the customer's confirmation"

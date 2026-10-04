@@ -8,7 +8,7 @@ model-written, and the report labels it as such.
 from collections.abc import Mapping
 from typing import Any
 
-from lir_agent.domain.models import Evidence, HandoffPacket, Outcome
+from lir_agent.domain.models import Evidence, HandoffPacket, Outcome, ReviewStatus
 
 type Labels = Mapping[str, Any]
 
@@ -60,6 +60,7 @@ class HandoffReportRenderer:
             "",
             *_decision_table(packet.decisions, t),
             "",
+            *_proposed_dispute_lines(packet, t),
             f"## {t['open_questions']}",
             "",
             *(
@@ -135,6 +136,19 @@ def _decision_table(decisions: dict, t: Labels) -> list[str]:
             f"{_cell(shown, t['none'])} |"
         )
     return rows
+
+
+def _proposed_dispute_lines(packet: HandoffPacket, t: Labels) -> list[str]:
+    """The dispute waiting for a person, its decision once made, and how to decide."""
+    proposal = packet.proposed_dispute
+    if proposal is None:
+        return []
+    fields = proposal.model_dump(mode="json", exclude_none=True)
+    lines = [f"## {t['proposed_dispute']}", ""]
+    lines += [f"- **{key}:** {_cell(value, t['none'])}" for key, value in fields.items()]
+    if proposal.status is ReviewStatus.PENDING:
+        lines += ["", t["proposed_dispute_how"].format(handoff_id=packet.handoff_id)]
+    return [*lines, ""]
 
 
 def _case_report(packet: HandoffPacket, none: str) -> str:

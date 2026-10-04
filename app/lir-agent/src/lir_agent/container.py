@@ -32,6 +32,7 @@ from lir_agent.application.use_cases import (
     GatherTransactionEvidence,
     GetCustomerProfile,
     OpenDispute,
+    ProposeDispute,
     RequestHandoff,
     RouteTurn,
     SubmitCase,
@@ -75,6 +76,7 @@ class Container:
     find_candidates: FindCandidateTransactions
     gather_evidence: GatherTransactionEvidence
     open_dispute: OpenDispute
+    propose_dispute: ProposeDispute
     request_handoff: RequestHandoff
     route_turn: RouteTurn
     case_store: CaseStore
@@ -236,6 +238,7 @@ def build_container(
             repository, evidence_builder, policy, presenter
         ),
         open_dispute=OpenDispute(cases, dispute_guard),
+        propose_dispute=ProposeDispute(request_handoff, dispute_guard),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
         case_store=case_store,

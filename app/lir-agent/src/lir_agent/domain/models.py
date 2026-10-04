@@ -16,6 +16,8 @@ class Lane(StrEnum):
     CLARIFY = "clarify"
     CONFIRM = "confirm"
     OUT_OF_SCOPE = "out_of_scope"
+    # The customer rejects an explanation: draft a dispute that a person approves (HITL).
+    REVIEW = "review"
     # Case lanes
     EXPLAIN = "explain"
     DISPUTE = "dispute"
@@ -114,6 +116,27 @@ class DisputeCase(_Frozen):
     created_at: datetime
 
 
+class ReviewStatus(StrEnum):
+    """Where a proposed dispute stands in the human review."""
+
+    PENDING = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ProposedDispute(_Frozen):
+    """A dispute the customer confirmed and a bank specialist must approve before it opens."""
+
+    transaction_id: str
+    reason: str = Field(description="The customer's reason, as the model summarized it.")
+    proposed_at: datetime
+    status: ReviewStatus = ReviewStatus.PENDING
+    reviewer: str | None = None
+    decided_at: datetime | None = None
+    note: str | None = Field(default=None, description="The reviewer's note; internal.")
+    dispute_case_id: str | None = None
+
+
 class HandoffPacket(_Frozen):
     """What a human reviewer receives when a case is handed off.
 
@@ -136,4 +159,7 @@ class HandoffPacket(_Frozen):
     )
     case_report: CaseReport | None = Field(
         default=None, description="What the customer reported in the web form."
+    )
+    proposed_dispute: ProposedDispute | None = Field(
+        default=None, description="A dispute waiting for (or decided by) a person."
     )

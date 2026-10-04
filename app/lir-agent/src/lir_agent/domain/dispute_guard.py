@@ -25,6 +25,19 @@ class DisputeGuard:
             return DisputeBlock.CONFIRMATION_REQUIRED
         return None
 
+    def check_proposal(
+        self, session: SessionState, transaction_id: str | None
+    ) -> DisputeBlock | None:
+        """None when a dispute may go to human review; otherwise why it is blocked.
+
+        Only the explained charge the customer rejected, once they confirmed the details.
+        """
+        if transaction_id is None or transaction_id != session.review_transaction:
+            return DisputeBlock.NOT_UNDER_REVIEW
+        if transaction_id not in self._confirmed_charge(session):
+            return DisputeBlock.CONFIRMATION_REQUIRED
+        return None
+
     @staticmethod
     def _confirmed_charge(session: SessionState) -> set[str]:
         """The confirmed transaction plus its duplicates: one charge, billed twice.

@@ -76,7 +76,7 @@ come from `EVALS_BQ_TABLE`. Rows reuse `report.py`, so the dashboard and the con
 5. Run it, then **read the transcript** (`npx promptfoo@0 view`) before trusting the grade.
 
 Scripted customer messages go in `script: {turns: [...]}` (promptfoo expands any list placed
-directly in `vars` into one test per element). Outcomes understood by `graders.py`: `explain`, `dispute`, `confirm_pending`, `handoff`
+directly in `vars` into one test per element). Outcomes understood by `graders.py`: `explain`, `dispute`, `dispute_proposed` (waits for a person), `confirm_pending`, `handoff`
 (optional `handoff_rule` prefix such as `T3` or `C10`), `clarify`, `ask_which`
 (`mention_all`), `out_of_scope`, `no_action`, `refuse_session`. Optional: `txn_any`,
 `must_not_say`, `mention_any`, `merchants_absent`, `max_turns`, `max_model_calls`, `gate_efficiency`.

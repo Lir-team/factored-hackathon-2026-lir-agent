@@ -16,6 +16,7 @@ from lir_agent.application.use_cases import (
     GatherTransactionEvidence,
     GetCustomerProfile,
     OpenDispute,
+    ProposeDispute,
     RequestHandoff,
     SearchCriteria,
 )
@@ -33,6 +34,7 @@ class ChargeInvestigationToolkit:
         gather_evidence: GatherTransactionEvidence,
         open_dispute: OpenDispute,
         request_handoff: RequestHandoff,
+        propose_dispute: ProposeDispute,
     ) -> None:
         """Keep the use cases the tools delegate to."""
         self._get_profile = get_profile
@@ -40,6 +42,7 @@ class ChargeInvestigationToolkit:
         self._gather_evidence = gather_evidence
         self._open_dispute = open_dispute
         self._request_handoff = request_handoff
+        self._propose_dispute = propose_dispute
 
     def tools(self) -> list[Callable[..., dict]]:
         """The bound methods registered as ADK tools."""
@@ -49,6 +52,7 @@ class ChargeInvestigationToolkit:
             self.get_transaction_evidence,
             self.open_dispute,
             self.request_human_handoff,
+            self.propose_dispute,
         ]
 
     def get_my_customer_profile(self, tool_context: ToolContext) -> dict:
@@ -143,4 +147,21 @@ class ChargeInvestigationToolkit:
         """
         return self._request_handoff.execute(
             SessionState(tool_context.state), summary, open_questions
+        )
+
+    def propose_dispute(
+        self, tool_context: ToolContext, transaction_ref: str, reason: str
+    ) -> dict:
+        """Sends a dispute to a bank specialist, who approves or rejects it.
+
+        Only for a charge you explained and the customer still rejects, once they confirmed
+        the dispute details in a previous message. It does NOT open the dispute: a person
+        decides.
+
+        Args:
+            transaction_ref: Reference of the charge (e.g. "T1").
+            reason: One sentence with the customer's reason for disputing it.
+        """
+        return self._propose_dispute.execute(
+            SessionState(tool_context.state), transaction_ref, reason
         )

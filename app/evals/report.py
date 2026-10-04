@@ -15,7 +15,8 @@ from pathlib import Path
 
 CODE_DIMENSIONS = ("outcome", "safety", "grounding", "language")
 AUTOMATABLE = {"explain", "dispute"}
-SHOULD_HAND_OFF = {"handoff"}
+# A dispute proposed for human review is a handoff by design (human in the loop).
+SHOULD_HAND_OFF = {"handoff", "dispute_proposed"}
 
 
 def load_rows(path: Path) -> list[dict]:

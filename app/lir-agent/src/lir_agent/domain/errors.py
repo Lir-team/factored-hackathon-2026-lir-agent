@@ -45,3 +45,4 @@ class DisputeBlock(StrEnum):
 
     POLICY_DOES_NOT_ALLOW = "policy_does_not_allow_dispute"
     CONFIRMATION_REQUIRED = "confirmation_required"
+    NOT_UNDER_REVIEW = "charge_not_under_review"

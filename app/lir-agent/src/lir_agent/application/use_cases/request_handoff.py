@@ -4,7 +4,7 @@ import logging
 import uuid
 
 from lir_agent.application.ports import CaseRepository, HandoffNotifier
-from lir_agent.domain.models import HandoffPacket
+from lir_agent.domain.models import HandoffPacket, ProposedDispute
 from lir_agent.domain.policy import PolicyConfig
 from lir_agent.domain.session import SessionState, utc_now
 
@@ -44,6 +44,37 @@ class RequestHandoff:
         session.record_action(
             {"action": "handoff", "handoff_id": packet.handoff_id, "verified": verified}
         )
+        if verified and self._notifier:
+            self._notify(packet)
+        return {
+            "status": "submitted" if verified else "unverified",
+            "handoff_id": packet.handoff_id,
+        }
+
+    def propose_dispute(self, session: SessionState, proposal: ProposedDispute) -> dict:
+        """Hand the case to a person with a dispute to approve (human in the loop).
+
+        Attached to the session's handoff when there is one; the team is notified either
+        way, because a decision is now waiting for them.
+        """
+        stored = self._cases.get_handoff(session.handoff_id or "")
+        if stored is None:
+            questions = self._questions(session, [])
+            packet = self._build_packet(session, proposal.reason, questions)
+            packet = packet.model_copy(update={"proposed_dispute": proposal})
+            session.handoff_id = packet.handoff_id
+        else:
+            packet = stored.model_copy(
+                update={
+                    "turn_outcome": session.turn_outcome,
+                    "case_outcome": session.case_outcome,
+                    "verified_evidence": session.evidence,
+                    "actions_taken": session.actions,
+                    "open_questions": self._questions(session, stored.open_questions),
+                    "proposed_dispute": proposal,
+                }
+            )
+        verified = self._submit(packet)
         if verified and self._notifier:
             self._notify(packet)
         return {

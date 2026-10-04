@@ -166,4 +166,5 @@ def test_the_form_answers_reach_the_conversation(bot):
         freeze_card_requested=False,
         card_in_possession="yes",
         shared_credentials="no",
+        case_id=CASE_ID,
     )

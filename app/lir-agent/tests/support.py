@@ -67,6 +67,7 @@ class Harness:
             container.gather_evidence,
             container.open_dispute,
             container.request_handoff,
+            container.propose_dispute,
         )
         loader, settings = ResourceLoader(), container.settings
         self.callbacks = AgentCallbacks(

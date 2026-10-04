@@ -29,6 +29,25 @@ written to an audit log.
    refunds or ask for credentials. `before_tool` resolves the placeholders the model passes
    to a tool, so tools and the handoff packet work on real values.
 
+### Human in the loop: a customer who rejects an explanation
+
+The policy may only *explain* a charge (e.g. the customer paid that merchant before), but a
+paid-before merchant does not prove the charge is theirs, and the customer must never be left
+without a way to dispute it. So:
+
+1. After an explanation, each new message is also asked `rechaza_explicacion` (does the
+   customer still reject the charge?). A yes routes the turn to `T3c_explanation_rejected`,
+   lane `review`.
+2. The agent restates the dispute (merchant, date, amount, the customer's reason), says a
+   specialist must approve it, and asks for an explicit confirmation, registered in code.
+3. After the confirmation (`T2b_review_confirmed`), `propose_dispute` hands the case to a
+   person with the dispute in `pending_review`; the team is notified (Slack). The agent never
+   opens it: `open_dispute` stays blocked for an explained charge.
+4. A specialist reads the case file and decides with `POST /v1/handoffs/{id}/dispute-review`
+   (`approve` opens the dispute and reads it back; `reject` opens nothing). The reviewer (the
+   IAP identity), the time and the decision are kept in the packet and the audit log.
+5. A customer who came through the web form hears the decision in their chat.
+
 ## Tools
 
 | Tool | What it does |
@@ -38,6 +57,7 @@ written to an audit log.
 | `get_transaction_evidence` | Verifiable facts and the policy lane: explain, dispute, propose or escalate |
 | `open_dispute` | Only with the `dispute` lane and a prior explicit confirmation; read back before reporting |
 | `request_human_handoff` | Case file built from session state, not from model prose |
+| `propose_dispute` | Only in the `review` lane, for the explained charge the customer rejected, after an explicit confirmation; sends it to a person, never opens it |
 
 ## Layout
 
@@ -103,6 +123,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
+| `POST` | `/v1/handoffs/{handoff_id}/dispute-review` | `{"decision": "approve" \| "reject", "note": "..."}` | A specialist decides a proposed dispute; approval opens it. `404` without a proposal, `409` if already decided |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 | `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
