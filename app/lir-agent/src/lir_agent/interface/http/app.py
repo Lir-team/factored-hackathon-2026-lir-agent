@@ -15,6 +15,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
@@ -132,6 +133,13 @@ def create_app(
         return None
 
     app = FastAPI(title="Lir agent API", version="1.0.0")
+    if origins := [o.strip() for o in settings.cors_origins.split(",") if o.strip()]:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type", "Idempotency-Key", "Authorization"],
+        )
 
     # Not /healthz: Cloud Run reserves public paths ending in "z".
     @app.get("/health")

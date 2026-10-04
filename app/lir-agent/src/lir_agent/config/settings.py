@@ -110,6 +110,9 @@ class Settings(BaseSettings):
     max_message_chars: int = Field(default=2000, gt=0)
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
+    # Comma-separated browser origins allowed to call the API (CORS). Empty: CORS off,
+    # as on Cloud Run where API Gateway answers it. Set it for local runs with lir-web.
+    cors_origins: str = ""
 
     # ---- Case intake (`POST /v1/cases`) --------------------------------------------------
     # API Gateway verifies the customer JWT and forwards its claims in this header

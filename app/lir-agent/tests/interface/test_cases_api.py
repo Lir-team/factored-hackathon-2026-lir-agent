@@ -347,3 +347,31 @@ def test_local_runs_trust_the_payload_customer(settings):
     response = intake.post(case(), {"Idempotency-Key": CASE_ID})
 
     assert response.status_code == 202
+
+
+PREFLIGHT = {
+    "Origin": "http://localhost:5500",
+    "Access-Control-Request-Method": "POST",
+    "Access-Control-Request-Headers": "content-type,idempotency-key,authorization",
+}
+
+
+def test_cors_preflight_is_answered_for_configured_origins(settings) -> None:
+    intake = Intake(
+        settings.model_copy(update={"cors_origins": "http://localhost:5500"})
+    )
+
+    response = intake.client.options("/v1/cases", headers=PREFLIGHT)
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5500"
+    allowed = response.headers["access-control-allow-headers"].lower()
+    assert {"content-type", "idempotency-key", "authorization"} <= {
+        h.strip() for h in allowed.split(",")
+    }
+
+
+def test_cors_is_off_by_default(settings) -> None:
+    response = Intake(settings).client.options("/v1/cases", headers=PREFLIGHT)
+
+    assert "access-control-allow-origin" not in response.headers
