@@ -128,6 +128,8 @@ def test_identifiers_are_redacted(identifier):
         "un cargo de 1.500.000 COP",
         "fueron 245,50 MXN el 10/06/2026",
         "el martes 2026-06-10",
+        "un cargo de 12000000.00 COP",
+        "fueron 123456789,50 ARS",
     ],
 )
 def test_amounts_and_dates_are_not_identifiers(text):

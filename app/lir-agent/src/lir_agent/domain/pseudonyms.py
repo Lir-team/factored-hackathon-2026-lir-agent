@@ -48,7 +48,8 @@ _IDENTIFIERS = (
         r"\b[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}\b", re.IGNORECASE
     ),
     # Ten or more digits, optionally grouped: cards, CLABE/CBU, accounts, phones, CPF.
-    re.compile(r"(?<![\w.,])\+?\d(?:[ .-]?\d){9,}(?![\w])"),
+    # A number with exactly two decimals is an amount, not an identifier.
+    re.compile(r"(?<![\w.,])(?!\d+[.,]\d{2}(?![\w.,]))\+?\d(?:[ .-]?\d){9,}(?![\w])"),
 )
 
 
