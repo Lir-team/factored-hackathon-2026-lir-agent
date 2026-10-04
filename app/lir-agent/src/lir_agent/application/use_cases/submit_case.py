@@ -7,6 +7,7 @@ from typing import Any
 from lir_agent.application.ports import (
     AuditSink,
     CaseInbox,
+    CaseInProgressError,
     CasePublisher,
     CaseStore,
     CustomerNotFoundError,
@@ -24,6 +25,9 @@ from lir_agent.domain.case_intake import (
     new_start_token,
     telegram_start_url,
 )
+
+# How long a request may take to accept a case before another one may take its key over.
+CLAIM_TTL = timedelta(minutes=5)
 
 
 class SubmitCase:
@@ -59,6 +63,7 @@ class SubmitCase:
         Raises:
             IdempotencyKeyMismatchError: If the key is not the payload's `case_id`.
             ForeignCaseError: If the case or its key belongs to another customer.
+            CaseInProgressError: If another request with the key is still accepting it.
             CustomerNotFoundError: If the customer does not exist.
             UnknownTransactionError: If a transaction is not the customer's.
             CasePublishError: If the case could not be handed to the agent (nothing is kept
@@ -67,11 +72,9 @@ class SubmitCase:
         case_id = payload["case_id"]
         if idempotency_key != case_id:
             raise IdempotencyKeyMismatchError(case_id)
-        stored = self._store.get_receipt(idempotency_key)
-        if stored is not None:
-            if stored.customer_id != customer_id:
-                raise ForeignCaseError(case_id)
-            return stored.receipt
+        replay = self._replay(customer_id, idempotency_key)
+        if replay is not None:
+            return replay
         if payload["customer"]["customer_id"] != customer_id:
             raise ForeignCaseError(case_id)
         if self._customers.get_customer(customer_id) is None:
@@ -82,6 +85,42 @@ class SubmitCase:
         if any(t["transaction_id"] not in owned for t in payload["transactions"]):
             raise UnknownTransactionError(case_id)
 
+        # Claimed before any side effect: a concurrent request with the key archives and
+        # publishes nothing. Released on failure, so a retry can accept the case.
+        now = self._now()
+        if not self._store.claim_key(idempotency_key, now, now + CLAIM_TTL):
+            replay = self._replay(customer_id, idempotency_key)  # it just finished
+            if replay is not None:
+                return replay
+            raise CaseInProgressError(case_id)
+        try:
+            receipt = self._accept(customer_id, idempotency_key, payload)
+        except BaseException:
+            self._store.release_key(idempotency_key)
+            raise
+        self._audit.record(
+            "case_received",
+            None,
+            case_id=case_id,
+            category=payload["category"],
+            customer_id=customer_id,
+        )
+        return receipt
+
+    def _replay(self, customer_id: str, idempotency_key: str) -> CaseReceipt | None:
+        """The answer stored for the key, or None when the key was never accepted."""
+        stored = self._store.get_receipt(idempotency_key)
+        if stored is None:
+            return None
+        if stored.customer_id != customer_id:
+            raise ForeignCaseError(idempotency_key)
+        return stored.receipt
+
+    def _accept(
+        self, customer_id: str, idempotency_key: str, payload: dict[str, Any]
+    ) -> CaseReceipt:
+        """Archive and publish the case, then keep its answer for replay."""
+        case_id = payload["case_id"]
         attributes = case_attributes(payload)
         self._inbox.put(case_id, payload, attributes)
         # Ordered per customer: one customer's cases reach the agent in filing order.
@@ -97,13 +136,6 @@ class SubmitCase:
         )
         # Only successful answers are kept: a failed attempt is processed again.
         self._store.save_receipt(idempotency_key, StoredReceipt(customer_id, receipt))
-        self._audit.record(
-            "case_received",
-            None,
-            case_id=case_id,
-            category=payload["category"],
-            customer_id=customer_id,
-        )
         return receipt
 
     def _start_link(self, start: CaseStart, payload: dict[str, Any]) -> str | None:

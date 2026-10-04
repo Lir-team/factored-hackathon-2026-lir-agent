@@ -3,6 +3,7 @@
 One collection per record kind, every name starting with a configurable prefix (`lir_`):
 
 - `<prefix>receipts/<idempotency key>`: the customer and the 202 answer to replay.
+- `<prefix>claims/<idempotency key>`: `expires_at` of the request accepting the case.
 - `<prefix>start_tokens/<sha256 of the token>`: the `CaseStart` and `expires_at`. Only the
   hash is stored, so the database never holds a usable start link.
 - `<prefix>chats/<chat id>`: the chat's current `ChatLink`.
@@ -53,12 +54,37 @@ def _consume(
 
 
 @firestore.transactional
+def _take_over(
+    transaction: firestore.Transaction,
+    ref: firestore.DocumentReference,
+    now: datetime,
+    expires_at: datetime,
+) -> bool:
+    snapshot = ref.get(transaction=transaction)
+    if snapshot.exists and now < (snapshot.to_dict() or {})["expires_at"]:
+        return False
+    transaction.set(ref, {"expires_at": expires_at})
+    return True
+
+
+@firestore.transactional
 def _append(
     transaction: firestore.Transaction, ref: firestore.DocumentReference, text: str
 ) -> None:
     snapshot = ref.get(transaction=transaction)
     texts = (snapshot.to_dict() or {}).get("texts", []) if snapshot.exists else []
     transaction.set(ref, {"texts": [*texts, text]})
+
+
+@firestore.transactional
+def _prepend(
+    transaction: firestore.Transaction,
+    ref: firestore.DocumentReference,
+    texts: list[str],
+) -> None:
+    snapshot = ref.get(transaction=transaction)
+    queued = (snapshot.to_dict() or {}).get("texts", []) if snapshot.exists else []
+    transaction.set(ref, {"texts": [*texts, *queued]})
 
 
 @firestore.transactional
@@ -79,6 +105,7 @@ class FirestoreCaseStore:
         """Bind the client; `prefix` keeps environments or test runs apart."""
         self._client = client
         self._receipts = client.collection(f"{prefix}receipts")
+        self._claims = client.collection(f"{prefix}claims")
         self._tokens = client.collection(f"{prefix}start_tokens")
         self._chats = client.collection(f"{prefix}chats")
         self._case_chats = client.collection(f"{prefix}case_chats")
@@ -112,6 +139,21 @@ class FirestoreCaseStore:
                 "status": receipt.status,
             }
         )
+
+    def claim_key(
+        self, idempotency_key: str, now: datetime, expires_at: datetime
+    ) -> bool:
+        """Claim the key until `expires_at`; False while another claim is still valid."""
+        ref = self._claims.document(idempotency_key)
+        try:
+            ref.create({"expires_at": expires_at})
+        except AlreadyExists:  # held or expired: only an expired claim is taken over
+            return _take_over(self._client.transaction(), ref, now, expires_at)
+        return True
+
+    def release_key(self, idempotency_key: str) -> None:
+        """Drop the key's claim."""
+        self._claims.document(idempotency_key).delete()
 
     def add_start_token(
         self, token: str, start: CaseStart, expires_at: datetime
@@ -191,3 +233,9 @@ class FirestoreCaseStore:
     def pop_replies(self, case_id: str) -> list[str]:
         """Remove and return the case's queued replies, oldest first."""
         return _pop(self._client.transaction(), self._replies.document(case_id))
+
+    def requeue_replies(self, case_id: str, texts: list[str]) -> None:
+        """Put unsent replies back, before any queued since."""
+        if texts:
+            ref = self._replies.document(case_id)
+            _prepend(self._client.transaction(), ref, texts)

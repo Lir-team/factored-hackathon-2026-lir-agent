@@ -53,6 +53,20 @@ scenarios are in [`AGENTS.md`](AGENTS.md).
   on its own), missed and unnecessary handoffs, unsafe outcomes, p50/p95 latency, cost per
   attempted case and per successful resolution. Every rate carries its counts.
 
+## Publishing a run to BigQuery
+
+Each run can be appended to `lir_analytics.eval_trials` (schema in Lir-team/lir-infra), one row
+per trial tagged with the run id, time, git commit and agent model. The Looker Studio report
+reads it for its evaluation page (`docs/analytics/looker-studio.md`).
+
+```bash
+uv run python upload_bigquery.py out/results.json --table lir-agent:lir_analytics.eval_trials
+uv run python upload_bigquery.py out/results.json --dry-run   # print the rows only
+```
+
+It needs the Google Cloud SDK (`bq`) signed in with access to the dataset; the table can also
+come from `EVALS_BQ_TABLE`. Rows reuse `report.py`, so the dashboard and the console agree.
+
 ## Adding a task
 
 1. Start from a real failure, a manual check or a job in the proposal.

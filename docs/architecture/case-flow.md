@@ -54,10 +54,11 @@ no bot token or webhook secret means no `/channels/telegram`.
 |---|---|---|
 | Accepted case (full payload) | Cases inbox: Cloud Storage `cases/<case_id>.json` (`CASES_INBOX=gcs`) or a local folder | Archive only; the agent reads the case from the Pub/Sub message |
 | Idempotent `202` replies | Case store | Keyed by `Idempotency-Key` (= `case_id`); bound to the customer |
+| Idempotency-key claims | Case store | Taken atomically before archiving; a concurrent duplicate gets `409`; released on failure, expire after 5 minutes |
 | Start tokens | Case store | Stored as SHA-256, single use, expire after `START_TOKEN_TTL_MINUTES` |
 | Chat ↔ case links | Case store | Latest `/start` wins for a chat |
 | Case conversation (owner, session) | Case store | Created once per case: duplicates from Pub/Sub are dropped |
-| Replies waiting for a chat | Case store | Popped atomically, so each is sent once |
+| Replies waiting for a chat | Case store | Popped atomically, so each is sent once; unsent ones are put back first in line |
 | ADK session (the dialogue itself) | Memory of the instance | Keep `max-instances=1` until sessions move to a persistent service |
 
 The case store is in memory by default (`CASE_STORE=memory`) and Firestore with
@@ -113,6 +114,8 @@ arrives in the chat.
 
 ## Known gaps
 
-- If `sendMessage` fails, the popped reply is lost and `case_reply_sent` is still audited.
+- If `sendMessage` fails, the reply is put back in the queue and sent on Pub/Sub's retry or
+  before the chat's next answer. A reply popped by an instance that dies before sending it
+  is still lost, and a reply split in parts may repeat the parts already sent.
 - ADK sessions live in memory, so a restart ends ongoing conversations.
 - Pub/Sub dead-lettering and the Slack hand-off are not wired yet.
