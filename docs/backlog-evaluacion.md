@@ -19,13 +19,13 @@ seguridad, legal, operación).
 | [EVAL-02](#eval-02) | El README afirma cosas que hoy no son ciertas | agent | P0 | §4, §6 | Pendiente |
 | [SEC-01](#sec-01) | El servicio de casos confía en el `customer_id` del formulario | infra, agent, web | P0 | §3 | Pendiente |
 | [SEC-02](#sec-02) | Datos bancarios enviados al LLM externo | agent | P0 | Data boundaries | Hecho (#36, #37, #38) |
-| [BUG-01](#bug-01) | País desconocido cuenta como "local" y apaga la regla C2 | agent | P0 | §3 | En revisión (#40) |
-| [BUG-02](#bug-02) | El formulario pide congelar la tarjeta y nadie lo hace | agent, web | P0 | §3 | Pendiente |
-| [PROD-01](#prod-01) | El lane `explain` puede desalentar un reclamo legítimo | agent | P0 | §3 | En revisión (aprobación del cliente) |
+| [BUG-01](#bug-01) | País desconocido cuenta como "local" y apaga la regla C2 | agent | P0 | §3 | Hecho (#40) |
+| [BUG-02](#bug-02) | El formulario pide congelar la tarjeta y nadie lo hace | agent, web | P0 | §3 | Hecho (#42) |
+| [PROD-01](#prod-01) | El lane `explain` puede desalentar un reclamo legítimo | agent | P0 | §3 | Hecho (#44) |
 | [EVAL-03](#eval-03) | Held-out de escenarios e intervalos de confianza | agent | P1 | §5 | Pendiente |
 | [EVAL-04](#eval-04) | Escenarios de falla que piden las bases y no existen | agent | P1 | §5 | Pendiente |
 | [SEC-03](#sec-03) | API de operador sin control de acceso por cliente ni por caso | agent | P1 | §3 | Pendiente |
-| [SEC-04](#sec-04) | Sesión de Telegram válida 7 días sin reautenticar | agent, infra | P1 | §3 | Pendiente |
+| [SEC-04](#sec-04) | Sesión de Telegram válida 7 días sin reautenticar | agent, infra | P1 | §3 | Parcial (#44, #45, lir-web#3) |
 | [BUG-03](#bug-03) | `consent: true` fijo en el payload | web | P1 | Data boundaries | Pendiente |
 | [PROD-02](#prod-02) | Contención medida como "reclamo retirado", no "no derivado" | agent | P1 | §5 | Pendiente |
 | [INF-01](#inf-01) | Sesiones en memoria: techo de 1 instancia | agent, infra | P1 | §6 | Pendiente |
@@ -44,6 +44,15 @@ seguridad, legal, operación).
 | [LEG-03](#leg-03) | Aviso de IA y derecho a revisión humana | agent, web | P2 | §6 | Pendiente |
 | [PROD-06](#prod-06) | Medir el abandono por "pedir un detalle concreto" | agent | P3 | §5 | Pendiente |
 | [INF-04](#inf-04) | Latencia p95 de 12 a 18 s | agent | P3 | §6 | Pendiente |
+
+### Bases §3: "which actions require confirmation"
+
+Lo cubre el **human in the loop del cliente** (#44, #45, lir-web#3): las acciones
+importantes se declaran en `policy.yaml` (`approvals.actions`), nunca se ejecutan desde la
+conversación y el cliente las aprueba con un componente (botones en Telegram, tarjeta web),
+ligado al contenido que vio (hash), de un solo uso y auditado. El resultado se lee de vuelta
+antes de informarlo (§2: "report only actions whose outcomes the system has verified"). En
+los evals, una disputa abierta sin aprobación cuenta como resultado inseguro.
 
 ## Orden sugerido
 
@@ -194,6 +203,11 @@ seguridad, legal, operación).
 - **Propuesta:** TTL corto (p. ej. 30 min de inactividad) y, para acciones (`open_dispute`),
   step-up auth: un link al banco para confirmar.
 - **Aceptación:** test de expiración; `open_dispute` exige una confirmación fuera del chat.
+- **Estado:** la confirmación fuera del chat está hecha (#44, #45, lir-web#3): un "sí" escrito
+  no abre nada; se aprueba con botón o tarjeta web, ligada al contenido y de un solo uso.
+  Falta: (1) el TTL corto; (2) step-up real: el link llega por el mismo chat, así que quien
+  tome la cuenta de Telegram también lo recibe. La tarjeta web debe exigir la sesión del
+  banco (JWT del cliente, depende de SEC-01).
 
 ### SEC-05
 
@@ -232,7 +246,7 @@ seguridad, legal, operación).
 
 ### BUG-01
 
-**País desconocido cuenta como "local" y apaga la regla C2** · P0 · agent · Bases §3 · *En revisión: #40*
+**País desconocido cuenta como "local" y apaga la regla C2** · P0 · agent · Bases §3 · *Hecho: #40*
 
 - **Problema:** `resources/reference.yaml` solo mapea MX, CO y AR. Cualquier otro país (BR,
   US…) da `None` y `foreign = False`. El fixture de evals tiene 6 transacciones en Brasil y
@@ -248,7 +262,7 @@ seguridad, legal, operación).
 
 ### BUG-02
 
-**El formulario pide congelar la tarjeta y nadie lo hace** · P0 · agent, web · Bases §3
+**El formulario pide congelar la tarjeta y nadie lo hace** · P0 · agent, web · Bases §3 · *Hecho: #42*
 
 - **Problema:** `lir-web` envía `freeze_card_requested` y `fraud_suspected`, pero el agente
   no usa ninguno de los dos (solo viajan como atributos de Pub/Sub). El cliente marca
@@ -277,7 +291,7 @@ seguridad, legal, operación).
 
 ### PROD-01
 
-**El lane `explain` puede desalentar un reclamo legítimo** · P0 · agent · Bases §3
+**El lane `explain` puede desalentar un reclamo legítimo** · P0 · agent · Bases §3 · *Hecho: #44*
 
 - **Decisión del equipo:** human in the loop del propio cliente. Ninguna acción importante se
   ejecuta desde la conversación: el agente crea una solicitud y el cliente la aprueba o
