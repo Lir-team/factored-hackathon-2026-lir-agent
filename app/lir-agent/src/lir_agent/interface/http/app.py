@@ -109,6 +109,12 @@ class CaseAcceptedResponse(BaseModel):
     telegram_start_url: str | None
 
 
+def _signed_in_customer(request: Request, settings: Settings) -> str | None:
+    """The customer API Gateway verified (JWT userinfo), or None without a readable one."""
+    userinfo = request.headers.get(settings.customer_identity_header, "").strip()
+    return customer_from_userinfo(userinfo, settings.customer_claim) if userinfo else None
+
+
 def _invalid_case() -> HTTPException:
     return HTTPException(status.HTTP_400_BAD_REQUEST, "invalid case")
 
@@ -250,6 +256,8 @@ def create_app(
             deps.decide_approval,
             deps.verify_approval_link,
             settings.identity_header,
+            signed_in_customer=lambda request: _signed_in_customer(request, settings),
+            require_sign_in=settings.approval_requires_sign_in,
         )
     )
 
@@ -405,7 +413,8 @@ def create_app(
             deps.case_store,
             messenger,
             deps.audit,
-            session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
+            session_ttl=timedelta(minutes=settings.case_session_idle_minutes),
+            max_session_ttl=timedelta(minutes=settings.case_session_max_minutes),
             present_approvals=deps.present_approvals,
         )
         app.include_router(

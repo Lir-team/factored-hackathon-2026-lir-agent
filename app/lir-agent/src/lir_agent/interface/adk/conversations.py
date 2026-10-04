@@ -73,6 +73,7 @@ class AdkConversations:
         auth_method: str,
         transaction_ids: Sequence[str] = (),
         case_report: CaseReport | None = None,
+        max_ttl: timedelta | None = None,
     ) -> StartedConversation:
         """Create a session for `customer_id`, owned by `owner` and valid for `ttl`.
 
@@ -85,7 +86,7 @@ class AdkConversations:
             raise CustomerNotFoundError(customer_id)
         state: dict = {}
         session = SessionState(state)
-        expires_at = session.start(customer_id, ttl, auth_method)
+        expires_at = session.start(customer_id, ttl, auth_method, max_ttl=max_ttl)
         if case_report is not None:
             session.case_report = case_report
         refs: tuple[str, ...] = ()

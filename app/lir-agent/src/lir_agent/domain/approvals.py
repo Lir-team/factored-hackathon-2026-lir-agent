@@ -74,6 +74,10 @@ class Actor(BaseModel):
     role: Approver
     identity: str = Field(description="Customer id, or the specialist's verified identity.")
     channel: str = Field(description="The surface: telegram, web, backoffice, ...")
+    proof: str = Field(
+        default="",
+        description="How the identity was proven: link, link+sign_in, linked_chat, iap.",
+    )
 
 
 class ApprovalRequest(BaseModel):

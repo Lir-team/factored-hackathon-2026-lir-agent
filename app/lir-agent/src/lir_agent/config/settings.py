@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     # Web link to an approval card, e.g. "https://lir-web.example/aprobar.html?id={approval_id}&t={token}".
     # Unset: no web link is issued (surfaces such as Telegram still present the request).
     approval_link_template: str | None = None
+    # Step-up: approving needs the customer signed in to the bank (the JWT API Gateway
+    # verifies), not only the link or the chat. Telegram then links to the web card instead
+    # of approving with a button, so whoever holds the Telegram account cannot approve.
+    approval_requires_sign_in: bool = False
     # Language of the handoff report when the request does not ask for one.
     report_default_language: str = "es"
     audit_path: Path = APP_DIR / ".audit" / "audit.jsonl"
@@ -174,8 +178,10 @@ class Settings(BaseSettings):
     # Without both, the webhook route does not exist (404).
     telegram_bot_token: SecretStr | None = None
     telegram_webhook_secret: SecretStr | None = None
-    # How long a case's conversation stays valid (7 days), counted from its delivery.
-    case_session_ttl_minutes: int = Field(default=10080, gt=0)
+    # Conversations opened from a case (Telegram): an idle timeout extended by every message,
+    # never past the ceiling. Then the customer files a new case, signing in to the bank again.
+    case_session_idle_minutes: int = Field(default=30, gt=0)
+    case_session_max_minutes: int = Field(default=1440, gt=0)
 
     # ---- Case store (receipts, start tokens, chat links, conversations, replies) ---------
     # "memory" is lost on restart and not shared between instances (tests, single-instance

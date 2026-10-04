@@ -10,6 +10,7 @@ Chat surfaces (Telegram) authenticate the actor their own way and call the same
 `DecideApproval` use case; the rules and the audit trail do not depend on the surface.
 """
 
+from collections.abc import Callable
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -111,9 +112,26 @@ def approvals_router(
     decide: DecideApproval,
     verify_link: VerifyApprovalLink,
     identity_header: str,
+    signed_in_customer: Callable[[Request], str | None] = lambda _: None,
+    require_sign_in: bool = False,
 ) -> APIRouter:
-    """The approval routes."""
+    """The approval routes.
+
+    `signed_in_customer` reads the customer the bank's sign-in verified (API Gateway's JWT
+    userinfo); with `require_sign_in` (step-up) the customer's routes refuse without it.
+    """
     router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
+
+    def link_holder(
+        request: Request, approval_id: str, token: str
+    ) -> tuple[ApprovalRequest, Actor]:
+        signed_in_as = signed_in_customer(request)
+        if require_sign_in and signed_in_as is None:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "sign_in_required")
+        try:
+            return verify_link.execute(approval_id, token, signed_in_as=signed_in_as)
+        except ApprovalError as error:
+            raise _http_error(error) from None
 
     def specialist(request: Request) -> Actor:
         """The IAP-verified identity; required, never a local fallback."""
@@ -124,25 +142,26 @@ def approvals_router(
             role=Approver.SPECIALIST,
             identity=identity.removeprefix(_IAP_PREFIX),
             channel="backoffice",
+            proof="iap",
         )
 
     @router.get("/{approval_id}")
     async def show(
+        request: Request,
         approval_id: str,
         token: Annotated[str, Header(alias=LINK_TOKEN_HEADER, min_length=1)],
     ) -> ApprovalView:
         """The card behind a customer's link (the token travels in a header, not the URL)."""
-        try:
-            request, _ = verify_link.execute(approval_id, token)
-        except ApprovalError as error:
-            raise _http_error(error) from None
-        return ApprovalView.of(request)
+        approval, _ = link_holder(request, approval_id, token)
+        return ApprovalView.of(approval)
 
     @router.post("/{approval_id}/decision")
-    async def customer_decision(approval_id: str, body: CustomerDecision) -> ApprovalView:
+    async def customer_decision(
+        request: Request, approval_id: str, body: CustomerDecision
+    ) -> ApprovalView:
         """The customer approves or rejects from the web card."""
+        _, actor = link_holder(request, approval_id, body.token)
         try:
-            _, actor = verify_link.execute(approval_id, body.token)
             decided = await decide.execute(
                 approval_id, actor, body.decision == "approve", body.content_hash
             )

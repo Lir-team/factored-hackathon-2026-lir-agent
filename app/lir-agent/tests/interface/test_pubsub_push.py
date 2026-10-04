@@ -29,7 +29,8 @@ def test_a_pushed_case_starts_its_conversation_and_runs_the_first_turn(bot):
     assert response.status_code == 204
     session_id, (owner, customer) = next(iter(bot.conversations.sessions.items()))
     assert (owner, customer) == (OWNER, CUSTOMER)
-    assert bot.conversations.policies[session_id] == (timedelta(days=7), "case_intake")
+    assert bot.conversations.policies[session_id] == (timedelta(minutes=30), "case_intake")
+    assert bot.conversations.max_ttls[session_id] == timedelta(hours=24)
     assert bot.conversations.messages == [(OWNER, session_id, SUMMARY)]
     conversation = bot.store.get_conversation(CASE_ID)
     assert conversation is not None

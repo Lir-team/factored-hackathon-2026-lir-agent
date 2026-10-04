@@ -187,7 +187,7 @@ def test_a_web_link_identifies_the_customer_and_works_for_one_decision():
     token = world.link_token()
 
     request, actor = world.verify.execute(world.request.approval_id, token)
-    assert actor == Actor(role=Approver.CUSTOMER, identity=CUSTOMER, channel="web")
+    assert actor == Actor(role=Approver.CUSTOMER, identity=CUSTOMER, channel="web", proof="link")
     with pytest.raises(ApprovalError, match="not_found"):
         world.verify.execute(world.request.approval_id, "a-wrong-token")
     refused = [e for e in world.audit.entries if e["event"] == "approval_link_refused"]

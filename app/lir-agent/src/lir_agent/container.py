@@ -248,7 +248,11 @@ def build_container(
     messenger = messenger or build_messenger(settings)
     surfaces = list(approval_surfaces)
     if messenger is not None:
-        surfaces.append(TelegramApprovalSurface(case_store, messenger, approval_labels))
+        surfaces.append(
+            TelegramApprovalSurface(
+                case_store, messenger, approval_labels, settings.approval_requires_sign_in
+            )
+        )
     actions = {"open_dispute": OpenDisputeAction(cases, dispute_guard)}
     present_approvals = PresentApprovals(
         approvals, surfaces, audit, settings.approval_link_template
@@ -295,7 +299,13 @@ def build_container(
         verify_approval_link=VerifyApprovalLink(approvals, audit),
         messenger=messenger,
         answer_approval_button=AnswerApprovalButton(
-            approvals, decide_approval, case_store, messenger, audit, approval_labels
+            approvals,
+            decide_approval,
+            case_store,
+            messenger,
+            audit,
+            approval_labels,
+            settings.approval_requires_sign_in,
         )
         if messenger is not None
         else None,
