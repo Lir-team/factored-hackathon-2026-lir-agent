@@ -84,7 +84,7 @@ for the demo, and a lost session is rebuilt from the case record.
   `telegram_start_url`. Route: delegated.
 - [ ] **T3 Case store.** Port for case record, start token, chat link and
   queued replies; Firestore + in-memory adapters. Route: delegated.
-- [ ] **T4 `/pubsub/push`.** OIDC check, GCS notification parsing, load case,
+- [x] **T4 `/pubsub/push`.** OIDC check, GCS notification parsing, load case,
   dedupe by `case_id`, case-bound session with long TTL, first agent turn,
   reply queued or sent. Route: delegated.
 - [x] **T5 Telegram channel.** `Messenger` port + Bot API adapter (httpx);
@@ -168,3 +168,19 @@ strategy applies: chain strategy to be chosen before the first PR.
   logs the bot token in URLs at DEBUG; a failing `conversations.start` burns the
   token and returns 500; once T4 runs the agent from Pub/Sub, `/start` must stop
   running the first turn.
+- 2026-10-04: user asked to finish T3 and T4 and prove the flow end to end with
+  the Pub/Sub emulator (Docker). Decision (user): `POST /v1/cases` publishes the
+  case directly to topic `lir-cases` (as the lir-web contract already says);
+  the Cloud Storage inbox stays as the case archive, and the GCS notification
+  path is dropped. Order: T4 on `feat/pubsub-case-processing`, then T3
+  (Firestore adapter for the final store interface, tested on the Firestore
+  emulator) on `feat/firestore-case-store`, then the end-to-end run.
+- 2026-10-04: T4 done (delegated writer). `/v1/cases` archives, publishes to
+  `lir-cases` (ordering key = customer_id; publish failure -> 503, no receipt),
+  then issues the token. `/pubsub/push` verifies the OIDC token (or
+  `PUBSUB_VERIFY_TOKEN=false` for the emulator), dedupes with a first-writer-wins
+  `add_conversation`, runs the first turn and queues the reply; `/start` only
+  links and flushes queued replies. Emulator scripts: `scripts/pubsub-emulator.sh`,
+  `scripts/firestore-emulator.sh` (host network: ufw blocks docker0). RED: 4
+  collection errors. Checks: pytest 284 passed, ruff clean, pyright 0 errors.
+  Pending: lir-web `docs/case-contract.md` must go back to direct publishing.

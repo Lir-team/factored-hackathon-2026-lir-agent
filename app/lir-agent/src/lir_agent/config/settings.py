@@ -121,8 +121,7 @@ class Settings(BaseSettings):
     customer_identity_header: str = "X-Apigateway-Api-Userinfo"
     # JWT claim holding the customer id.
     customer_claim: str = "sub"
-    # Where accepted cases are stored: a local directory, or the Cloud Storage bucket whose
-    # notification feeds the agent.
+    # Where accepted cases are archived: a local directory, or a Cloud Storage bucket.
     cases_inbox: Literal["local", "gcs"] = "local"
     cases_bucket: str = "cases-inbox"
     cases_local_dir: Path = APP_DIR / ".cases"
@@ -130,13 +129,29 @@ class Settings(BaseSettings):
     telegram_bot_username: str | None = None
     # How long a Telegram start link stays usable.
     start_token_ttl_minutes: int = Field(default=1440, gt=0)
+    # How accepted cases reach the agent: "pubsub" publishes them to CASES_TOPIC (the
+    # emulator when PUBSUB_EMULATOR_HOST is set); "none" keeps them in memory, unworked.
+    cases_publisher: Literal["none", "pubsub"] = "none"
+    # Google Cloud project of the topic (required with CASES_PUBLISHER=pubsub).
+    google_cloud_project: str | None = None
+    cases_topic: str = "lir-cases"
+
+    # ---- Case processing (`POST /pubsub/push`) -------------------------------------------
+    # Pub/Sub push signs each call with an OIDC token for this audience (the push
+    # subscription's audience). Without it, and with verification on, the route is absent.
+    pubsub_push_audience: str | None = None
+    # Service account the push subscription signs as; empty accepts any Google-signed token
+    # for the audience.
+    pubsub_push_service_account: str | None = None
+    # Turn off only for the local emulator, which sends no token.
+    pubsub_verify_token: bool = True
 
     # ---- Telegram channel (`POST /channels/telegram`) ------------------------------------
     # Bot API token (from BotFather) and the `secret_token` registered with `setWebhook`.
     # Without both, the webhook route does not exist (404).
     telegram_bot_token: SecretStr | None = None
     telegram_webhook_secret: SecretStr | None = None
-    # How long a conversation opened from a Telegram start link stays valid (7 days).
+    # How long a case's conversation stays valid (7 days), counted from its delivery.
     case_session_ttl_minutes: int = Field(default=10080, gt=0)
 
     @field_validator("reference_date", mode="before")

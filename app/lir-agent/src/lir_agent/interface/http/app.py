@@ -6,8 +6,9 @@ owns the sessions it creates. The *customer* is chosen on session creation, stan
 the bank's identity check (biometric KYC, mocked).
 
 Cases filed from the web form (`POST /v1/cases`) come through API Gateway instead, which
-verifies the *customer's* JWT and forwards its claims. The customer then continues on
-Telegram (`POST /channels/telegram`, see `telegram.py`).
+verifies the *customer's* JWT and forwards its claims. Each accepted case is published to
+Pub/Sub and pushed back to the agent (`POST /pubsub/push`, see `pubsub.py`), which works it
+at once; the customer continues on Telegram (`POST /channels/telegram`, see `telegram.py`).
 """
 
 import re
@@ -21,12 +22,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from lir_agent.application.ports import (
+    CasePublishError,
     ConversationNotFoundError,
     Conversations,
     CustomerNotFoundError,
     Messenger,
 )
-from lir_agent.application.use_cases import AnswerTelegramMessage
+from lir_agent.application.use_cases import AnswerTelegramMessage, ProcessCase
 from lir_agent.config.settings import Settings
 from lir_agent.domain.case_intake import (
     ForeignCaseError,
@@ -34,6 +36,11 @@ from lir_agent.domain.case_intake import (
     UnknownTransactionError,
 )
 from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
+from lir_agent.interface.http.pubsub import (
+    TokenVerifier,
+    google_token_verifier,
+    pubsub_router,
+)
 from lir_agent.interface.http.telegram import telegram_router
 
 if TYPE_CHECKING:
@@ -106,6 +113,17 @@ def _telegram_credentials(settings: Settings) -> tuple[str, str] | None:
     return None
 
 
+def _push_verifier(
+    settings: Settings, injected: TokenVerifier | None
+) -> tuple[bool, TokenVerifier | None]:
+    """Whether the push route exists, and how its OIDC token is verified (None: it is not)."""
+    if not settings.pubsub_verify_token:
+        return True, None
+    if not settings.pubsub_push_audience:
+        return False, None
+    return True, injected or google_token_verifier(settings.pubsub_push_audience)
+
+
 def _real_conversations(settings: Settings) -> Conversations:
     """The real agent behind ADK; imported lazily because the agent stack is heavy."""
     from lir_agent.interface.adk import build_conversations
@@ -118,8 +136,9 @@ def create_app(
     conversations: Conversations | None = None,
     container: "Container | None" = None,
     messenger: Messenger | None = None,
+    push_token_verifier: TokenVerifier | None = None,
 ) -> FastAPI:
-    """Build the API; tests inject `conversations`, `container` and `messenger`."""
+    """Build the API; tests inject the agent, adapters and the push token verifier."""
     agent = conversations or _real_conversations(settings)
     deps = container or _real_container(settings)
     intake = deps.submit_case
@@ -243,6 +262,10 @@ def create_app(
             ) from None
         except UnknownTransactionError:
             return _field_errors({"transaction_ids": "unknown"})
+        except CasePublishError:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Case not accepted, retry"
+            ) from None
         return CaseAcceptedResponse(
             case_id=receipt.case_id,
             folio=receipt.folio,
@@ -250,16 +273,33 @@ def create_app(
             telegram_start_url=receipt.telegram_start_url,
         )
 
-    if credentials := _telegram_credentials(settings):
-        bot_token, secret = credentials
+    credentials = _telegram_credentials(settings)
+    if messenger is None and credentials:
+        messenger = _real_messenger(credentials[0])
+
+    push_on, verifier = _push_verifier(settings, push_token_verifier)
+    if push_on:
+        process = ProcessCase(
+            agent,
+            deps.case_store,
+            messenger,
+            deps.audit,
+            session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
+        )
+        app.include_router(
+            pubsub_router(
+                process, deps.audit, verifier, settings.pubsub_push_service_account
+            )
+        )
+
+    if credentials and messenger is not None:
         answer = AnswerTelegramMessage(
             agent,
             deps.case_store,
-            messenger or _real_messenger(bot_token),
+            messenger,
             deps.audit,
-            session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
             max_message_chars=settings.max_message_chars,
         )
-        app.include_router(telegram_router(secret, answer))
+        app.include_router(telegram_router(credentials[1], answer))
 
     return app

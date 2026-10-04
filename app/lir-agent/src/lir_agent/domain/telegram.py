@@ -1,7 +1,7 @@
 """Telegram channel rules: chat links, the `/start` command and the bot's fixed replies.
 
 A chat is linked to one case by a single-use start token; from then on its messages go to
-that case's conversation. Fixed replies never reach the model, so they live here in both
+that case's conversation, and the agent's replies about the case come back to it. Fixed replies never reach the model, so they live here in both
 languages the agent speaks.
 """
 
@@ -27,6 +27,10 @@ _MESSAGES: dict[str, dict[Language, str]] = {
         "es": "Para empezar, usa el enlace que recibiste al enviar el formulario.",
         "pt": "Para começar, use o link que você recebeu ao enviar o formulário.",
     },
+    "processing": {
+        "es": "Todavía estoy revisando tu caso {folio}. Te escribo por aquí en cuanto pueda.",
+        "pt": "Ainda estou analisando seu caso {folio}. Escrevo por aqui assim que puder.",
+    },
     "conversation_expired": {
         "es": "Esta conversación expiró. Envía un nuevo reporte desde el formulario.",
         "pt": "Esta conversa expirou. Envie um novo relato pelo formulário.",
@@ -40,12 +44,13 @@ _MESSAGES: dict[str, dict[Language, str]] = {
 
 @dataclass(frozen=True)
 class ChatLink:
-    """A Telegram chat bound to a case's conversation (the latest start link wins)."""
+    """A Telegram chat bound to a case (the latest start link wins).
+
+    The case's conversation is looked up by `case_id`: it may start after the chat links.
+    """
 
     case_id: str
     folio: str
-    owner: str
-    session_id: str
     language: Language
 
 

@@ -8,7 +8,9 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from fastapi.testclient import TestClient
 
+from lir_agent.application.ports import CasePublishError
 from lir_agent.container import build_container
+from lir_agent.domain.case_intake import CaseStart
 from lir_agent.infrastructure.audit import InMemoryAuditSink
 from lir_agent.infrastructure.case_store import InMemoryCaseStore
 from lir_agent.interface.http import create_app
@@ -81,6 +83,19 @@ class RecordingInbox:
         self.puts.append((case_id, payload, attributes))
 
 
+class RecordingPublisher:
+    def __init__(self) -> None:
+        self.published: list[tuple[dict, dict[str, str], str]] = []
+        self.fail = False
+
+    def publish(
+        self, payload: dict, attributes: dict[str, str], ordering_key: str
+    ) -> None:
+        if self.fail:
+            raise CasePublishError("lir-cases unavailable")
+        self.published.append((payload, attributes, ordering_key))
+
+
 class NoConversations:
     async def start(self, *args, **kwargs):
         raise AssertionError("not used")
@@ -96,8 +111,13 @@ class Intake:
         self.inbox = RecordingInbox()
         self.store = InMemoryCaseStore()
         self.audit = InMemoryAuditSink()
+        self.publisher = RecordingPublisher()
         container = build_container(
-            settings, audit=self.audit, case_inbox=self.inbox, case_store=self.store
+            settings,
+            audit=self.audit,
+            case_inbox=self.inbox,
+            case_store=self.store,
+            case_publisher=self.publisher,
         )
         app = create_app(settings, conversations=NoConversations(), container=container)
         self.client = TestClient(app)
@@ -132,34 +152,44 @@ def test_telegram_case_is_accepted_with_a_start_link(intake):
     token = start_token(body["telegram_start_url"])
     assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", token)
     start = intake.store.consume_start_token(token, datetime.now(UTC))
-    assert start is not None
-    assert (start.case_id, start.customer_id, start.folio, start.language) == (
-        CASE_ID,
-        CUSTOMER,
-        "LB-2026-6F1C2D",
-        "es",
-    )
-    assert start.summary.startswith(PAYLOAD["description"])
+    assert start == CaseStart(CASE_ID, "LB-2026-6F1C2D", "es")
+
+
+ATTRIBUTES = {
+    "category": "unrecognized_charge",
+    "intent_hint": "cargo_no_reconocido",
+    "fraud_suspected": "true",
+    "priority_hint": "high",
+    "country": "MX",
+    "language": "es",
+    "schema_version": "1.1",
+}
 
 
 def test_accepted_case_is_stored_with_its_attributes(intake):
     intake.post(case())
 
-    assert intake.inbox.puts == [
-        (
-            CASE_ID,
-            PAYLOAD,
-            {
-                "category": "unrecognized_charge",
-                "intent_hint": "cargo_no_reconocido",
-                "fraud_suspected": "true",
-                "priority_hint": "high",
-                "country": "MX",
-                "language": "es",
-                "schema_version": "1.1",
-            },
-        )
-    ]
+    assert intake.inbox.puts == [(CASE_ID, PAYLOAD, ATTRIBUTES)]
+
+
+def test_accepted_case_is_published_in_order_per_customer(intake):
+    intake.post(case())
+
+    assert intake.publisher.published == [(PAYLOAD, ATTRIBUTES, CUSTOMER)]
+
+
+def test_a_failed_publish_is_unavailable_and_retried_with_the_same_key(intake):
+    intake.publisher.fail = True
+
+    response = intake.post(case())
+
+    assert response.status_code == 503
+    assert intake.store.get_receipt(CASE_ID) is None
+    assert "case_received" not in intake.audit.events()
+
+    intake.publisher.fail = False
+    assert intake.post(case()).status_code == 202
+    assert len(intake.publisher.published) == 1
 
 
 def test_accepted_case_is_audited_without_the_token(intake):
@@ -201,6 +231,7 @@ def test_a_repeated_key_replays_the_original_response(intake):
     assert second.status_code == 202
     assert second.json() == first.json()
     assert len(intake.inbox.puts) == 1
+    assert len(intake.publisher.published) == 1
 
 
 def test_a_failed_attempt_is_not_replayed(intake):
