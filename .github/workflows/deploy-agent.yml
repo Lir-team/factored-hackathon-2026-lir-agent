@@ -1,0 +1,62 @@
+# Builds the agent image with Cloud Build and rolls it out to both Cloud Run services.
+#
+# Terraform (lir-infra) owns the services' configuration and ignores their image, so this
+# workflow only changes the image. Repository variables come from `terraform output` in
+# lir-infra; see app/lir-agent/README.md, "Deploy".
+name: Deploy agent
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/lir-agent/**"
+      - "app/decision-layer/**"
+      - ".github/workflows/deploy-agent.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPO }}/lir-agent:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push the image
+        run: |
+          gcloud builds submit app \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --config app/lir-agent/cloudbuild.yaml \
+            --substitutions "_IMAGE=${IMAGE}" \
+            --service-account "projects/${{ vars.GCP_PROJECT_ID }}/serviceAccounts/${{ vars.BUILD_SA }}" \
+            --gcs-source-staging-dir "gs://${{ vars.BUILD_BUCKET }}/source"
+
+      - name: Deploy the operator service
+        run: |
+          gcloud run deploy lir-agent \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --image "${IMAGE}"
+
+      - name: Deploy the cases service
+        run: |
+          gcloud run deploy lir-agent-cases \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --image "${IMAGE}"
