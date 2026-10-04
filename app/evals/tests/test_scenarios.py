@@ -47,7 +47,13 @@ def test_every_scenario_customer_and_transaction_exists_in_the_world():
     assert {t["customer_id"] for t in world["transactions"]} <= customers
     for _, task in TASKS:
         assert task["vars"].get("customer_id", next(iter(customers))) in customers
-        assert set(task["vars"]["expect"].get("txn_any", [])) <= transactions
+        # Transactions a scenario posts during the conversation (late postings) count too.
+        posted = {
+            t["transaction_id"]
+            for update in (task["vars"].get("world") or {}).get("updates", [])
+            for t in update["transactions"]
+        }
+        assert set(task["vars"]["expect"].get("txn_any", [])) <= transactions | posted
 
 
 def test_world_loads_through_the_agent_repository():

@@ -6,5 +6,10 @@ from lir_agent.infrastructure.persistence.duckdb_repository import (
 from lir_agent.infrastructure.persistence.fixture_repository import (
     FixtureTransactionRepository,
 )
+from lir_agent.infrastructure.persistence.retrying import RetryingTransactionRepository
 
-__all__ = ["DuckDbTransactionRepository", "FixtureTransactionRepository"]
+__all__ = [
+    "DuckDbTransactionRepository",
+    "FixtureTransactionRepository",
+    "RetryingTransactionRepository",
+]

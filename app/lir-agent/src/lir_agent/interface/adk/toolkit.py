@@ -18,8 +18,22 @@ from lir_agent.application.use_cases import (
     RequestHandoff,
     SearchCriteria,
 )
-from lir_agent.domain.errors import InvalidSearchCriteriaError, TransactionNotFoundError
+from lir_agent.domain.errors import (
+    DataUnavailableError,
+    InvalidSearchCriteriaError,
+    TransactionNotFoundError,
+)
 from lir_agent.domain.session import SessionState
+
+# Safe fallback when the bank's records cannot be read (after the bounded retries).
+RECORDS_UNAVAILABLE = {
+    "status": "unavailable",
+    "instruction": (
+        "The bank's records are unavailable right now. Do not guess or repeat any amount, date "
+        "or merchant. Tell the customer, and call request_human_handoff so a specialist "
+        "follows up."
+    ),
+}
 
 
 class ChargeInvestigationToolkit:
@@ -60,7 +74,10 @@ class ChargeInvestigationToolkit:
             or `found` set to False. Names, contact details, identity documents and
             financial data are never available.
         """
-        return self._get_profile.execute(SessionState(tool_context.state))
+        try:
+            return self._get_profile.execute(SessionState(tool_context.state))
+        except DataUnavailableError:
+            return RECORDS_UNAVAILABLE
 
     def find_candidate_transactions(
         self,
@@ -91,7 +108,10 @@ class ChargeInvestigationToolkit:
                 "field": error.field,
                 "expected": error.expected,
             }
-        return self._find_candidates.execute(SessionState(tool_context.state), criteria)
+        try:
+            return self._find_candidates.execute(SessionState(tool_context.state), criteria)
+        except DataUnavailableError:
+            return RECORDS_UNAVAILABLE
 
     def get_transaction_evidence(
         self, tool_context: ToolContext, transaction_ref: str
@@ -109,6 +129,8 @@ class ChargeInvestigationToolkit:
             result = self._gather_evidence.execute(session, transaction_ref)
         except TransactionNotFoundError:
             return {"status": "not_found"}
+        except DataUnavailableError:
+            return RECORDS_UNAVAILABLE
         if session.handoff_id:  # the case is already with a human: send them the charge too
             self._request_handoff.attach_evidence(session)
         return result

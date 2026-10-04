@@ -7,6 +7,10 @@ class DomainError(Exception):
     """Base class for expected, recoverable business errors."""
 
 
+class DataUnavailableError(DomainError):
+    """The bank's records could not be read, even after the bounded retries."""
+
+
 class TransactionNotFoundError(DomainError):
     """The transaction reference cannot be used by this session.
 
