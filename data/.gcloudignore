@@ -1,0 +1,15 @@
+# Files `gcloud builds submit data` does not upload (same as .dockerignore).
+raw/
+staging/
+curated/
+samples/
+notebooks/
+.venv/
+**/__pycache__/
+**/.ipynb_checkpoints/
+manifests/ingest/_etags.json
+.env
+.env.*
+!.env.example
+*.pdf
+.gcloudignore

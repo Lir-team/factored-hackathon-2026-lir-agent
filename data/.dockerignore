@@ -1,0 +1,14 @@
+# Build context is data/: code, contracts and manifests only. Data and secrets stay out.
+raw/
+staging/
+curated/
+samples/
+notebooks/
+.venv/
+**/__pycache__/
+**/.ipynb_checkpoints/
+manifests/ingest/_etags.json
+.env
+.env.*
+!.env.example
+*.pdf
