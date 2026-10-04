@@ -7,11 +7,20 @@ The data analysis shows that complaints are the contact reason with the most
 unresolved contacts, and that charge disputes are the largest block of formal
 claims (PQR). The product proposal ("No reconozco este cargo") has the agent
 handle that flow for a signed-in bank customer, in Spanish and Portuguese. It
-finds the charge, explains it with verifiable evidence, opens a dispute only
-when it is eligible, or hands off to a human. The LLM converses, a fast
-decision layer (Jev) classifies, and deterministic code authorizes. The agent
-app (`app/lir-agent/`) implements this flow end to end on the demo fixture or the
-staged data; the cloud services in the architecture below are the deployment target.
+finds the charge, explains it with verifiable evidence, puts a dispute to the
+customer's approval only when it is eligible, or hands off to a human. The LLM
+converses, a typed decision layer classifies (the ES/PT keyword baseline by default; the
+LLM or Jev by configuration), and deterministic code authorizes. The agent app
+(`app/lir-agent/`) implements this flow end to end on the demo fixture or the staged data;
+the cloud services in the architecture below are the deployment target.
+
+**What runs today and what is target.** Decisions: the keyword baseline unless `DECISIONS=llm`;
+Jev is integrated but off (no AI Gateway balance), and its probabilities are not measured.
+The decision layer is evaluated against labels in
+[`data/reports/decision_eval.md`](data/reports/decision_eval.md). Identity: the bank's sign-in
+is mocked; API Gateway validates the customer's JWT only when `customer_sign_in` is on in
+`lir-infra` (off by default, so the demo trusts the form's `customer_id`). WhatsApp is mocked;
+Telegram is the working channel.
 
 ## Architecture
 
@@ -23,7 +32,7 @@ everything outside is an external system or provider.
 
 | Zone | Services | Role |
 |---|---|---|
-| Security edge | Identity Platform, API Gateway | Validates the JWT issued after the bank's biometric check (mocked), rate limits, verifies channel webhook signatures |
+| Security edge | API Gateway (identity provider mocked with a service account) | Validates the customer's JWT when `customer_sign_in` is on, API key on the form, verifies channel webhook signatures |
 | Ingestion | Pub/Sub (`lir-cases`), dead-letter topic, Cloud Storage (`cases-inbox`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
 | Agent runtime | Cloud Run `lir-agent` (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) | One service with three routes: `/v1/cases`, `/pubsub/push`, `/channels` |
 | Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-curated`), Firestore | Curated parquet read by the tools; cases and handoffs written and read back |
@@ -33,16 +42,18 @@ everything outside is an external system or provider.
 How a case flows:
 
 1. The bank's chatbot verifies the customer (biometric KYC, mocked) and calls
-   `POST /v1/cases` with a JWT through API Gateway.
+   `POST /v1/cases` through API Gateway (with the customer's JWT once `customer_sign_in`
+   is on).
 2. `lir-agent` archives the case, publishes it to Pub/Sub and returns `202`
    with a Telegram Start link; Pub/Sub pushes the case back to the agent.
    The wiring, routes and local run are in
    [docs/architecture/case-flow.md](docs/architecture/case-flow.md).
 3. The agent talks to the customer over WhatsApp (mocked) or Telegram in
-   Spanish or Portuguese. Jev returns typed decisions with calibrated
-   probabilities, and a versioned policy in code assigns the lane:
-   auto-resolve (explain the charge or open a verified dispute, never a
-   refund), propose, or escalate.
+   Spanish or Portuguese. The decision layer returns typed decisions with
+   probabilities (their accuracy and calibration are measured in
+   `decision_eval.md`), and a versioned policy in code assigns the lane: explain the
+   charge, put a dispute to the customer's approval (the agent never opens one; the
+   customer approves it with buttons or the web card), propose, or escalate. Never a refund.
 4. Proposals and escalations reach a bank officer in Slack with the case file.
    Every step is written to the audit log in BigQuery.
 
@@ -59,7 +70,7 @@ before any model reads them.
 .
 ├── app/
 │   ├── lir-agent/       # Python agent (Google ADK + LiteLLM), managed with uv
-│   ├── decision-layer/  # Typed decisions with probabilities (Jev, keyword baseline, fallback)
+│   ├── decision-layer/  # Typed decisions with probabilities (keyword baseline, Jev, LLM, fallback)
 │   └── evals/           # Scenario evals from the jobs to be done (promptfoo runner, code graders)
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
 ├── docs/         # Product proposal and architecture diagram (docs/architecture/)
@@ -110,9 +121,9 @@ python -m pipelines               # skips the download (~1.5 min)
   DuckDB, pydantic-settings. Dev tools: pytest, pytest-cov, pyright, ruff.
 - **Architecture:** hexagonal layers (`domain`, `application`, `infrastructure`,
   `interface/adk`) wired in `container.py`. Typed decisions come from
-  `app/decision-layer/` (Jev or an ES/PT keyword baseline).
+  `app/decision-layer/` (the ES/PT keyword baseline by default; the LLM or Jev by configuration).
 - **Flow:** find the charge, gather verifiable evidence, and follow the lane chosen by a
-  versioned synthetic policy (`resources/policy.yaml`): explain, open a verified dispute
+  versioned synthetic policy (`resources/policy.yaml`): explain, put a dispute to the customer's approval
   after an explicit confirmation, propose, or hand off to a human with a case file.
 - **Hardening:** the session guard refuses sessions without a valid signed-in customer
   (missing or expired) before the model runs; the customer ID lives in session state;
@@ -171,7 +182,7 @@ git config core.hooksPath .githooks
 - [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/`
 - [`app/evals/AGENTS.md`](app/evals/AGENTS.md): how to run the evals, full or scoped, and rules for changing scenarios (Spanish)
 - [`app/lir-agent/README.md`](app/lir-agent/README.md): agent flow, tools, layout, commands, limitations
-- [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (Jev, baseline, fallback)
+- [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (baseline, Jev, LLM, fallback)
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
 - [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
 - [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)

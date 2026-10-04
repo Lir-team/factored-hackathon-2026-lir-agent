@@ -101,5 +101,6 @@ See [`.env.example`](.env.example).
 
 - Case event log (append-only): `decision`, `tool_called`, `policy_evaluated` and `handed_off`
   events, for the audit trail and the metrics.
-- Labelled ES/PT evaluation set and comparison: baseline vs Jev vs LLM (and Laya, optional).
-  Metrics: macro-F1, calibration (ECE), coverage/accuracy curve, p50/p95 latency and cost.
+- Jev and Laya against the labelled ES/PT set. The baseline and the LLM are already compared
+  there (`data/reports/decision_eval.md`): macro-F1, calibration (ECE), coverage/accuracy
+  curve, thresholds chosen on validation, p50/p95 latency and cost.

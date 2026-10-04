@@ -1,7 +1,7 @@
 # lir-agent
 
 Google ADK agent for the "I don't recognize this charge" flow. The LLM converses, typed
-decisions (Jev, or the keyword baseline) classify, and **deterministic code authorizes**:
+decisions (the keyword baseline by default; the LLM or Jev by configuration) classify, and **deterministic code authorizes**:
 policy, permissions and confirmations are enforced outside the prompt, and every step is
 written to an audit log.
 
@@ -284,7 +284,7 @@ for demos and operators; it is never sent to customer channels.
 
 | Message | Expected behavior |
 |---|---|
-| "No reconozco un cargo de 245.50 en OXXO", then "Confirmo, abre la disputa" | detects the duplicate, asks for confirmation, opens a verified dispute |
+| "No reconozco un cargo de 245.50 en OXXO", then "Confirmo, abre la disputa" | detects the duplicate and puts the dispute to the customer's approval; a typed "yes" opens nothing, the approval button or web card does |
 | "¿Qué es un cargo de 179 de Spotify?" | explains it: recurring payment, previous charges |
 | "No reconozco un cobro de PAYPAL STEAMGAMES" | explains it as a pending authorization |
 | "Veo una compra de 38900 en Argentina" | hands off to a specialist without revealing why |
@@ -348,7 +348,6 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
   or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`).
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
   (Cloud Run ingress and IAP settings, managed in `lir-infra`).
-- The keyword baseline misses a bare "sí" as a confirmation; Jev is expected to handle it.
 - What the customer types still reaches the external models, without identifiers: the model
   must understand it. Identifier redaction is pattern based (ten or more digits, e-mails,
   CURP/RFC); an 8-digit DNI or cédula is indistinguishable from an amount and is kept. The
