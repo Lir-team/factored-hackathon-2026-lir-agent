@@ -189,3 +189,12 @@ strategy applies: chain strategy to be chosen before the first PR.
   reply pop, first-writer-wins conversations. Same contract tests run against
   both stores. RED: ImportError on `build_case_store`. Checks: pytest 293 passed
   + 12 skipped without the emulator, 305 passed with it; ruff clean, pyright 0.
+- 2026-10-04: local end-to-end run passed (Pub/Sub + Firestore emulators, real
+  model `openai/gpt-4o`, fake bot token): POST /v1/cases 202 with start link ->
+  published -> pushed -> agent first turn (escalate, handoff) -> reply queued in
+  Firestore -> simulated `/start <token>` linked the chat and popped the queue ->
+  duplicate update ignored -> reused token refused -> follow-up text answered by
+  the agent. Tokens never appeared in logs. Found: when sendMessage fails the
+  popped reply is lost and `case_reply_sent` is still audited (follow-up).
+  Pending: real Telegram delivery (needs a public URL or a polling bridge) and
+  lir-web `docs/case-contract.md` back to direct publishing.
