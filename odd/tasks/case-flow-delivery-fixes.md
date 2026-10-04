@@ -26,7 +26,7 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
   that was not sent (send then remove, or re-queue the unsent ones on failure).
   Same on the `/start` path. Check: test where `messenger.send` raises, then a
   retry delivers the reply exactly once.
-- [ ] **T2 Telegram update dropped when the agent fails** — `interface/http/telegram.py`
+- [x] **T2 Telegram update dropped when the agent fails** — `interface/http/telegram.py`
   marks `update_id` seen before `execute()`; on an unexpected error the 500 makes
   Telegram retry, and the dedupe drops it. Fix: mark seen only after success (or
   answer the customer with a short "try again" and return 200). Check: test where
@@ -48,4 +48,7 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
 
 ## Progress
 
-- (none yet)
+- T2 done (delegated writer). RED: `tests/interface/test_telegram_webhook.py::test_an_update_that_failed_is_answered_when_telegram_retries_it`
+  (retry got 200 but nothing was sent). Fix: `_RecentUpdates.remember` runs only after
+  `execute()` succeeds. GREEN: 294 passed, 12 skipped; ruff and pyright clean.
+  Commit: `fix(agent): retry a Telegram update whose handling failed`.

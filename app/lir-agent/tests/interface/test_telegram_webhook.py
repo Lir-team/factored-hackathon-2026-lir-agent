@@ -299,6 +299,31 @@ def test_a_repeated_update_is_processed_once(bot):
     assert len(bot.messenger.sent) == 1
 
 
+def test_an_update_that_failed_is_answered_when_telegram_retries_it(bot):
+    bot.push()
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
+    body = {
+        "update_id": 99,
+        "message": {
+            "message_id": 1,
+            "chat": {"id": CHAT, "type": "private"},
+            "text": "hola",
+        },
+    }
+
+    async def broken(*args, **kwargs):
+        raise RuntimeError("model down")
+
+    bot.conversations.send = broken  # type: ignore[method-assign]
+    bot.client = TestClient(bot.client.app, raise_server_exceptions=False)
+    assert bot.post(body).status_code == 500
+
+    del bot.conversations.send  # back to the class method
+    assert bot.post(body).status_code == 200
+    assert bot.messenger.sent == [(CHAT, "echo: hola")]
+
+
 @pytest.mark.parametrize(
     "update",
     [

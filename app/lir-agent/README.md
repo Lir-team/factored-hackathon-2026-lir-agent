@@ -121,7 +121,8 @@ the case's conversation and the reply is sent back (split at Telegram's 4096 cha
 before the case is worked, the chat is asked to wait. Messages longer than `MAX_MESSAGE_CHARS`
 are refused with a short note; unlinked chats are asked to use the link from the form; used
 or expired links and lost conversations get a short message in Spanish or Portuguese. Only
-text from private chats is read, and repeated updates are handled once.
+text from private chats is read, and repeated updates are handled once; an update whose
+handling failed answers `500`, so Telegram's retry is handled again.
 
 Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 characters of
 `A-Z a-z 0-9 _ -`), then register the webhook once; Telegram sends the secret back in
