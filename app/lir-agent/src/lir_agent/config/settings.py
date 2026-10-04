@@ -123,9 +123,10 @@ class Settings(BaseSettings):
     slack_webhook_url: SecretStr | None = None
     # Public URL of this service, for the case file link in the notice.
     public_base_url: str | None = None
-    slack_message_template: str = (
-        "Nuevo caso {handoff_id} · regla {rule} · carril {lane}\n{report_url}"
-    )
+    slack_notice_path: Path = RESOURCES_DIR / "reports" / "slack_notice.yaml"
+    # Comma-separated Slack member ids that take handoffs in rotation.
+    slack_assignees: str = ""
+    slack_fallback_mention: str = "<!here>"
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
     # Shown in the API docs and in validation errors: what a customer id looks like, and one

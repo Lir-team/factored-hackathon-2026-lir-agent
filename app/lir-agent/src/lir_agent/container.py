@@ -169,8 +169,10 @@ def build_notifier(settings: Settings) -> HandoffNotifier | None:
 
     return SlackHandoffNotifier(
         settings.slack_webhook_url.get_secret_value(),
-        settings.slack_message_template,
+        ResourceLoader().load_mapping(settings.slack_notice_path),
         settings.public_base_url,
+        [a.strip() for a in settings.slack_assignees.split(",") if a.strip()],
+        settings.slack_fallback_mention,
     )
 
 
