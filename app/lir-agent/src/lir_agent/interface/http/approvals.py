@@ -13,7 +13,7 @@ Chat surfaces (Telegram) authenticate the actor their own way and call the same
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from lir_agent.application.ports import ApprovalRepository
@@ -27,6 +27,8 @@ from lir_agent.domain.approvals import (
 )
 
 _IAP_PREFIX = "accounts.google.com:"
+# The link token is a credential: sent in a header so proxies and gateways do not log it.
+LINK_TOKEN_HEADER = "X-Approval-Token"
 
 # Domain reasons to HTTP statuses. "not_found" also covers a wrong link token.
 _STATUS = {
@@ -125,8 +127,11 @@ def approvals_router(
         )
 
     @router.get("/{approval_id}")
-    async def show(approval_id: str, token: str) -> ApprovalView:
-        """The card behind a customer's link."""
+    async def show(
+        approval_id: str,
+        token: Annotated[str, Header(alias=LINK_TOKEN_HEADER, min_length=1)],
+    ) -> ApprovalView:
+        """The card behind a customer's link (the token travels in a header, not the URL)."""
         try:
             request, _ = verify_link.execute(approval_id, token)
         except ApprovalError as error:

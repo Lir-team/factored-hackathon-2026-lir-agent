@@ -292,7 +292,7 @@ def build_container(
         ),
         present_approvals=present_approvals,
         decide_approval=decide_approval,
-        verify_approval_link=VerifyApprovalLink(approvals),
+        verify_approval_link=VerifyApprovalLink(approvals, audit),
         messenger=messenger,
         answer_approval_button=AnswerApprovalButton(
             approvals, decide_approval, case_store, messenger, audit, approval_labels

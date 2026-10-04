@@ -140,7 +140,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
-| `GET` | `/v1/approvals/{approval_id}?token=...` | - | The approval card behind a customer's single-use link (web surface) |
+| `GET` | `/v1/approvals/{approval_id}` | header `X-Approval-Token` | The approval card behind a customer's single-use link (web surface). The token travels in a header so no proxy logs it; failed attempts are audited (`approval_link_refused`) |
 | `POST` | `/v1/approvals/{approval_id}/decision` | `{"decision": "approve" \| "reject", "token": "...", "content_hash": "..."}` | The customer decides from the web card. `404` wrong or spent link, `409` already decided or content changed, `410` expired |
 | `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required) |
 | `POST` | `/v1/approvals/{approval_id}/review` | `{"decision": ..., "content_hash": ..., "note": ...}` | A specialist decides a request that waits for one (IAP identity required, never a local fallback) |

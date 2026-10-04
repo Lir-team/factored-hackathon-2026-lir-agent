@@ -241,7 +241,7 @@ def create_app(
             CORSMiddleware,
             allow_origins=origins,
             allow_methods=["GET", "POST"],
-            allow_headers=["Content-Type", "Idempotency-Key", "Authorization"],
+            allow_headers=["Content-Type", "Idempotency-Key", "Authorization", "X-Approval-Token"],
         )
 
     app.include_router(

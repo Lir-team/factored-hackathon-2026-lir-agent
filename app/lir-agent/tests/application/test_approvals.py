@@ -81,7 +81,7 @@ class World:
             self.audit,
             clock,
         )
-        self.verify = VerifyApprovalLink(self.repository)
+        self.verify = VerifyApprovalLink(self.repository, self.audit)
         state: dict = {}
         self.session = SessionState(state)
         self.session.start(CUSTOMER, timedelta(minutes=15), "test")
@@ -190,6 +190,8 @@ def test_a_web_link_identifies_the_customer_and_works_for_one_decision():
     assert actor == Actor(role=Approver.CUSTOMER, identity=CUSTOMER, channel="web")
     with pytest.raises(ApprovalError, match="not_found"):
         world.verify.execute(world.request.approval_id, "a-wrong-token")
+    refused = [e for e in world.audit.entries if e["event"] == "approval_link_refused"]
+    assert [e["approval_id"] for e in refused] == [world.request.approval_id]
 
     world.decide_as(actor, seen=request.content_hash)
     with pytest.raises(ApprovalError, match="not_found"):

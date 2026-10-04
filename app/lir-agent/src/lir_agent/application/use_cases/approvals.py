@@ -225,9 +225,10 @@ class PresentApprovals:
 class VerifyApprovalLink:
     """Who holds a web link: the customer the request belongs to, while it is pending."""
 
-    def __init__(self, repository: ApprovalRepository) -> None:
-        """Keep the request store."""
+    def __init__(self, repository: ApprovalRepository, audit: AuditSink) -> None:
+        """Keep the request store and the audit sink (refused links are recorded)."""
         self._repository = repository
+        self._audit = audit
 
     def execute(self, approval_id: str, token: str, channel: str = "web") -> tuple[
         ApprovalRequest, Actor
@@ -243,7 +244,15 @@ class VerifyApprovalLink:
             or not request.link_token_hash
             or hash_token(token) != request.link_token_hash
         ):
-            raise ApprovalError("not_found")  # never tell which part was wrong
+            # Never tell which part was wrong; record it (guessing links leaves a trail).
+            self._audit.record(
+                "approval_link_refused",
+                request.session_id if request else None,
+                approval_id=approval_id,
+                known_request=request is not None,
+                channel=channel,
+            )
+            raise ApprovalError("not_found")
         return request, Actor(
             role=Approver.CUSTOMER, identity=request.customer_id, channel=channel
         )
