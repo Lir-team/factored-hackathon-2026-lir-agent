@@ -230,13 +230,21 @@ class VerifyApprovalLink:
         self._repository = repository
         self._audit = audit
 
-    def execute(self, approval_id: str, token: str, channel: str = "web") -> tuple[
-        ApprovalRequest, Actor
-    ]:
+    def execute(
+        self,
+        approval_id: str,
+        token: str,
+        channel: str = "web",
+        signed_in_as: str | None = None,
+    ) -> tuple[ApprovalRequest, Actor]:
         """The request and its customer as the actor.
 
+        `signed_in_as` is the customer the bank's sign-in verified, when the surface has one
+        (step-up): it must be the request's customer.
+
         Raises:
-            ApprovalError: `not_found` for an unknown request or a wrong token.
+            ApprovalError: `not_found` for an unknown request or a wrong token;
+                `not_your_request` when someone else is signed in.
         """
         request = self._repository.get(approval_id)
         if (
@@ -253,8 +261,21 @@ class VerifyApprovalLink:
                 channel=channel,
             )
             raise ApprovalError("not_found")
+        if signed_in_as is not None and signed_in_as != request.customer_id:
+            self._audit.record(
+                "approval_link_refused",
+                request.session_id,
+                approval_id=approval_id,
+                known_request=True,
+                channel=channel,
+                reason="signed_in_as_someone_else",
+            )
+            raise ApprovalError("not_your_request")
         return request, Actor(
-            role=Approver.CUSTOMER, identity=request.customer_id, channel=channel
+            role=Approver.CUSTOMER,
+            identity=request.customer_id,
+            channel=channel,
+            proof="link+sign_in" if signed_in_as else "link",
         )
 
 
@@ -373,6 +394,7 @@ class DecideApproval:
             actor=actor.identity,
             role=actor.role.value,
             channel=actor.channel,
+            proof=actor.proof,
             content_hash=decided.content_hash,
             seen_hash=seen_hash,
             result=decided.result,

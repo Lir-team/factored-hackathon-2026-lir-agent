@@ -23,6 +23,8 @@ class _Key(StrEnum):
     CUSTOMER_ID = "customer_id"
     AUTH_EXPIRES_AT = "auth_expires_at"
     AUTH_METHOD = "auth_method"
+    AUTH_IDLE_SECONDS = "auth_idle_seconds"
+    AUTH_MAX_EXPIRES_AT = "auth_max_expires_at"
     LAST_USER_TEXT = "last_user_text"
     DECISIONS = "decisions"
     DECISION_META = "decision_meta"
@@ -64,13 +66,44 @@ class SessionState:
         self._raw = raw
 
     # ---- authentication ------------------------------------------------------------------
-    def start(self, customer_id: str, ttl: timedelta, method: str) -> datetime:
-        """Bind the authenticated customer to the session; return when it expires."""
-        expires_at = utc_now() + ttl
+    def start(
+        self,
+        customer_id: str,
+        ttl: timedelta,
+        method: str,
+        *,
+        max_ttl: timedelta | None = None,
+    ) -> datetime:
+        """Bind the authenticated customer to the session; return when it expires.
+
+        With `max_ttl`, `ttl` is an idle timeout: every message extends the session by `ttl`
+        (`touch`), never past `max_ttl` from now. Without it, `ttl` is fixed.
+        """
+        now = utc_now()
+        expires_at = now + ttl
+        if max_ttl is not None:
+            ceiling = now + max(max_ttl, ttl)
+            self._raw[_Key.AUTH_IDLE_SECONDS] = ttl.total_seconds()
+            self._raw[_Key.AUTH_MAX_EXPIRES_AT] = ceiling.isoformat()
+            expires_at = min(expires_at, ceiling)
         self._raw[_Key.CUSTOMER_ID] = customer_id
         self._raw[_Key.AUTH_EXPIRES_AT] = expires_at.isoformat()
         self._raw[_Key.AUTH_METHOD] = method
         return expires_at
+
+    def touch(self, at: datetime | None = None) -> None:
+        """Extend an idle-timeout session after activity, up to its ceiling.
+
+        A session that already expired stays expired: the customer must sign in again.
+        """
+        idle = self._raw.get(_Key.AUTH_IDLE_SECONDS)
+        ceiling = self._raw.get(_Key.AUTH_MAX_EXPIRES_AT)
+        if not idle or not ceiling or self.auth_error(at) is not None:
+            return
+        extended = min(
+            (at or utc_now()) + timedelta(seconds=idle), datetime.fromisoformat(ceiling)
+        )
+        self._raw[_Key.AUTH_EXPIRES_AT] = extended.isoformat()
 
     def auth_error(self, at: datetime | None = None) -> AuthError | None:
         """Why the session cannot be used now, or None when it is valid."""

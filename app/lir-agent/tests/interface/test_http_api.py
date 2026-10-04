@@ -43,6 +43,7 @@ class FakeConversations:
         self.policies: dict[str, tuple[timedelta, str]] = {}
         self.reports: dict[str, CaseReport | None] = {}
         self.next_approvals: tuple[str, ...] = ()
+        self.max_ttls: dict[str, timedelta | None] = {}
         self.messages: list[tuple[str, str, str]] = []
 
     async def start(
@@ -54,12 +55,14 @@ class FakeConversations:
         auth_method: str,
         transaction_ids: Sequence[str] = (),
         case_report: CaseReport | None = None,
+        max_ttl: timedelta | None = None,
     ) -> StartedConversation:
         if customer_id == "CLI-UNKNOWN":
             raise CustomerNotFoundError(customer_id)
         session_id = f"s{len(self.sessions) + 1}"
         self.sessions[session_id] = (owner, customer_id)
         self.policies[session_id] = (ttl, auth_method)
+        self.max_ttls[session_id] = max_ttl
         self.reports[session_id] = case_report
         refs = tuple(f"T{i}" for i, _ in enumerate(transaction_ids, start=1))
         return StartedConversation(

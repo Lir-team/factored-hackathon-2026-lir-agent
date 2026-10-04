@@ -34,11 +34,22 @@ class TelegramApprovalSurface:
 
     name = "telegram"
 
-    def __init__(self, store: CaseStore, bot: ChatButtons, labels: Labels) -> None:
-        """Keep the case store (case -> chat), the bot and the labels per language."""
+    def __init__(
+        self,
+        store: CaseStore,
+        bot: ChatButtons,
+        labels: Labels,
+        require_sign_in: bool = False,
+    ) -> None:
+        """Keep the case store (case -> chat), the bot, the labels and the step-up setting.
+
+        With `require_sign_in` the message carries no approve or reject buttons: only the
+        link to the web card, which opens with the bank's sign-in.
+        """
         self._store = store
         self._bot = bot
         self._labels = labels
+        self._require_sign_in = require_sign_in
 
     def _chat(self, request: ApprovalRequest) -> int | None:
         """The chat linked to the request's case, if the customer linked one."""
@@ -60,16 +71,23 @@ class TelegramApprovalSurface:
             return False
         labels = self._labels_for(request)
         lines = [f"• {d.label}: {d.value}" for d in request.details]
-        text = "\n".join([request.title, "", *lines, "", labels["hint"]])
-        rows = [
-            [
-                InlineButton(labels["approve"], approval_callback(request.approval_id, True)),
-                InlineButton(labels["reject"], approval_callback(request.approval_id, False)),
-            ]
-        ]
-        # Telegram only opens https links from a button.
-        if link and link.startswith("https://"):
-            rows.append([InlineButton(labels["view_web"], url=link)])
+        web = link if link and link.startswith("https://") else None  # Telegram rule
+        hint = labels["hint_sign_in"] if self._require_sign_in else labels["hint"]
+        text = "\n".join([request.title, "", *lines, "", hint])
+        rows: list[list[InlineButton]] = []
+        if self._require_sign_in:
+            if web is None:
+                return False  # nowhere to approve from this chat
+            rows.append([InlineButton(labels["review_web"], url=web)])
+        else:
+            rows.append(
+                [
+                    InlineButton(labels["approve"], approval_callback(request.approval_id, True)),
+                    InlineButton(labels["reject"], approval_callback(request.approval_id, False)),
+                ]
+            )
+            if web:
+                rows.append([InlineButton(labels["view_web"], url=web)])
         try:
             await self._bot.send_buttons(chat_id, text, rows)
         except MessageNotSentError:

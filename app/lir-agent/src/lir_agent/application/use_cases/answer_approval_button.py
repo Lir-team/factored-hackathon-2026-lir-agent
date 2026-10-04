@@ -33,6 +33,7 @@ class AnswerApprovalButton:
         bot: ChatButtons,
         audit: AuditSink,
         labels: Mapping[str, Mapping[str, Any]],
+        require_sign_in: bool = False,
     ) -> None:
         """Keep the approval core, the case store (chat -> case) and the bot."""
         self._repository = repository
@@ -41,6 +42,7 @@ class AnswerApprovalButton:
         self._bot = bot
         self._audit = audit
         self._labels = labels
+        self._require_sign_in = require_sign_in
 
     async def execute(self, chat_id: int, callback_id: str, data: str | None) -> None:
         """Decide the request the button belongs to; any other button is ignored."""
@@ -60,7 +62,16 @@ class AnswerApprovalButton:
             )
             await self._bot.answer_callback(callback_id, labels["error_other"], alert=True)
             return
-        actor = Actor(role=Approver.CUSTOMER, identity=request.customer_id, channel=CHANNEL)
+        if self._require_sign_in:
+            # Step-up: holding the chat is not enough; the card opens with the bank's sign-in.
+            await self._bot.answer_callback(callback_id, labels["sign_in_needed"], alert=True)
+            return
+        actor = Actor(
+            role=Approver.CUSTOMER,
+            identity=request.customer_id,
+            channel=CHANNEL,
+            proof="linked_chat",
+        )
         try:
             # The message showed this request's content, and requests never change.
             decided = await self._decide.execute(

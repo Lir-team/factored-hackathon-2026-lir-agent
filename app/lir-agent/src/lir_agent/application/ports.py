@@ -143,12 +143,14 @@ class Conversations(Protocol):
         auth_method: str,
         transaction_ids: Sequence[str] = (),
         case_report: CaseReport | None = None,
+        max_ttl: timedelta | None = None,
     ) -> StartedConversation:
         """Start a conversation for `customer_id`, valid for `ttl`.
 
         `transaction_ids` (the charges a case reports) get session references, so the first
         message can name them without carrying the bank's records. `case_report` is what the
-        customer reported in the form; the policy acts on it.
+        customer reported in the form; the policy acts on it. With `max_ttl`, `ttl` is an
+        idle timeout that activity extends up to `max_ttl`.
 
         Raises:
             CustomerNotFoundError: If the customer does not exist.

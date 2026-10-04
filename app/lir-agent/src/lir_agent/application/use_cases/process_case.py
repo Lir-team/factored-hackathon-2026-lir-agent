@@ -35,6 +35,7 @@ class ProcessCase:
         audit: AuditSink,
         *,
         session_ttl: timedelta,
+        max_session_ttl: timedelta | None = None,
         present_approvals: PresentApprovals | None = None,
     ) -> None:
         """Keep the adapters; without a messenger, replies wait in the store."""
@@ -43,6 +44,7 @@ class ProcessCase:
         self._messenger = messenger
         self._audit = audit
         self._session_ttl = session_ttl
+        self._max_session_ttl = max_session_ttl
         self._present_approvals = present_approvals
 
     async def execute(self, payload: dict[str, Any]) -> None:
@@ -65,6 +67,7 @@ class ProcessCase:
                 auth_method=AUTH_METHOD,
                 transaction_ids=[t["transaction_id"] for t in payload["transactions"]],
                 case_report=CaseReport.from_payload(payload),
+                max_ttl=self._max_session_ttl,
             )
         except CustomerNotFoundError:
             self._audit.record(

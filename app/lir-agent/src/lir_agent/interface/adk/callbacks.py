@@ -127,6 +127,7 @@ class AgentCallbacks:
 
         auth_error = session.auth_error()
         if auth_error is None:
+            session.touch()  # activity keeps an idle-timeout session alive, up to its ceiling
             return None
         logger.warning("Refused a request from a session: %s", auth_error.value)
         self._audit.record("session_refused", session_id, reason=auth_error.value)

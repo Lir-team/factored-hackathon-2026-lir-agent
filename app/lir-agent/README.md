@@ -56,6 +56,15 @@ approvals:
    Approval runs the action and reads it back; rejection runs nothing. Who, when, through
    which surface, what they saw and the result go to the audit log (`approval_decided`).
 4. A typed "yes" never approves anything: the agent points the customer to the buttons.
+5. Step-up (`APPROVAL_REQUIRES_SIGN_IN=true`, with API Gateway validating the customer's JWT):
+   the web card also needs the customer signed in to the bank, and they must be the request's
+   customer; Telegram shows only a "review and approve" link to the card, never approve or
+   reject buttons, so whoever holds the Telegram account cannot approve. The audit records how
+   the identity was proven (`proof`: `link`, `link+sign_in`, `linked_chat`, `iap`).
+
+Conversations opened from a case (Telegram) expire after `CASE_SESSION_IDLE_MINUTES` (30) of
+inactivity, never later than `CASE_SESSION_MAX_MINUTES` (24 h) after the case: then the
+customer files a new case, signing in again.
 
 When the policy only *explains* a charge (e.g. a merchant paid before), the explanation ends
 by telling the customer they can still dispute it. If they still reject it

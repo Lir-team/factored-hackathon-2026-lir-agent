@@ -167,3 +167,41 @@ def test_the_bot_api_receives_inline_buttons():
     }
     assert "reply_markup" not in calls[1]["json"]
     assert calls[2]["path"].endswith("/answerCallbackQuery")
+
+
+# ---- step-up: the chat alone cannot approve ------------------------------------------------
+@pytest.fixture
+def stepped_bot(settings) -> Bot:
+    return Bot(
+        telegram_on(
+            settings,
+            approval_requires_sign_in=True,
+            approval_link_template="https://web.example/aprobar.html?id={approval_id}&t={token}",
+        )
+    )
+
+
+def test_with_step_up_the_chat_gets_a_link_to_sign_in_not_buttons(stepped_bot):
+    request = request_for(linked(stepped_bot))
+
+    present(stepped_bot, request.approval_id)
+
+    [(_, rows)] = stepped_bot.messenger.buttons
+    [[button]] = rows
+    assert button.callback_data is None
+    assert button.url and button.url.startswith("https://web.example/aprobar.html?id=")
+    assert "con tu sesión iniciada" in stepped_bot.messenger.sent[-1][1]
+
+
+def test_with_step_up_an_old_button_cannot_approve(stepped_bot):
+    request = request_for(linked(stepped_bot))
+
+    stepped_bot.press(approval_callback(request.approval_id, True))
+
+    pending = stepped_bot.container.approvals.get(request.approval_id)
+    assert pending is not None and pending.status == "pending"
+    assert stepped_bot.messenger.answers[-1] == (
+        "cb-1",
+        "Por tu seguridad, decide desde el enlace, con tu sesión del banco.",
+        True,
+    )
