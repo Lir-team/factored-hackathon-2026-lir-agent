@@ -1,6 +1,6 @@
 import pytest
 
-from lir_agent.domain.case_intake import case_summary
+from lir_agent.domain.case_intake import CaseReport, case_summary
 from lir_agent.domain.telegram import (
     bot_language,
     bot_message,
@@ -93,3 +93,22 @@ def test_split_message_cuts_at_the_limit():
     parts = split_message("a" * 4096 + "b" * 10)
 
     assert parts == ["a" * 4096, "b" * 10]
+
+
+def test_a_lost_or_stolen_card_is_always_a_fraud_report():
+    report = CaseReport(
+        category="card_lost_stolen", fraud_suspected=False, freeze_card_requested=True
+    )
+    assert report.facts() == {"case_fraud_reported": True, "case_freeze_requested": True}
+
+
+def test_the_report_reads_the_incident_answers():
+    payload = {
+        "category": "unrecognized_charge",
+        "fraud_suspected": True,
+        "freeze_card_requested": False,
+        "incident": {"card_in_possession": "unsure", "shared_credentials": "yes"},
+    }
+    report = CaseReport.from_payload(payload)
+    assert (report.card_in_possession, report.shared_credentials) == ("unsure", "yes")
+    assert CaseReport.from_payload({**payload, "incident": None}).card_in_possession is None

@@ -9,7 +9,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from lir_agent.domain.case_intake import CaseConversation, CaseReceipt, CaseStart
+from lir_agent.domain.case_intake import (
+    CaseConversation,
+    CaseReceipt,
+    CaseReport,
+    CaseStart,
+)
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 from lir_agent.domain.telegram import ChatLink
 
@@ -128,11 +133,13 @@ class Conversations(Protocol):
         ttl: timedelta,
         auth_method: str,
         transaction_ids: Sequence[str] = (),
+        case_report: CaseReport | None = None,
     ) -> StartedConversation:
         """Start a conversation for `customer_id`, valid for `ttl`.
 
         `transaction_ids` (the charges a case reports) get session references, so the first
-        message can name them without carrying the bank's records.
+        message can name them without carrying the bank's records. `case_report` is what the
+        customer reported in the form; the policy acts on it.
 
         Raises:
             CustomerNotFoundError: If the customer does not exist.

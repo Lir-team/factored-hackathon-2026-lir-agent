@@ -51,6 +51,7 @@ class RouteTurn:
         confirmed_now = self._resolve_confirmation(session, pending, decisions)
         facts = {
             **self._policy.turn_facts(decisions),
+            **(session.case_report.facts() if session.case_report else {}),
             "confirmed_now": confirmed_now,
             "awaiting_confirmation": bool(pending) and not confirmed_now,
         }

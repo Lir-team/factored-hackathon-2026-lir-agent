@@ -145,3 +145,40 @@ def test_an_unverified_country_with_a_small_amount_follows_the_usual_rules(polic
 
 def test_a_verified_domestic_charge_is_not_escalated_for_its_country(policy):
     assert policy.decide_case(CASE).rule_id != "C2b_country_unverified"
+
+
+@pytest.mark.parametrize(
+    ("form", "rule"),
+    [
+        ({"case_freeze_requested": True, "case_fraud_reported": True}, "T0b_card_freeze_requested"),
+        ({"case_freeze_requested": False, "case_fraud_reported": True}, "T0c_fraud_reported"),
+    ],
+)
+def test_the_form_answers_outrank_the_decision_model(policy, form, rule):
+    facts = {**policy.turn_facts(serialized(IN_SCOPE)), **form}
+    outcome = policy.route_turn(facts)
+    assert (outcome.rule_id, outcome.lane) == (rule, Lane.ESCALATE)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Listo, tu tarjeta ya está bloqueada.",
+        "Tu tarjeta quedó congelada.",
+        "Bloqueamos tu tarjeta por seguridad.",
+        "Seu cartão já está bloqueado.",
+    ],
+)
+def test_output_guard_blocks_a_card_freeze_nobody_made(policy, reply):
+    assert policy.config.output_guard.violations(reply)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Tu tarjeta todavía no está bloqueada: un especialista la bloqueará primero.",
+        "Aún no bloqueamos tu tarjeta; un especialista lo hará.",
+    ],
+)
+def test_output_guard_lets_the_truth_about_a_freeze_through(policy, reply):
+    assert not policy.config.output_guard.violations(reply)

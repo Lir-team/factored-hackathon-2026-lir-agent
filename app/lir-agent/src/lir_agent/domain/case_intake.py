@@ -9,6 +9,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from lir_agent.domain.errors import DomainError
 
 # 24 random bytes -> 32 URL-safe characters, within Telegram's 64-character start payload
@@ -92,6 +94,46 @@ def case_summary(payload: dict[str, Any], refs: Sequence[str] = ()) -> str:
         return payload["description"]
     label = _REPORTED_CHARGES.get(payload["language"], _DEFAULT_REPORTED_CHARGES)
     return f"{payload['description']}\n{label}: {', '.join(refs)}."
+
+
+# Form category for a lost or stolen card: always a fraud case.
+LOST_OR_STOLEN_CARD = "card_lost_stolen"
+
+
+class CaseReport(BaseModel):
+    """What the customer reported in the form, as structured facts (not model inferences).
+
+    The form asks directly whether the card was lost or stolen and whether to freeze it; the
+    policy acts on those answers instead of re-inferring them from the description.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    category: str
+    fraud_suspected: bool
+    freeze_card_requested: bool
+    card_in_possession: str | None = None
+    shared_credentials: str | None = None
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any]) -> "CaseReport":
+        """The report of a schema-valid case payload."""
+        incident = payload.get("incident") or {}
+        return cls(
+            category=payload["category"],
+            fraud_suspected=payload["fraud_suspected"],
+            freeze_card_requested=payload["freeze_card_requested"],
+            card_in_possession=incident.get("card_in_possession"),
+            shared_credentials=incident.get("shared_credentials"),
+        )
+
+    def facts(self) -> dict[str, bool]:
+        """Policy facts (turn rules T0b, T0c)."""
+        return {
+            "case_fraud_reported": self.fraud_suspected
+            or self.category == LOST_OR_STOLEN_CARD,
+            "case_freeze_requested": self.freeze_card_requested,
+        }
 
 
 def new_start_token() -> str:

@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any, Protocol
 
+from lir_agent.domain.case_intake import CaseReport
 from lir_agent.domain.errors import AuthError, UnauthenticatedSessionError
 from lir_agent.domain.models import Evidence, Lane, Outcome
 
@@ -29,6 +30,7 @@ class _Key(StrEnum):
     CASE_OUTCOME = "case_outcome"
     TRANSACTION_REFS = "transaction_refs"
     PSEUDONYMS = "pseudonyms"
+    CASE_REPORT = "case_report"
     EVIDENCE = "evidence"
     PENDING_CONFIRMATION = "pending_confirmation"
     CONFIRMED_TRANSACTION = "confirmed_transaction"
@@ -163,6 +165,17 @@ class SessionState:
     def resolve_ref(self, ref: str | None) -> str | None:
         """Internal id for a reference issued in this session, or None."""
         return (self._raw.get(_Key.TRANSACTION_REFS) or {}).get(ref or "")
+
+    # ---- what the customer reported in the web form ------------------------------------
+    @property
+    def case_report(self) -> CaseReport | None:
+        """The structured report of the case this conversation works, if any."""
+        raw = self._raw.get(_Key.CASE_REPORT)
+        return CaseReport.model_validate(raw) if raw else None
+
+    @case_report.setter
+    def case_report(self, report: CaseReport) -> None:
+        self._raw[_Key.CASE_REPORT] = report.model_dump(mode="json")
 
     # ---- placeholders for bank records (see domain/pseudonyms.py) ------------------------
     @property

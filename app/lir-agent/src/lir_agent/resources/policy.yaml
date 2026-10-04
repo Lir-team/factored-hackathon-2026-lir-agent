@@ -5,7 +5,7 @@
 # Rules are evaluated top to bottom; the first rule whose `when` matches wins.
 # `when` maps a fact name to {operator: value}; all conditions must hold. An empty `when` always matches.
 # Operators: eq, ne, gt, gte, lt, lte, in.
-version: 0.4.0-synthetic
+version: 0.5.0-synthetic
 
 # Maps policy fact names to the question keys used by agent/decisions/questions.py.
 decision_keys:
@@ -22,6 +22,17 @@ turn_rules:
     lane: escalate
     reason: No decision model could classify the message (safe fallback)
     when: {decisions_available: {eq: false}}
+  # Structured answers from the web form outrank what a model infers from the description.
+  - id: T0b_card_freeze_requested
+    lane: escalate
+    reason: >-
+      The customer asked to freeze their card. This assistant cannot freeze cards: tell them
+      clearly that the card is NOT frozen yet and that a specialist will do it first
+    when: {case_freeze_requested: {eq: true}}
+  - id: T0c_fraud_reported
+    lane: escalate
+    reason: The customer reported fraud or a lost or stolen card in the form
+    when: {case_fraud_reported: {eq: true}}
   - id: T1_wants_human
     lane: escalate
     reason: Customer explicitly asks for a person
@@ -120,6 +131,12 @@ tools_by_turn_lane:
 handoff_open_questions:
   T0_decisions_unavailable:
     - "Clasificar el pedido: el modelo de decisiones no respondió."
+  T0b_card_freeze_requested:
+    - "PRIORIDAD: bloquear la tarjeta. El cliente lo pidió en el formulario y este canal no bloquea tarjetas."
+    - "¿Hay otros movimientos que el cliente no reconoce?"
+  T0c_fraud_reported:
+    - "El cliente reportó fraude o pérdida/robo en el formulario: ¿hay que bloquear la tarjeta?"
+    - "¿Hay otros movimientos que el cliente no reconoce?"
   T1_wants_human:
     - "Qué necesita el cliente: pidió una persona antes de detallar el caso."
   T3_theft_suspected:
@@ -193,6 +210,9 @@ output_guard:
     - '(?i)\breembols\w*\s+(aprobad|confirmad|garantizad)'
     - '(?i)\b(vamos|iremos)\s+(devolver|reembolsar|estornar)'
     - '(?i)\bestorno\s+(aprovad|confirmad|garantid)'
+    # Card freezes: no tool freezes a card, so a reply saying one is frozen is never true.
+    - '(?i)\b(tarjeta|cart[aã]o)\s+(ya\s+|j[aá]\s+)?(est[aá]|qued[oó]|fue|foi|ficou)\s+(bloquead|congelad)'
+    - '(?i)\b(bloqueamos|congelamos|bloqueei|congelei)\b'
   # A negation only cancels a promise when every word between them is listed here, so
   # "no puedo prometer que te vamos a devolver" passes but "si no lo reconoces te vamos
   # a devolver" and "no te preocupes que te vamos a devolver" are blocked. A missing word
@@ -210,8 +230,8 @@ output_guard:
   ]
   fallback_message:
     es: >-
-      Tu caso quedó registrado y un especialista lo revisará. No podemos confirmar
-      devoluciones por este canal.
+      Tu caso quedó registrado y un especialista lo revisará. Por este canal no podemos
+      confirmar devoluciones ni bloqueos de tarjeta.
     pt: >-
-      Seu caso foi registrado e um especialista vai analisá-lo. Não podemos confirmar
-      estornos por este canal.
+      Seu caso foi registrado e um especialista vai analisá-lo. Por este canal não podemos
+      confirmar estornos nem bloqueios de cartão.
