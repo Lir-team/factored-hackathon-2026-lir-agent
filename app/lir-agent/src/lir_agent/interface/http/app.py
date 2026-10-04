@@ -11,17 +11,15 @@ from datetime import timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from google.adk.runners import InMemoryRunner
 from pydantic import BaseModel, Field, field_validator
 
-from lir_agent.config.settings import Settings
-from lir_agent.interface.http.gateway import (
-    AgentGateway,
+from lir_agent.application.ports import (
+    ConversationNotFoundError,
+    Conversations,
     CustomerNotFoundError,
-    SessionNotFoundError,
 )
+from lir_agent.config.settings import Settings
 
-APP_NAME = "lir"
 # IAP prefixes the e-mail with the identity provider.
 _IAP_PREFIX = "accounts.google.com:"
 
@@ -50,25 +48,19 @@ class MessageResponse(BaseModel):
     reply: str
 
 
-def build_gateway(settings: Settings) -> AgentGateway:
-    """Wire the real agent behind an in-memory ADK runner, sharing one container."""
-    from lir_agent.container import build_container  # heavy imports, only when serving
-    from lir_agent.interface.adk import build_agent
+def _real_conversations(settings: Settings) -> Conversations:
+    """The real agent behind ADK; imported lazily because the agent stack is heavy."""
+    from lir_agent.interface.adk import build_conversations
 
-    container = build_container(settings)
-    runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
-    return AgentGateway(
-        runner,
-        customers=container.repository,
-        audit=container.audit,
-        session_ttl=timedelta(minutes=settings.session_ttl_minutes),
-        auth_method=settings.http_auth_method,
-    )
+    return build_conversations(settings)
 
 
-def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastAPI:
-    """Build the API. `gateway` is injected in tests; by default the real agent is wired."""
-    agent_gateway = gateway or build_gateway(settings)
+def create_app(
+    settings: Settings, conversations: Conversations | None = None
+) -> FastAPI:
+    """Build the API. `conversations` is injected in tests; by default the real agent is wired."""
+    agent = conversations or _real_conversations(settings)
+    session_ttl = timedelta(minutes=settings.session_ttl_minutes)
     customer_id_pattern = re.compile(settings.customer_id_pattern)
 
     class MessageRequest(BaseModel):
@@ -100,7 +92,12 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
                 status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid customer_id"
             )
         try:
-            started = await agent_gateway.start_session(caller, body.customer_id)
+            started = await agent.start(
+                caller,
+                body.customer_id,
+                ttl=session_ttl,
+                auth_method=settings.http_auth_method,
+            )
         except CustomerNotFoundError:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND, "Customer not found"
@@ -114,8 +111,8 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
         session_id: str, body: MessageRequest, caller: Annotated[str, Depends(operator)]
     ) -> MessageResponse:
         try:
-            reply = await agent_gateway.send(caller, session_id, body.text.strip())
-        except SessionNotFoundError:
+            reply = await agent.send(caller, session_id, body.text.strip())
+        except ConversationNotFoundError:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND, "Session not found"
             ) from None

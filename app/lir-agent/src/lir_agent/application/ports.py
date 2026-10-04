@@ -4,6 +4,8 @@ Infrastructure adapters implement them; use cases depend only on these contracts
 The decision model port is `decision_layer.DecisionModel`.
 """
 
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
@@ -54,4 +56,47 @@ class AuditSink(Protocol):
 
     def record(self, event: str, session_id: str | None, **fields: Any) -> dict:
         """Write one audit entry and return it."""
+        ...
+
+
+class ConversationNotFoundError(Exception):
+    """The conversation does not exist, expired from memory, or belongs to another owner."""
+
+
+class CustomerNotFoundError(Exception):
+    """No customer with this id exists in the data source."""
+
+
+@dataclass(frozen=True)
+class StartedConversation:
+    """A new conversation bound to a customer."""
+
+    session_id: str
+    expires_at: datetime
+
+
+class Conversations(Protocol):
+    """Customer conversations with the agent, shared by every entry point.
+
+    Each conversation belongs to an `owner` (the IAP operator over HTTP, a case for intake
+    channels): only that owner can continue it. The customer is bound on start and never
+    passes through the conversation with the model.
+    """
+
+    async def start(
+        self, owner: str, customer_id: str, *, ttl: timedelta, auth_method: str
+    ) -> StartedConversation:
+        """Start a conversation for `customer_id`, valid for `ttl`.
+
+        Raises:
+            CustomerNotFoundError: If the customer does not exist.
+        """
+        ...
+
+    async def send(self, owner: str, session_id: str, text: str) -> str:
+        """Send one customer message and return the agent's reply.
+
+        Raises:
+            ConversationNotFoundError: If `owner` has no conversation with this id.
+        """
         ...
