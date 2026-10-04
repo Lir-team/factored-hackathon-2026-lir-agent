@@ -25,3 +25,6 @@ htmlcov/
 
 # Local audit log (contains conversation metadata)
 .audit/
+
+# Local case inbox (CASES_INBOX=local; contains customer case payloads)
+.cases/

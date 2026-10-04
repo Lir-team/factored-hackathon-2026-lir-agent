@@ -15,7 +15,13 @@ from decision_layer import (
     KeywordDecisionModel,
 )
 
-from lir_agent.application.ports import AuditSink, CaseRepository, TransactionRepository
+from lir_agent.application.ports import (
+    AuditSink,
+    CaseInbox,
+    CaseRepository,
+    CaseStore,
+    TransactionRepository,
+)
 from lir_agent.application.presenter import LlmPresenter
 from lir_agent.application.use_cases import (
     FindCandidateTransactions,
@@ -24,13 +30,16 @@ from lir_agent.application.use_cases import (
     OpenDispute,
     RequestHandoff,
     RouteTurn,
+    SubmitCase,
 )
 from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
+from lir_agent.infrastructure.case_store import InMemoryCaseStore
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
+from lir_agent.infrastructure.cases_inbox import GcsCaseInbox, LocalCaseInbox
 from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
     DuckDbTransactionRepository,
@@ -59,6 +68,7 @@ class Container:
     open_dispute: OpenDispute
     request_handoff: RequestHandoff
     route_turn: RouteTurn
+    submit_case: SubmitCase
 
 
 def build_repository(settings: Settings) -> TransactionRepository:
@@ -80,6 +90,13 @@ def build_audit(settings: Settings) -> AuditSink:
     if settings.audit_sink == "stdout":
         return StdoutAuditSink()
     return JsonlAuditSink(settings.audit_path)
+
+
+def build_case_inbox(settings: Settings) -> CaseInbox:
+    """The case inbox chosen by `CASES_INBOX`."""
+    if settings.cases_inbox == "gcs":
+        return GcsCaseInbox(settings.cases_bucket)
+    return LocalCaseInbox(settings.cases_local_dir)
 
 
 def build_decisions(
@@ -126,6 +143,8 @@ def build_container(
     cases: CaseRepository | None = None,
     audit: AuditSink | None = None,
     decisions: DecisionModel | None = None,
+    case_inbox: CaseInbox | None = None,
+    case_store: CaseStore | None = None,
     today: Callable[[], date] | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
@@ -168,4 +187,12 @@ def build_container(
         open_dispute=OpenDispute(cases, dispute_guard),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
+        submit_case=SubmitCase(
+            repository,
+            case_inbox or build_case_inbox(settings),
+            case_store or InMemoryCaseStore(),
+            audit,
+            telegram_bot_username=settings.telegram_bot_username,
+            start_token_ttl=timedelta(minutes=settings.start_token_ttl_minutes),
+        ),
     )

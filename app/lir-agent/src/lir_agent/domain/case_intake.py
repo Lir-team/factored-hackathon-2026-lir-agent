@@ -1,0 +1,65 @@
+"""Case intake: what the bank answers when a customer files a case from the web form.
+
+The payload follows the `lir-web` contract (`resources/schemas/case.schema.json`); these
+rules assume it already passed that schema.
+"""
+
+import secrets
+from dataclasses import dataclass
+from typing import Any
+
+from lir_agent.domain.errors import DomainError
+
+# 24 random bytes -> 32 URL-safe characters, within Telegram's 64-character start payload
+# (A-Z, a-z, 0-9, _ and -).
+_START_TOKEN_BYTES = 24
+
+
+@dataclass(frozen=True)
+class CaseReceipt:
+    """The answer to an accepted case, replayed unchanged for a repeated idempotency key."""
+
+    case_id: str
+    folio: str
+    telegram_start_url: str | None
+    status: str = "received"
+
+
+class IdempotencyKeyMismatchError(DomainError):
+    """The `Idempotency-Key` is not the payload's `case_id`."""
+
+
+class ForeignCaseError(DomainError):
+    """The case, or its idempotency key, belongs to another customer."""
+
+
+class UnknownTransactionError(DomainError):
+    """A reported transaction does not belong to the customer."""
+
+
+def folio_for(case_id: str, submitted_at: str) -> str:
+    """Human-readable reference, e.g. `LB-2026-3F2A9C` (same rule as `lir-web`'s `folioFor`)."""
+    return f"LB-{submitted_at[:4]}-{case_id.replace('-', '')[:6].upper()}"
+
+
+def case_attributes(payload: dict[str, Any]) -> dict[str, str]:
+    """String attributes that route the case before its payload is read (contract)."""
+    return {
+        "category": payload["category"],
+        "intent_hint": payload["intent_hint"],
+        "fraud_suspected": str(payload["fraud_suspected"]).lower(),
+        "priority_hint": payload["priority_hint"],
+        "country": payload["customer"]["country"],
+        "language": payload["language"],
+        "schema_version": payload["schema_version"],
+    }
+
+
+def new_start_token() -> str:
+    """An opaque, unguessable Telegram start token. Never log it."""
+    return secrets.token_urlsafe(_START_TOKEN_BYTES)
+
+
+def telegram_start_url(bot_username: str, token: str) -> str:
+    """Deep link that opens the bot and sends `/start <token>` when the customer taps Start."""
+    return f"https://t.me/{bot_username}?start={token}"

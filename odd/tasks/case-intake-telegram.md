@@ -77,7 +77,7 @@ for the demo, and a lost session is rebuilt from the case record.
   call) implemented with ADK in `interface/adk/`; the HTTP routes depend on the
   port and `/v1/sessions` behaves as today. Application code stays free of ADK
   imports. Route: delegated (writer trigger: 2+ non-trivial files).
-- [ ] **T2 `POST /v1/cases`.** Schema validation against the `lir-web` schema
+- [x] **T2 `POST /v1/cases`.** Schema validation against the `lir-web` schema
   (v1.1), 422 error shape from the contract, identity and ownership checks,
   `Idempotency-Key` replay of 2xx, `CaseInbox` port (GCS + local adapters),
   start token issued, 202 with `case_id`, `folio`, `status`,
@@ -137,3 +137,16 @@ strategy applies: chain strategy to be chosen before the first PR.
   `owner` (warning), removed public exports from `interface/http`, TTL passed
   to `start` is not validated. Separate change: `.env.example` completed on
   branch `chore/complete-env-template` (`f2975c2`).
+- 2026-10-04: branch re-reviewed after the doc note (granted, approved,
+  acknowledged; same two non-blocking notes). T2 started on
+  `feat/case-intake-endpoint`, stacked on `refactor/shared-conversation-service`.
+  Route: delegated (writer trigger). T2 adds a minimal `CaseStore` port with an
+  in-memory adapter (idempotency replay, start tokens); T3 adds Firestore.
+- 2026-10-04: T2 done (delegated writer). `SubmitCase` use case, `CaseInbox`
+  (GCS + local) and `CaseStore` (in-memory) ports, schema copied from lir-web
+  v1.1. RED: both new test modules failed at import before the change. Checks:
+  pytest 213 passed (34 new), ruff check clean, ruff format clean on touched
+  files, pyright 0 errors. Notes for later: `date-time` formats are not checked
+  (needs `rfc3339-validator`); `create_app` builds a second container for case
+  intake besides the agent's one; Cloud Run must set `CASES_INBOX=gcs`;
+  Firestore `consume_start_token` must be transactional (T3).

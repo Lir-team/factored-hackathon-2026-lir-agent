@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lir-web.example/schema/case.schema.json",
+  "title": "LATAM Bank support case",
+  "description": "Payload sent by lir-web to POST /v1/cases (schema_version 1.1). See docs/case-contract.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "submitted_at",
+    "language",
+    "channel",
+    "customer",
+    "category",
+    "intent_hint",
+    "fraud_suspected",
+    "priority_hint",
+    "transactions",
+    "cards",
+    "incident",
+    "freeze_card_requested",
+    "description",
+    "consent"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "case_id": {
+      "description": "Client-generated UUID. Also sent as the Idempotency-Key header.",
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "submitted_at": { "type": "string", "format": "date-time" },
+    "language": {
+      "description": "UI language. The Lir agent speaks es and pt; a backend should map en to es.",
+      "enum": ["es", "pt", "en"]
+    },
+    "channel": { "const": "web" },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customer_id", "country", "preferred_contact"],
+      "properties": {
+        "customer_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "country": { "enum": ["MX", "CO", "AR"] },
+        "preferred_contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "value"],
+          "properties": {
+            "channel": { "enum": ["whatsapp", "telegram", "email", "phone"] },
+            "value": { "type": "string", "minLength": 1, "maxLength": 120 }
+          }
+        }
+      }
+    },
+    "category": {
+      "enum": [
+        "unrecognized_charge",
+        "card_lost_stolen",
+        "improper_fee",
+        "transaction_inquiry",
+        "app_issue",
+        "service_complaint",
+        "other_request"
+      ]
+    },
+    "intent_hint": {
+      "description": "Lir agent decision-layer intent. A hint: the agent re-classifies.",
+      "enum": ["cargo_no_reconocido", "cobro_indebido", "consulta_movimiento", "otra_queja", "fuera_de_alcance"]
+    },
+    "fraud_suspected": { "type": "boolean" },
+    "priority_hint": {
+      "description": "Client-side suggestion. The server is authoritative.",
+      "enum": ["critical", "high", "medium", "low"]
+    },
+    "transactions": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/transaction" }
+    },
+    "cards": {
+      "description": "Cards the case is about, once each: the picked card for card_lost_stolen, otherwise the cards behind the selected charges, in statement order. freeze_card_requested applies to all of them.",
+      "type": "array",
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/card" }
+    },
+    "incident": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/incident" }] },
+    "freeze_card_requested": { "type": "boolean" },
+    "description": { "type": "string", "minLength": 20, "maxLength": 1000 },
+    "consent": { "const": true }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "category": { "enum": ["unrecognized_charge", "card_lost_stolen"] } } },
+      "then": {
+        "properties": {
+          "intent_hint": { "const": "cargo_no_reconocido" },
+          "fraud_suspected": { "const": true },
+          "incident": { "$ref": "#/$defs/incident" }
+        }
+      },
+      "else": {
+        "properties": {
+          "fraud_suspected": { "const": false },
+          "incident": { "type": "null" },
+          "freeze_card_requested": { "const": false }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "category": { "const": "unrecognized_charge" } } },
+      "then": { "properties": { "transactions": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "category": { "const": "card_lost_stolen" } } },
+      "then": {
+        "properties": { "cards": { "minItems": 1, "maxItems": 1 }, "priority_hint": { "const": "critical" } }
+      }
+    },
+    {
+      "if": { "properties": { "category": { "const": "improper_fee" } } },
+      "then": {
+        "properties": {
+          "intent_hint": { "const": "cobro_indebido" },
+          "transactions": { "minItems": 1, "maxItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "category": { "const": "transaction_inquiry" } } },
+      "then": {
+        "properties": {
+          "intent_hint": { "const": "consulta_movimiento" },
+          "transactions": { "minItems": 1, "maxItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "category": { "enum": ["app_issue", "service_complaint"] } } },
+      "then": {
+        "properties": {
+          "intent_hint": { "const": "otra_queja" },
+          "transactions": { "maxItems": 0 },
+          "cards": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "category": { "const": "other_request" } } },
+      "then": {
+        "properties": {
+          "intent_hint": { "const": "fuera_de_alcance" },
+          "transactions": { "maxItems": 0 },
+          "cards": { "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transaction_id", "amount", "currency", "merchant", "occurred_at"],
+      "properties": {
+        "transaction_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "amount": { "type": "number", "exclusiveMinimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "merchant": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "occurred_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["last4", "type"],
+      "properties": {
+        "last4": { "type": "string", "pattern": "^[0-9]{4}$" },
+        "type": { "enum": ["credit", "debit"] }
+      }
+    },
+    "incident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["occurred_at", "location", "card_in_possession", "shared_credentials"],
+      "properties": {
+        "occurred_at": { "type": ["string", "null"], "format": "date-time" },
+        "location": { "type": ["string", "null"], "maxLength": 120 },
+        "card_in_possession": { "enum": ["yes", "no", "unsure", null] },
+        "shared_credentials": { "enum": ["yes", "no", "unsure"] }
+      }
+    }
+  }
+}
