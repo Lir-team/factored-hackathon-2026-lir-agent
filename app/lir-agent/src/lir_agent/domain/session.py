@@ -28,6 +28,7 @@ class _Key(StrEnum):
     TURN_OUTCOME = "turn_outcome"
     CASE_OUTCOME = "case_outcome"
     TRANSACTION_REFS = "transaction_refs"
+    PSEUDONYMS = "pseudonyms"
     EVIDENCE = "evidence"
     PENDING_CONFIRMATION = "pending_confirmation"
     CONFIRMED_TRANSACTION = "confirmed_transaction"
@@ -162,6 +163,16 @@ class SessionState:
     def resolve_ref(self, ref: str | None) -> str | None:
         """Internal id for a reference issued in this session, or None."""
         return (self._raw.get(_Key.TRANSACTION_REFS) or {}).get(ref or "")
+
+    # ---- placeholders for bank records (see domain/pseudonyms.py) ------------------------
+    @property
+    def pseudonyms(self) -> dict[str, str]:
+        """Placeholder -> value table of this session; it never leaves the service."""
+        return dict(self._raw.get(_Key.PSEUDONYMS) or {})
+
+    @pseudonyms.setter
+    def pseudonyms(self, table: dict[str, str]) -> None:
+        self._raw[_Key.PSEUDONYMS] = table
 
     # ---- evidence, confirmation and actions ----------------------------------------------
     @property

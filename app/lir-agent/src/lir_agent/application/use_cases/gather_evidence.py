@@ -56,7 +56,7 @@ class GatherTransactionEvidence:
         return {
             "status": "ok",
             "transaction_ref": transaction_ref,
-            "evidence": self._presenter.evidence(evidence),
+            "evidence": self._presenter.evidence(session, evidence),
             "outcome": self._presenter.outcome(outcome),
             "next_step": CONFIRMATION_NEXT_STEP if is_dispute else None,
             "note": DATA_NOT_INSTRUCTIONS,

@@ -26,4 +26,4 @@ class GetCustomerProfile:
         if customer is None:
             logger.info("Customer %s not found", customer_id)
             return {"found": False}
-        return {"found": True, "customer": self._presenter.customer(customer)}
+        return {"found": True, "customer": self._presenter.customer(session, customer)}

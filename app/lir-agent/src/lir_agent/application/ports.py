@@ -4,6 +4,7 @@ Infrastructure adapters implement them; use cases depend only on these contracts
 The decision model port is `decision_layer.DecisionModel`.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
@@ -75,6 +76,8 @@ class StartedConversation:
 
     session_id: str
     expires_at: datetime
+    # Session references (T1, T2, ...) of the transactions the conversation started with.
+    transaction_refs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -118,9 +121,18 @@ class Conversations(Protocol):
     """
 
     async def start(
-        self, owner: str, customer_id: str, *, ttl: timedelta, auth_method: str
+        self,
+        owner: str,
+        customer_id: str,
+        *,
+        ttl: timedelta,
+        auth_method: str,
+        transaction_ids: Sequence[str] = (),
     ) -> StartedConversation:
         """Start a conversation for `customer_id`, valid for `ttl`.
+
+        `transaction_ids` (the charges a case reports) get session references, so the first
+        message can name them without carrying the bank's records.
 
         Raises:
             CustomerNotFoundError: If the customer does not exist.

@@ -30,7 +30,7 @@ CHAT = 7001
 FOLIO = "LB-2026-6F1C2D"
 SUMMARY = (
     "No reconozco este cargo de Spotify en mi tarjeta.\n"
-    "Cargos que reporto: SPOTIFY P1A2B3, 179.0 MXN, 2026-03-14."
+    "Cargos que reporto: T1."  # the reported charge, by session reference only
 )
 OWNER = f"case:{CASE_ID}"
 AUDIENCE = "https://lir-agent.example/pubsub/push"

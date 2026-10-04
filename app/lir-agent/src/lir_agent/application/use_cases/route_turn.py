@@ -10,6 +10,7 @@ from lir_agent.application.questions import CONFIRMATION
 from lir_agent.application.use_cases.request_handoff import RequestHandoff
 from lir_agent.domain.models import Lane, Outcome
 from lir_agent.domain.policy import PolicyEngine
+from lir_agent.domain.pseudonyms import Pseudonyms
 from lir_agent.domain.session import SessionState
 
 
@@ -40,7 +41,12 @@ class RouteTurn:
         questions = dict(TURN_QUESTIONS)
         if pending:
             questions[self._confirms_key] = CONFIRMATION
-        decisions, session.decision_meta = self._classify(text, questions, session_id)
+        # The decision model may be external: it reads the message without identifiers
+        # and with the bank's records (merchants, the customer's name) as placeholders.
+        model_text = Pseudonyms(session).protect_customer_text(text)
+        decisions, session.decision_meta = self._classify(
+            model_text, questions, session_id
+        )
 
         confirmed_now = self._resolve_confirmation(session, pending, decisions)
         facts = {

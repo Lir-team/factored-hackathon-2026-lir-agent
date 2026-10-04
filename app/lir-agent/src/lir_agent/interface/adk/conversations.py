@@ -9,7 +9,7 @@ model.
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -64,9 +64,17 @@ class AdkConversations:
         return self._runner.app_name
 
     async def start(
-        self, owner: str, customer_id: str, *, ttl: timedelta, auth_method: str
+        self,
+        owner: str,
+        customer_id: str,
+        *,
+        ttl: timedelta,
+        auth_method: str,
+        transaction_ids: Sequence[str] = (),
     ) -> StartedConversation:
         """Create a session for `customer_id`, owned by `owner` and valid for `ttl`.
+
+        Only `transaction_ids` of this customer get a reference; others are ignored.
 
         Raises:
             CustomerNotFoundError: If the customer does not exist.
@@ -74,7 +82,17 @@ class AdkConversations:
         if self._customers.get_customer(customer_id) is None:
             raise CustomerNotFoundError(customer_id)
         state: dict = {}
-        expires_at = SessionState(state).start(customer_id, ttl, auth_method)
+        session = SessionState(state)
+        expires_at = session.start(customer_id, ttl, auth_method)
+        refs: tuple[str, ...] = ()
+        if transaction_ids:
+            owned = {
+                txn.transaction_id
+                for txn in self._customers.list_transactions(customer_id)
+            }
+            refs = tuple(
+                session.ref_for(txn_id) for txn_id in transaction_ids if txn_id in owned
+            )
         session_id = uuid.uuid4().hex
         await self._runner.session_service.create_session(
             app_name=self.app_name, user_id=owner, session_id=session_id, state=state
@@ -82,7 +100,9 @@ class AdkConversations:
         self._audit.record(
             "session_started", session_id, auth_method=auth_method, owner=owner
         )
-        return StartedConversation(session_id=session_id, expires_at=expires_at)
+        return StartedConversation(
+            session_id=session_id, expires_at=expires_at, transaction_refs=refs
+        )
 
     async def send(self, owner: str, session_id: str, text: str) -> str:
         """Send one customer message and return the agent's reply.

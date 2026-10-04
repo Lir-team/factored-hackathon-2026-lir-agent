@@ -12,6 +12,7 @@ from lir_agent.application.presenter import DATA_NOT_INSTRUCTIONS, LlmPresenter
 from lir_agent.domain.errors import InvalidSearchCriteriaError
 from lir_agent.domain.models import Transaction
 from lir_agent.domain.policy import SearchSettings
+from lir_agent.domain.pseudonyms import redact_identifiers
 from lir_agent.domain.session import SessionState, utc_now
 
 NO_MERCHANT_MATCH = "ninguno"  # option added by decision_layer.questions.d4_merchant
@@ -182,14 +183,19 @@ class FindCandidateTransactions:
     def _decided_merchant(
         self, hint: str, named: list[Transaction]
     ) -> Transaction | None:
-        """The candidate the D4 decision picked with enough confidence, if any."""
+        """The candidate the D4 decision picked with enough confidence, if any.
+
+        Matching a description to a merchant needs the merchant names, so D4 is the one
+        decision that reads them in clear: names only, no amounts, dates or ids, next to the
+        customer's description without identifiers.
+        """
         options = {
             f"c{i}": f"{txn.merchant_name} ({txn.merchant_category})"
             for i, txn in enumerate(named)
         }
         try:
             result = self._decisions.decide(
-                hint, {self._merchant_key: d4_merchant(options)}
+                redact_identifiers(hint)[0], {self._merchant_key: d4_merchant(options)}
             )
             answer = result.answers[self._merchant_key]
         except DecisionError:
