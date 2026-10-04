@@ -7,6 +7,8 @@ from lir_agent.application.ports import (
     ConversationNotFoundError,
     CustomerNotFoundError,
     StartedConversation,
+    Turn,
+    TurnTrace,
 )
 from lir_agent.interface.http import create_app
 
@@ -14,6 +16,23 @@ IAP_HEADER = {
     "X-Goog-Authenticated-User-Email": "accounts.google.com:tester@example.com"
 }
 EXPIRES = datetime(2026, 10, 5, tzinfo=UTC)
+TRACE = TurnTrace(
+    decision_model="keywords-v1",
+    decision_fallback=None,
+    decisions={"intencion": {"value": "cargo_no_reconocido", "probability": 0.9}},
+    turn_lane="proceed",
+    turn_rule="T9_in_scope",
+    case_lane="dispute",
+    case_rule="C2_duplicate",
+    policy_version="0.2.0-synthetic",
+    tools=["find_candidate_transactions", "get_transaction_evidence"],
+    handoff_id=None,
+    llm_model="openai/gpt-4o",
+    latency_ms=1234.5,
+    input_tokens=900,
+    output_tokens=120,
+    cost_usd=0.0035,
+)
 
 
 class FakeConversations:
@@ -33,10 +52,13 @@ class FakeConversations:
         return StartedConversation(session_id=session_id, expires_at=EXPIRES)
 
     async def send(self, owner: str, session_id: str, text: str) -> str:
+        return (await self.converse(owner, session_id, text)).reply
+
+    async def converse(self, owner: str, session_id: str, text: str) -> Turn:
         if self.sessions.get(session_id, (None, None))[0] != owner:
             raise ConversationNotFoundError(session_id)
         self.messages.append((owner, session_id, text))
-        return f"echo: {text}"
+        return Turn(reply=f"echo: {text}", trace=TRACE)
 
 
 @pytest.fixture
@@ -75,7 +97,7 @@ def test_message_round_trip(client, conversations):
     response = client.post(
         "/v1/sessions/s1/messages", json={"text": "  hola "}, headers=IAP_HEADER
     )
-    assert response.json() == {"reply": "echo: hola"}
+    assert response.json() == {"reply": "echo: hola", "trace": None}
     assert conversations.messages == [("tester@example.com", "s1", "hola")]
 
 
@@ -124,3 +146,49 @@ def test_unknown_customer_is_not_found(client, conversations):
     )
     assert response.status_code == 404
     assert response.json() == {"detail": "Customer not found"}
+
+
+def test_trace_is_hidden_by_default(client):
+    client.post("/v1/sessions", json={"customer_id": "CLI-1"}, headers=IAP_HEADER)
+    response = client.post(
+        "/v1/sessions/s1/messages", json={"text": "hola"}, headers=IAP_HEADER
+    )
+    assert response.json() == {"reply": "echo: hola", "trace": None}
+
+
+def test_trace_shows_how_the_turn_was_decided(settings, conversations):
+    traced = settings.model_copy(update={"expose_trace": True})
+    client = TestClient(create_app(traced, conversations=conversations))
+    client.post("/v1/sessions", json={"customer_id": "CLI-1"}, headers=IAP_HEADER)
+    trace = client.post(
+        "/v1/sessions/s1/messages", json={"text": "hola"}, headers=IAP_HEADER
+    ).json()["trace"]
+    assert trace["decision_model"] == "keywords-v1"
+    assert trace["case_rule"] == "C2_duplicate"
+    assert trace["decisions"]["intencion"]["probability"] == 0.9
+    assert trace["cost_usd"] == 0.0035
+
+
+def test_handoff_report_is_markdown_and_its_reading_is_audited(settings, conversations):
+    from lir_agent.container import build_container
+    from lir_agent.infrastructure.audit import InMemoryAuditSink
+    from tests.application.test_handoff_report import packet
+
+    audit = InMemoryAuditSink()
+    container = build_container(settings, audit=audit)
+    container.cases.submit_handoff(packet())
+    client = TestClient(
+        create_app(settings, conversations=conversations, container=container)
+    )
+    response = client.get("/v1/handoffs/HND-ABC/report.md", headers=IAP_HEADER)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/markdown")
+    assert "# Reporte de derivación HND-ABC" in response.text
+    [entry] = [e for e in audit.entries if e["event"] == "handoff_report_viewed"]
+    assert entry["operator"] == "tester@example.com"
+
+
+def test_handoff_report_needs_identity_and_an_existing_handoff(client):
+    assert client.get("/v1/handoffs/HND-ABC/report.md").status_code == 401
+    missing = client.get("/v1/handoffs/HND-NOPE/report.md", headers=IAP_HEADER)
+    assert missing.status_code == 404

@@ -52,6 +52,8 @@ def conversations(settings, runner, audit) -> AdkConversations:
         runner,
         customers=FixtureTransactionRepository(settings.fixture_path),
         audit=audit,
+        llm_model="openai/test-model",
+        cost=lambda model, tokens_in, tokens_out: 0.25,
     )
 
 
@@ -131,3 +133,27 @@ def test_conversation_start_is_audited_without_the_customer_id(conversations, au
     assert entry["owner"] == "tester@example.com"
     assert entry["auth_method"] == AUTH
     assert "CLI-DEMO-001" not in str(entry)
+
+
+def test_every_turn_is_audited_with_its_trace(conversations, audit):
+    async def scenario():
+        started = await conversations.start(
+            "tester@example.com",
+            "CLI-DEMO-001",
+            ttl=timedelta(minutes=15),
+            auth_method="iap_operator",
+        )
+        return started, await conversations.converse(
+            "tester@example.com", started.session_id, "hola"
+        )
+
+    started, turn = asyncio.run(scenario())
+    assert turn.reply == "hi CLI-DEMO-001"
+    assert turn.trace.llm_model == "openai/test-model"
+    assert turn.trace.cost_usd == 0.25
+    assert turn.trace.latency_ms >= 0
+    completed = [e for e in audit.entries if e["event"] == "turn_completed"]
+    assert len(completed) == 1
+    assert completed[0]["session_id"] == started.session_id
+    assert completed[0]["llm_model"] == "openai/test-model"
+    assert "CLI-DEMO-001" not in str(completed[0])

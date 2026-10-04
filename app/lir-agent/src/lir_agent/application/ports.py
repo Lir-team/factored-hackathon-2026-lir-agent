@@ -77,6 +77,38 @@ class StartedConversation:
     expires_at: datetime
 
 
+@dataclass(frozen=True)
+class TurnTrace:
+    """How one turn was decided: the typed decisions, the policy lanes and what it cost.
+
+    Facts only, read from session state and runtime events; nothing is model-written.
+    """
+
+    decision_model: str | None
+    decision_fallback: list[str] | None
+    decisions: dict | None
+    turn_lane: str | None
+    turn_rule: str | None
+    case_lane: str | None
+    case_rule: str | None
+    policy_version: str | None
+    tools: list[str]
+    handoff_id: str | None
+    llm_model: str
+    latency_ms: float
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float | None
+
+
+@dataclass(frozen=True)
+class Turn:
+    """The agent's reply to one customer message and how it was decided."""
+
+    reply: str
+    trace: TurnTrace
+
+
 class Conversations(Protocol):
     """Customer conversations with the agent, shared by every entry point.
 
@@ -97,6 +129,14 @@ class Conversations(Protocol):
 
     async def send(self, owner: str, session_id: str, text: str) -> str:
         """Send one customer message and return the agent's reply.
+
+        Raises:
+            ConversationNotFoundError: If `owner` has no conversation with this id.
+        """
+        ...
+
+    async def converse(self, owner: str, session_id: str, text: str) -> Turn:
+        """Like `send`, but also return how the turn was decided.
 
         Raises:
             ConversationNotFoundError: If `owner` has no conversation with this id.
