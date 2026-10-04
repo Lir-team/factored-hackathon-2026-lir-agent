@@ -23,7 +23,7 @@ from lir_agent.domain.case_intake import (
 )
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 from lir_agent.domain.session import SessionState
-from lir_agent.domain.telegram import ChatLink
+from lir_agent.domain.telegram import ChatLink, InlineButton
 
 
 class TransactionRepository(Protocol):
@@ -380,3 +380,27 @@ class ApprovalAction(Protocol):
             ApprovalError: `action_not_verified` when the result could not be read back.
         """
         ...
+
+
+class ChatButtons(Protocol):
+    """Messages with buttons, and answers to button presses (Telegram today)."""
+
+    async def send_buttons(
+        self, chat_id: int, text: str, rows: list[list[InlineButton]]
+    ) -> None:
+        """Send `text` with rows of buttons under it.
+
+        Raises:
+            MessageNotSentError: If it was not delivered.
+        """
+        ...
+
+    async def answer_callback(
+        self, callback_id: str, text: str, alert: bool = False
+    ) -> None:
+        """Acknowledge a button press (a short notice, or an alert the user must close)."""
+        ...
+
+
+class ChatChannel(Messenger, ChatButtons, Protocol):
+    """A customer chat channel: plain messages and messages with buttons."""

@@ -187,7 +187,7 @@ Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 ch
 curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
   -d "url=https://<public base URL>/channels/telegram" \
   -d "secret_token=$TELEGRAM_WEBHOOK_SECRET" \
-  -d 'allowed_updates=["message"]'
+  -d 'allowed_updates=["message","callback_query"]'
 ```
 
 Telegram only calls HTTPS URLs: locally, expose the API with a tunnel (e.g.
@@ -328,9 +328,10 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 
 - Disputes, handoffs and approval requests are in-memory mocks with documented contracts; no
   money moves.
-- Approval surfaces: the API (web link and chat replies) ships here; the Telegram buttons, the
-  `lir-web` card and exposing the customer routes on API Gateway are follow-up work. Until the
-  Telegram surface lands, a customer on Telegram cannot approve a dispute.
+- Approval surfaces: Telegram buttons (`TelegramApprovalSurface`, webhook `callback_query`) and
+  the web link (`lir-web` card) ship; exposing the customer routes on API Gateway is follow-up
+  work. Telegram only opens `https` links from a button: with a local `http` link template the
+  "view on the web" button is left out.
 - ADK sessions are in memory: on Cloud Run this means one instance (`max-instances=1`) so a
   session's messages reach the instance that holds it, and a restart ends open
   conversations. Case state (start tokens, chat links, case conversations, waiting replies)

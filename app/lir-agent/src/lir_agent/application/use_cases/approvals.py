@@ -204,6 +204,15 @@ class PresentApprovals:
             )
         return links
 
+    async def execute_for_case(self, case_id: str) -> dict[str, str | None]:
+        """Present a case's pending customer requests (e.g. once its chat is linked)."""
+        pending = [
+            r.approval_id
+            for r in reversed(self._repository.list(ApprovalStatus.PENDING, Approver.CUSTOMER))
+            if r.case_id == case_id
+        ]
+        return await self.execute(pending)
+
     def _issue_link(self, request: ApprovalRequest) -> str | None:
         """A fresh single-use web link; the stored hash replaces any earlier one."""
         if not self._link_template or request.approver is not Approver.CUSTOMER:

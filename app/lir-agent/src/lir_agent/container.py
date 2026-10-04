@@ -25,11 +25,13 @@ from lir_agent.application.ports import (
     CasePublisher,
     CaseRepository,
     CaseStore,
+    ChatChannel,
     HandoffNotifier,
     TransactionRepository,
 )
 from lir_agent.application.presenter import LlmPresenter
 from lir_agent.application.use_cases import (
+    AnswerApprovalButton,
     DecideApproval,
     FindCandidateTransactions,
     GatherTransactionEvidence,
@@ -47,7 +49,10 @@ from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
-from lir_agent.infrastructure.approvals import InMemoryApprovalRepository
+from lir_agent.infrastructure.approvals import (
+    InMemoryApprovalRepository,
+    TelegramApprovalSurface,
+)
 from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
 from lir_agent.infrastructure.case_store import FirestoreCaseStore, InMemoryCaseStore
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
@@ -87,6 +92,9 @@ class Container:
     present_approvals: PresentApprovals
     decide_approval: DecideApproval
     verify_approval_link: VerifyApprovalLink
+    # The customer chat (Telegram) when configured, and its approval buttons.
+    messenger: ChatChannel | None
+    answer_approval_button: AnswerApprovalButton | None
     request_handoff: RequestHandoff
     route_turn: RouteTurn
     case_store: CaseStore
@@ -141,6 +149,16 @@ def build_case_store(settings: Settings) -> CaseStore:
         )
         return FirestoreCaseStore(client, settings.firestore_collection_prefix)
     return InMemoryCaseStore()
+
+
+def build_messenger(settings: Settings) -> ChatChannel | None:
+    """The Telegram bot when its token and webhook secret are set."""
+    token, secret = settings.telegram_bot_token, settings.telegram_webhook_secret
+    if not (token and secret and token.get_secret_value() and secret.get_secret_value()):
+        return None
+    from lir_agent.infrastructure.messaging import TelegramBotMessenger
+
+    return TelegramBotMessenger(token.get_secret_value())
 
 
 def build_notifier(settings: Settings) -> HandoffNotifier | None:
@@ -206,6 +224,7 @@ def build_container(
     today: Callable[[], date] | None = None,
     approvals: ApprovalRepository | None = None,
     approval_surfaces: Iterable[ApprovalSurface] = (),
+    messenger: ChatChannel | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
@@ -225,10 +244,17 @@ def build_container(
     request_handoff = RequestHandoff(cases, policy.config, build_notifier(settings))
     case_store = case_store or build_case_store(settings)
     approvals = approvals or InMemoryApprovalRepository()
+    approval_labels = resources.load_labels(settings.approval_labels_path)
+    messenger = messenger or build_messenger(settings)
     surfaces = list(approval_surfaces)
+    if messenger is not None:
+        surfaces.append(TelegramApprovalSurface(case_store, messenger, approval_labels))
     actions = {"open_dispute": OpenDisputeAction(cases, dispute_guard)}
     present_approvals = PresentApprovals(
         approvals, surfaces, audit, settings.approval_link_template
+    )
+    decide_approval = DecideApproval(
+        approvals, actions, present_approvals, surfaces, audit
     )
     return Container(
         settings=settings,
@@ -262,11 +288,17 @@ def build_container(
             ),
             actions,
             policy.config.approvals.actions,
-            resources.load_labels(settings.approval_labels_path),
+            approval_labels,
         ),
         present_approvals=present_approvals,
-        decide_approval=DecideApproval(approvals, actions, present_approvals, surfaces, audit),
+        decide_approval=decide_approval,
         verify_approval_link=VerifyApprovalLink(approvals),
+        messenger=messenger,
+        answer_approval_button=AnswerApprovalButton(
+            approvals, decide_approval, case_store, messenger, audit, approval_labels
+        )
+        if messenger is not None
+        else None,
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
         case_store=case_store,

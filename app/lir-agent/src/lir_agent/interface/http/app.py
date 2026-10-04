@@ -396,7 +396,7 @@ def create_app(
 
     credentials = _telegram_credentials(settings)
     if messenger is None and credentials:
-        messenger = _real_messenger(credentials[0])
+        messenger = deps.messenger or _real_messenger(credentials[0])
 
     push_on, verifier = _push_verifier(settings, push_token_verifier)
     if push_on:
@@ -423,6 +423,8 @@ def create_app(
             max_message_chars=settings.max_message_chars,
             present_approvals=deps.present_approvals,
         )
-        app.include_router(telegram_router(credentials[1], answer))
+        app.include_router(
+            telegram_router(credentials[1], answer, deps.answer_approval_button)
+        )
 
     return app

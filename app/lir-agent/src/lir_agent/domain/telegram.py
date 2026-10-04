@@ -78,3 +78,29 @@ def bot_message(key: str, language: Language, **values: object) -> str:
 def split_message(text: str, limit: int = MESSAGE_LIMIT) -> list[str]:
     """Cut `text` into parts Telegram accepts (at most `limit` characters each)."""
     return [text[i : i + limit] for i in range(0, len(text), limit)]
+
+
+# ---- approval buttons (human in the loop) ------------------------------------------------
+_APPROVAL_CALLBACK = "apr"
+
+
+@dataclass(frozen=True)
+class InlineButton:
+    """A button under a bot message: it sends `callback_data` back, or opens `url`."""
+
+    text: str
+    callback_data: str | None = None
+    url: str | None = None
+
+
+def approval_callback(approval_id: str, approve: bool) -> str:
+    """The callback data of an approval button (Telegram allows 64 bytes)."""
+    return f"{_APPROVAL_CALLBACK}:{approval_id}:{'a' if approve else 'r'}"
+
+
+def parse_approval_callback(data: str | None) -> tuple[str, bool] | None:
+    """The approval id and the decision of a button press, or None for other data."""
+    parts = (data or "").split(":")
+    if len(parts) != 3 or parts[0] != _APPROVAL_CALLBACK or parts[2] not in ("a", "r"):
+        return None
+    return parts[1], parts[2] == "a"
