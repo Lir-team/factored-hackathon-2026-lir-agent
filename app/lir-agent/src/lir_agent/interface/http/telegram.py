@@ -2,7 +2,8 @@
 
 Telegram proves the call is its own with the `secret_token` registered through `setWebhook`,
 sent back in a header. Every authenticated update is answered `200`, even when ignored:
-any other status makes Telegram retry it. Retries of an update already handled are dropped.
+any other status makes Telegram retry it. Retries of an update already handled are dropped;
+an update whose handling failed is not remembered, so Telegram's retry is handled again.
 """
 
 import hmac
@@ -43,13 +44,14 @@ class _RecentUpdates:
         self._size = size
 
     def seen(self, update_id: int) -> bool:
-        """Whether the id was already seen; remembers it otherwise."""
-        if update_id in self._ids:
-            return True
+        """Whether the id was already handled."""
+        return update_id in self._ids
+
+    def remember(self, update_id: int) -> None:
+        """Remember a handled id."""
         self._ids[update_id] = None
         if len(self._ids) > self._size:
             self._ids.popitem(last=False)
-        return False
 
 
 def telegram_router(secret: str, answer: AnswerTelegramMessage) -> APIRouter:
@@ -75,6 +77,7 @@ def telegram_router(secret: str, answer: AnswerTelegramMessage) -> APIRouter:
         ):
             return Response()
         await answer.execute(message.chat.id, message.text)
+        recent.remember(update.update_id)  # only once handled: a failure is retried
         return Response()
 
     return router

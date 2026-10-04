@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
+from lir_agent.application.ports import MessageNotSentError
 from lir_agent.container import build_container
 from lir_agent.domain.case_intake import CaseStart
 from lir_agent.infrastructure.audit import InMemoryAuditSink
@@ -38,10 +39,16 @@ GOOD_TOKEN = "good-oidc-token"
 
 
 class RecordingMessenger:
+    """Records what is sent; the next `failures` sends raise as Telegram being down would."""
+
     def __init__(self) -> None:
         self.sent: list[tuple[int, str]] = []
+        self.failures = 0
 
     async def send(self, chat_id: int, text: str) -> None:
+        if self.failures:
+            self.failures -= 1
+            raise MessageNotSentError("Telegram is down")
         self.sent.append((chat_id, text))
 
 
@@ -185,6 +192,31 @@ def test_the_case_reply_is_sent_at_once_to_a_linked_chat(bot):
     assert "case_reply_sent" in bot.audit.events()
 
 
+def test_replies_that_failed_at_start_are_sent_with_the_next_answer(bot):
+    bot.push()
+    bot.messenger.failures = 2  # the confirmation and the queued reply
+
+    assert bot.say(f"/start {bot.issue()}").status_code == 200
+    assert bot.store.get_chat_link(CHAT) is not None
+
+    bot.say("hola")
+
+    assert bot.texts() == [f"echo: {SUMMARY}", "echo: hola"]
+
+
+def test_an_answer_that_failed_is_sent_with_the_next_one(bot):
+    bot.push()
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
+    bot.messenger.failures = 1
+
+    assert bot.say("hola").status_code == 200
+    bot.say("sigues ahí?")
+
+    assert bot.texts() == ["echo: hola", "echo: sigues ahí?"]
+    assert len(bot.conversations.messages) == 3  # the case summary, then one per message
+
+
 def test_linking_is_audited_without_the_token(bot):
     token = bot.issue()
     bot.say(f"/start {token}")
@@ -297,6 +329,31 @@ def test_a_repeated_update_is_processed_once(bot):
     assert bot.post(body).status_code == 200
 
     assert len(bot.messenger.sent) == 1
+
+
+def test_an_update_that_failed_is_answered_when_telegram_retries_it(bot):
+    bot.push()
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
+    body = {
+        "update_id": 99,
+        "message": {
+            "message_id": 1,
+            "chat": {"id": CHAT, "type": "private"},
+            "text": "hola",
+        },
+    }
+
+    async def broken(*args, **kwargs):
+        raise RuntimeError("model down")
+
+    bot.conversations.send = broken  # type: ignore[method-assign]
+    bot.client = TestClient(bot.client.app, raise_server_exceptions=False)
+    assert bot.post(body).status_code == 500
+
+    del bot.conversations.send  # back to the class method
+    assert bot.post(body).status_code == 200
+    assert bot.messenger.sent == [(CHAT, "echo: hola")]
 
 
 @pytest.mark.parametrize(

@@ -3,7 +3,9 @@ import json
 import logging
 
 import httpx
+import pytest
 
+from lir_agent.application.ports import MessageNotSentError
 from lir_agent.infrastructure.messaging import TelegramBotMessenger
 
 TOKEN = "123456:SECRET-bot-token"
@@ -40,24 +42,33 @@ def test_long_text_is_split_at_telegrams_limit():
     assert [json.loads(r.content)["text"] for r in requests] == ["a" * 4096, "b"]
 
 
-def test_a_rejected_send_is_logged_without_the_token(caplog):
+def test_a_rejected_send_raises_and_is_logged_without_the_token(caplog):
     bot, _ = messenger(lambda _: httpx.Response(403, json={"ok": False}))
 
-    with caplog.at_level(logging.DEBUG, logger="lir_agent"):
+    with (
+        caplog.at_level(logging.DEBUG, logger="lir_agent"),
+        pytest.raises(MessageNotSentError) as raised,
+    ):
         asyncio.run(bot.send(42, "hola"))
 
     assert "403" in caplog.text
     assert TOKEN not in caplog.text
+    assert TOKEN not in str(raised.value)
 
 
-def test_a_network_failure_does_not_raise_nor_log_the_token(caplog):
+def test_a_network_failure_raises_without_the_token(caplog):
     def fail(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError(f"cannot reach {request.url}", request=request)
 
     bot, _ = messenger(fail)
 
-    with caplog.at_level(logging.DEBUG, logger="lir_agent"):
+    with (
+        caplog.at_level(logging.DEBUG, logger="lir_agent"),
+        pytest.raises(MessageNotSentError) as raised,
+    ):
         asyncio.run(bot.send(42, "hola"))
 
     assert "ConnectError" in caplog.text
     assert TOKEN not in caplog.text
+    assert TOKEN not in str(raised.value)
+    assert raised.value.__cause__ is None  # the httpx error carries the URL

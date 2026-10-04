@@ -94,7 +94,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
-| `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` |
+| `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 | `POST` | `/pubsub/push` | a Pub/Sub push message carrying a case, header `Authorization: Bearer <OIDC token>` | `204` (`401` bad token, `404` not configured, `500` retried) |
 
@@ -105,9 +105,11 @@ copied from `lir-web`: field errors return `422 {"errors": {"<form field>": "<co
 errors without a form field return `400`. `customer.customer_id` must be the JWT's customer
 (`403`) and exist (`404`); every transaction must be theirs (`422 transaction_ids: unknown`).
 The `Idempotency-Key` must equal `case_id` (`400`), and repeating it replays the first `202`.
+The key is claimed before anything is archived or published, so a concurrent request with
+the same key gets `409` and changes nothing; the client retries it and gets the replay.
 Accepted cases are archived in the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`,
 attributes as object metadata) and published to the agent (see below) before the `202`; if
-publishing fails the answer is `503` and nothing is kept, so a retry with the same key
+publishing fails the answer is `503` and the claim is released, so a retry with the same key
 publishes again. `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
 when the customer chose Telegram and `TELEGRAM_BOT_USERNAME` is set, otherwise `null`.
 
@@ -121,8 +123,11 @@ that is still in flight its reply arrives on its own. Later messages from that c
 the case's conversation and the reply is sent back (split at Telegram's 4096 characters);
 before the case is worked, the chat is asked to wait. Messages longer than `MAX_MESSAGE_CHARS`
 are refused with a short note; unlinked chats are asked to use the link from the form; used
-or expired links and lost conversations get a short message in Spanish or Portuguese. Only
-text from private chats is read, and repeated updates are handled once.
+or expired links and lost conversations get a short message in Spanish or Portuguese. These
+notices are best effort; an agent reply Telegram did not accept stays queued and is sent
+before the chat's next answer. Only
+text from private chats is read, and repeated updates are handled once; an update whose
+handling failed answers `500`, so Telegram's retry is handled again.
 
 Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 characters of
 `A-Z a-z 0-9 _ -`), then register the webhook once; Telegram sends the secret back in
@@ -148,9 +153,9 @@ delivers it to `POST /pubsub/push`, which starts the case's conversation (owner
 `case:<case_id>`, auth method `case_intake`, valid for `CASE_SESSION_TTL_MINUTES`, 7 days by
 default) and runs the agent's first turn from the case description and reported charges.
 The reply goes to the linked Telegram chat, or waits until `/start` links one. Pub/Sub
-delivers at least once: a case already worked is acknowledged without new work. Messages
-that are not a valid case are acknowledged and audited as `case_rejected`; agent failures
-answer `500` so Pub/Sub retries. Audit events: `case_processed`, `case_reply_queued`,
+delivers at least once: a case already worked only sends its replies still waiting.
+Messages that are not a valid case are acknowledged and audited as `case_rejected`; agent
+failures, and replies Telegram did not accept (kept queued), answer `500` so Pub/Sub retries. Audit events: `case_processed`, `case_reply_queued`,
 `case_reply_sent` (never the message text).
 
 The push subscription must sign its calls (OIDC) with audience `PUBSUB_PUSH_AUDIENCE`; set
@@ -174,7 +179,7 @@ Idempotent receipts, Telegram start tokens, chat links, case conversations and r
 waiting for a chat live in the case store. The default `CASE_STORE=memory` loses them on
 restart and does not share them between instances; `CASE_STORE=firestore` keeps them in
 Firestore (`GOOGLE_CLOUD_PROJECT`, database `FIRESTORE_DATABASE`, collections named
-`FIRESTORE_COLLECTION_PREFIX` + `receipts`, `start_tokens`, `chats`, `case_chats`,
+`FIRESTORE_COLLECTION_PREFIX` + `receipts`, `claims`, `start_tokens`, `chats`, `case_chats`,
 `conversations`, `replies`). Start tokens are stored as their SHA-256 hash only.
 
 Locally, with the Firestore emulator (`scripts/firestore-emulator.sh up` at the repository

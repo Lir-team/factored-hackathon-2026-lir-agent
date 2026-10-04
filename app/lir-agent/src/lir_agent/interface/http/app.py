@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from lir_agent.application.ports import (
+    CaseInProgressError,
     CasePublishError,
     ConversationNotFoundError,
     Conversations,
@@ -359,6 +360,10 @@ def create_app(
             ) from None
         except UnknownTransactionError:
             return _field_errors({"transaction_ids": "unknown"})
+        except CaseInProgressError:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "Case still being accepted, retry"
+            ) from None
         except CasePublishError:
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE, "Case not accepted, retry"

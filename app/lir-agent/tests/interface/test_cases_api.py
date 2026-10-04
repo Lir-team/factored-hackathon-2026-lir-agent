@@ -2,7 +2,7 @@ import base64
 import copy
 import json
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -235,6 +235,17 @@ def test_a_repeated_key_replays_the_original_response(intake):
     assert second.json() == first.json()
     assert len(intake.inbox.puts) == 1
     assert len(intake.publisher.published) == 1
+
+
+def test_a_key_still_being_accepted_is_a_conflict(intake):
+    now = datetime.now(UTC)
+    intake.store.claim_key(CASE_ID, now, now + timedelta(minutes=5))
+
+    response = intake.post(case())
+
+    assert response.status_code == 409
+    assert intake.inbox.puts == []
+    assert intake.publisher.published == []
 
 
 def test_a_failed_attempt_is_not_replayed(intake):

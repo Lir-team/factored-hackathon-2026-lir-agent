@@ -7,6 +7,7 @@ under its own collection prefix, so runs never see each other's documents.
 
 import os
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -69,6 +70,38 @@ def test_a_receipt_without_a_start_link_round_trips(store):
     store.save_receipt(CASE_ID, stored)
 
     assert store.get_receipt(CASE_ID) == stored
+
+
+def test_a_key_is_claimed_once(store):
+    until = NOW + timedelta(minutes=5)
+
+    assert store.claim_key(CASE_ID, NOW, until) is True
+    assert store.claim_key(CASE_ID, NOW, until) is False
+    assert store.claim_key("other", NOW, until) is True
+
+
+def test_a_released_key_can_be_claimed_again(store):
+    store.claim_key(CASE_ID, NOW, NOW + timedelta(minutes=5))
+
+    store.release_key(CASE_ID)
+
+    assert store.claim_key(CASE_ID, NOW, NOW + timedelta(minutes=5)) is True
+
+
+def test_an_expired_claim_can_be_taken_over(store):
+    store.claim_key(CASE_ID, NOW, NOW + timedelta(minutes=5))
+    later = NOW + timedelta(minutes=5)
+
+    assert store.claim_key(CASE_ID, later, later + timedelta(minutes=5)) is True
+
+
+def test_concurrent_claims_have_one_winner(store):
+    until = NOW + timedelta(minutes=5)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        won = list(pool.map(lambda _: store.claim_key(CASE_ID, NOW, until), range(8)))
+
+    assert won.count(True) == 1
 
 
 def test_a_start_token_is_single_use(store):
@@ -138,6 +171,17 @@ def test_queued_replies_pop_once_in_order_with_repeats(store):
     assert store.pop_replies(CASE_ID) == ["one", "one", "two"]
     assert store.pop_replies(CASE_ID) == []
     assert store.pop_replies("other") == ["elsewhere"]
+
+
+def test_requeued_replies_go_back_before_newer_ones(store):
+    store.queue_reply(CASE_ID, "one")
+    store.queue_reply(CASE_ID, "two")
+    unsent = store.pop_replies(CASE_ID)
+    store.queue_reply(CASE_ID, "three")
+
+    store.requeue_replies(CASE_ID, unsent)
+
+    assert store.pop_replies(CASE_ID) == ["one", "two", "three"]
 
 
 def test_popping_a_case_without_replies_returns_nothing(store):

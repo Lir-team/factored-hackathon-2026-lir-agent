@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from tests.interface.test_cases_api import CASE_ID, CUSTOMER, PAYLOAD, case
 from tests.interface.test_telegram_webhook import (
+    CHAT,
     FOLIO,
     OWNER,
     PUSHER,
@@ -122,6 +123,21 @@ def test_an_unknown_customer_is_acknowledged_and_rejected(bot):
 
     assert response.status_code == 204
     assert "case_rejected" in bot.audit.events()
+
+
+def test_a_reply_that_failed_to_send_is_sent_once_on_redelivery(bot):
+    bot.say(f"/start {bot.issue()}")
+    bot.messenger.sent.clear()
+    bot.messenger.failures = 1
+    bot.client = TestClient(bot.client.app, raise_server_exceptions=False)
+
+    assert bot.push().status_code == 500
+    assert bot.messenger.sent == []
+
+    assert bot.push().status_code == 204
+    assert bot.push(envelope(PAYLOAD, message_id="m-2")).status_code == 204
+    assert bot.messenger.sent == [(CHAT, f"echo: {SUMMARY}")]
+    assert len(bot.conversations.messages) == 1
 
 
 def test_an_agent_failure_is_retried(bot):

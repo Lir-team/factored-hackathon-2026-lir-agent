@@ -158,6 +158,10 @@ class CasePublishError(Exception):
     """The case could not be handed to the agent; the client may retry with the same key."""
 
 
+class CaseInProgressError(Exception):
+    """Another request with the same key is still being accepted; the client may retry."""
+
+
 class CasePublisher(Protocol):
     """Hands accepted cases to the agent (the `lir-cases` Pub/Sub topic in production)."""
 
@@ -193,6 +197,21 @@ class CaseStore(Protocol):
 
     def save_receipt(self, idempotency_key: str, stored: StoredReceipt) -> None:
         """Keep a successful answer for replay."""
+        ...
+
+    def claim_key(
+        self, idempotency_key: str, now: datetime, expires_at: datetime
+    ) -> bool:
+        """Claim the key until `expires_at`; False while another claim is still valid.
+
+        Must be atomic: it is what makes concurrent requests with one key accept it once.
+        A claim is never cleared on success (the receipt then answers); an expired one can
+        be taken over, so a request that died mid-way does not block the key forever.
+        """
+        ...
+
+    def release_key(self, idempotency_key: str) -> None:
+        """Drop the key's claim, so a retry can accept the case."""
         ...
 
     def add_start_token(
@@ -235,14 +254,28 @@ class CaseStore(Protocol):
     def pop_replies(self, case_id: str) -> list[str]:
         """Remove and return the case's queued replies, oldest first.
 
-        Must be atomic: two callers never get the same reply.
+        Must be atomic: two callers never get the same reply. A caller that cannot send
+        them puts the unsent ones back with `requeue_replies`.
         """
         ...
+
+    def requeue_replies(self, case_id: str, texts: list[str]) -> None:
+        """Put popped replies that were not sent back, before any queued since."""
+        ...
+
+
+class MessageNotSentError(Exception):
+    """A message did not reach the chat; the caller decides whether to retry or move on."""
 
 
 class Messenger(Protocol):
     """Outbound messages to a customer's chat (Telegram today)."""
 
     async def send(self, chat_id: int, text: str) -> None:
-        """Deliver `text` to the chat; failures are logged, never raised."""
+        """Deliver `text` to the chat.
+
+        Raises:
+            MessageNotSentError: If it was not delivered (a long text split in parts may
+                have been delivered in part).
+        """
         ...
