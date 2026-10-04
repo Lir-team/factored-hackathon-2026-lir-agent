@@ -24,7 +24,7 @@ everything outside is an external system or provider.
 | Zone | Services | Role |
 |---|---|---|
 | Security edge | Identity Platform, API Gateway | Validates the JWT issued after the bank's biometric check (mocked), rate limits, verifies channel webhook signatures |
-| Ingestion | Cloud Storage (`cases-inbox`), Pub/Sub, dead-letter topic | Stores each incoming case, triggers the agent, buffers spikes and retries failures |
+| Ingestion | Pub/Sub (`lir-cases`), dead-letter topic, Cloud Storage (`cases-inbox`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
 | Agent runtime | Cloud Run `lir-agent` (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) | One service with three routes: `/v1/cases`, `/pubsub/push`, `/channels` |
 | Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-curated`), Firestore | Curated parquet read by the tools; cases and handoffs written and read back |
 | Audit, observability & analytics | BigQuery (`lir_audit`), Looker Studio, Cloud Logging, Trace, Monitoring | Audit receipt for every step, dashboards and alerts |
@@ -34,8 +34,10 @@ How a case flows:
 
 1. The bank's chatbot verifies the customer (biometric KYC, mocked) and calls
    `POST /v1/cases` with a JWT through API Gateway.
-2. `lir-agent` stores the case in Cloud Storage and returns `202`; the storage
-   notification publishes to Pub/Sub, which pushes the case back to the agent.
+2. `lir-agent` archives the case, publishes it to Pub/Sub and returns `202`
+   with a Telegram Start link; Pub/Sub pushes the case back to the agent.
+   The wiring, routes and local run are in
+   [docs/architecture/case-flow.md](docs/architecture/case-flow.md).
 3. The agent talks to the customer over WhatsApp (mocked) or Telegram in
    Spanish or Portuguese. Jev returns typed decisions with calibrated
    probabilities, and a versioned policy in code assigns the lane:
