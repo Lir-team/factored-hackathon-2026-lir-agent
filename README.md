@@ -173,5 +173,7 @@ git config core.hooksPath .githooks
 - [`app/lir-agent/README.md`](app/lir-agent/README.md): agent flow, tools, layout, commands, limitations
 - [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (Jev, baseline, fallback)
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
+- [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
+- [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
 - [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow
 - [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard
