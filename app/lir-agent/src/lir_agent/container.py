@@ -14,8 +14,16 @@ from decision_layer import (
     JevClient,
     KeywordDecisionModel,
 )
+from google.cloud import firestore
 
-from lir_agent.application.ports import AuditSink, CaseRepository, TransactionRepository
+from lir_agent.application.ports import (
+    AuditSink,
+    CaseInbox,
+    CasePublisher,
+    CaseRepository,
+    CaseStore,
+    TransactionRepository,
+)
 from lir_agent.application.presenter import LlmPresenter
 from lir_agent.application.use_cases import (
     FindCandidateTransactions,
@@ -24,17 +32,24 @@ from lir_agent.application.use_cases import (
     OpenDispute,
     RequestHandoff,
     RouteTurn,
+    SubmitCase,
 )
 from lir_agent.config.settings import Settings
 from lir_agent.domain.dispute_guard import DisputeGuard
 from lir_agent.domain.evidence import EvidenceBuilder
 from lir_agent.domain.policy import PolicyEngine
 from lir_agent.infrastructure.audit import JsonlAuditSink, StdoutAuditSink
+from lir_agent.infrastructure.case_store import FirestoreCaseStore, InMemoryCaseStore
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
+from lir_agent.infrastructure.cases_inbox import GcsCaseInbox, LocalCaseInbox
 from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
     DuckDbTransactionRepository,
     FixtureTransactionRepository,
+)
+from lir_agent.infrastructure.publishing import (
+    InMemoryCasePublisher,
+    PubSubCasePublisher,
 )
 from lir_agent.infrastructure.resources import ResourceLoader
 
@@ -59,6 +74,8 @@ class Container:
     open_dispute: OpenDispute
     request_handoff: RequestHandoff
     route_turn: RouteTurn
+    case_store: CaseStore
+    submit_case: SubmitCase
 
 
 def build_repository(settings: Settings) -> TransactionRepository:
@@ -80,6 +97,35 @@ def build_audit(settings: Settings) -> AuditSink:
     if settings.audit_sink == "stdout":
         return StdoutAuditSink()
     return JsonlAuditSink(settings.audit_path)
+
+
+def build_case_inbox(settings: Settings) -> CaseInbox:
+    """The case inbox chosen by `CASES_INBOX`."""
+    if settings.cases_inbox == "gcs":
+        return GcsCaseInbox(settings.cases_bucket)
+    return LocalCaseInbox(settings.cases_local_dir)
+
+
+def build_case_publisher(settings: Settings) -> CasePublisher:
+    """The case publisher chosen by `CASES_PUBLISHER`."""
+    if settings.cases_publisher == "pubsub":
+        if not settings.google_cloud_project:
+            raise ValueError("CASES_PUBLISHER=pubsub needs GOOGLE_CLOUD_PROJECT")
+        return PubSubCasePublisher(settings.google_cloud_project, settings.cases_topic)
+    return InMemoryCasePublisher()
+
+
+def build_case_store(settings: Settings) -> CaseStore:
+    """The case store chosen by `CASE_STORE`."""
+    if settings.case_store == "firestore":
+        if not settings.google_cloud_project:
+            raise ValueError("CASE_STORE=firestore needs GOOGLE_CLOUD_PROJECT")
+        client = firestore.Client(
+            project=settings.google_cloud_project,
+            database=settings.firestore_database,
+        )
+        return FirestoreCaseStore(client, settings.firestore_collection_prefix)
+    return InMemoryCaseStore()
 
 
 def build_decisions(
@@ -126,6 +172,9 @@ def build_container(
     cases: CaseRepository | None = None,
     audit: AuditSink | None = None,
     decisions: DecisionModel | None = None,
+    case_inbox: CaseInbox | None = None,
+    case_publisher: CasePublisher | None = None,
+    case_store: CaseStore | None = None,
     today: Callable[[], date] | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
@@ -144,6 +193,7 @@ def build_container(
     )
     dispute_guard = DisputeGuard()
     request_handoff = RequestHandoff(cases, policy.config)
+    case_store = case_store or build_case_store(settings)
     return Container(
         settings=settings,
         resources=resources,
@@ -168,4 +218,14 @@ def build_container(
         open_dispute=OpenDispute(cases, dispute_guard),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
+        case_store=case_store,
+        submit_case=SubmitCase(
+            repository,
+            case_inbox or build_case_inbox(settings),
+            case_publisher or build_case_publisher(settings),
+            case_store,
+            audit,
+            telegram_bot_username=settings.telegram_bot_username,
+            start_token_ttl=timedelta(minutes=settings.start_token_ttl_minutes),
+        ),
     )

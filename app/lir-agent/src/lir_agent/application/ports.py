@@ -4,9 +4,13 @@ Infrastructure adapters implement them; use cases depend only on these contracts
 The decision model port is `decision_layer.DecisionModel`.
 """
 
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+from lir_agent.domain.case_intake import CaseConversation, CaseReceipt, CaseStart
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
+from lir_agent.domain.telegram import ChatLink
 
 
 class TransactionRepository(Protocol):
@@ -54,4 +58,151 @@ class AuditSink(Protocol):
 
     def record(self, event: str, session_id: str | None, **fields: Any) -> dict:
         """Write one audit entry and return it."""
+        ...
+
+
+class ConversationNotFoundError(Exception):
+    """The conversation does not exist, expired from memory, or belongs to another owner."""
+
+
+class CustomerNotFoundError(Exception):
+    """No customer with this id exists in the data source."""
+
+
+@dataclass(frozen=True)
+class StartedConversation:
+    """A new conversation bound to a customer."""
+
+    session_id: str
+    expires_at: datetime
+
+
+class Conversations(Protocol):
+    """Customer conversations with the agent, shared by every entry point.
+
+    Each conversation belongs to an `owner` (the IAP operator over HTTP, a case for intake
+    channels): only that owner can continue it. The customer is bound on start and never
+    passes through the conversation with the model.
+    """
+
+    async def start(
+        self, owner: str, customer_id: str, *, ttl: timedelta, auth_method: str
+    ) -> StartedConversation:
+        """Start a conversation for `customer_id`, valid for `ttl`.
+
+        Raises:
+            CustomerNotFoundError: If the customer does not exist.
+        """
+        ...
+
+    async def send(self, owner: str, session_id: str, text: str) -> str:
+        """Send one customer message and return the agent's reply.
+
+        Raises:
+            ConversationNotFoundError: If `owner` has no conversation with this id.
+        """
+        ...
+
+
+class CaseInbox(Protocol):
+    """Archive of accepted cases (the `cases-inbox` bucket in production)."""
+
+    def put(
+        self, case_id: str, payload: dict[str, Any], attributes: dict[str, str]
+    ) -> None:
+        """Store the case payload unchanged, with its routing attributes as metadata."""
+        ...
+
+
+class CasePublishError(Exception):
+    """The case could not be handed to the agent; the client may retry with the same key."""
+
+
+class CasePublisher(Protocol):
+    """Hands accepted cases to the agent (the `lir-cases` Pub/Sub topic in production)."""
+
+    def publish(
+        self, payload: dict[str, Any], attributes: dict[str, str], ordering_key: str
+    ) -> None:
+        """Publish the payload unchanged and wait until it is accepted.
+
+        Raises:
+            CasePublishError: If the message was not accepted.
+        """
+        ...
+
+
+@dataclass(frozen=True)
+class StoredReceipt:
+    """An accepted case's answer and the customer who filed it."""
+
+    customer_id: str
+    receipt: CaseReceipt
+
+
+class CaseStore(Protocol):
+    """Case state that must outlive the request.
+
+    Answers, start tokens, chat links, each case's conversation and the agent's replies
+    waiting for a chat.
+    """
+
+    def get_receipt(self, idempotency_key: str) -> StoredReceipt | None:
+        """Return the answer stored for this key, or None."""
+        ...
+
+    def save_receipt(self, idempotency_key: str, stored: StoredReceipt) -> None:
+        """Keep a successful answer for replay."""
+        ...
+
+    def add_start_token(
+        self, token: str, start: CaseStart, expires_at: datetime
+    ) -> None:
+        """Bind a single-use Telegram start token to a case until `expires_at`."""
+        ...
+
+    def consume_start_token(self, token: str, now: datetime) -> CaseStart | None:
+        """Burn the token and return its case; None when unknown, used or expired."""
+        ...
+
+    def link_chat(self, chat_id: int, link: ChatLink) -> None:
+        """Bind a Telegram chat to a case, replacing the chat's previous link."""
+        ...
+
+    def get_chat_link(self, chat_id: int) -> ChatLink | None:
+        """Return the chat's current link, or None."""
+        ...
+
+    def get_case_chat(self, case_id: str) -> int | None:
+        """Return the chat last linked to the case, or None."""
+        ...
+
+    def add_conversation(self, conversation: CaseConversation) -> bool:
+        """Keep the case's conversation unless it has one; False when it already had one.
+
+        Must be atomic: it is what makes a redelivered case answered only once.
+        """
+        ...
+
+    def get_conversation(self, case_id: str) -> CaseConversation | None:
+        """Return the case's conversation, or None while the case was not worked."""
+        ...
+
+    def queue_reply(self, case_id: str, text: str) -> None:
+        """Keep an agent reply until a chat is linked to the case (repeats allowed)."""
+        ...
+
+    def pop_replies(self, case_id: str) -> list[str]:
+        """Remove and return the case's queued replies, oldest first.
+
+        Must be atomic: two callers never get the same reply.
+        """
+        ...
+
+
+class Messenger(Protocol):
+    """Outbound messages to a customer's chat (Telegram today)."""
+
+    async def send(self, chat_id: int, text: str) -> None:
+        """Deliver `text` to the chat; failures are logged, never raised."""
         ...

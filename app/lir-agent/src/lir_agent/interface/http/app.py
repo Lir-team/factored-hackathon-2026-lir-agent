@@ -4,24 +4,48 @@ Authentication happens upstream: on Cloud Run, IAP verifies the caller's Google 
 forwards it in a header. That identity is the *operator* (a tester or the bank channel) and
 owns the sessions it creates. The *customer* is chosen on session creation, standing in for
 the bank's identity check (biometric KYC, mocked).
+
+Cases filed from the web form (`POST /v1/cases`) come through API Gateway instead, which
+verifies the *customer's* JWT and forwards its claims. Each accepted case is published to
+Pub/Sub and pushed back to the agent (`POST /pubsub/push`, see `pubsub.py`), which works it
+at once; the customer continues on Telegram (`POST /channels/telegram`, see `telegram.py`).
 """
 
 import re
 from datetime import timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
-from google.adk.runners import InMemoryRunner
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from lir_agent.config.settings import Settings
-from lir_agent.interface.http.gateway import (
-    AgentGateway,
+from lir_agent.application.ports import (
+    CasePublishError,
+    ConversationNotFoundError,
+    Conversations,
     CustomerNotFoundError,
-    SessionNotFoundError,
+    Messenger,
 )
+from lir_agent.application.use_cases import AnswerTelegramMessage, ProcessCase
+from lir_agent.config.settings import Settings
+from lir_agent.domain.case_intake import (
+    ForeignCaseError,
+    IdempotencyKeyMismatchError,
+    UnknownTransactionError,
+)
+from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
+from lir_agent.interface.http.pubsub import (
+    TokenVerifier,
+    google_token_verifier,
+    pubsub_router,
+)
+from lir_agent.interface.http.telegram import telegram_router
 
-APP_NAME = "lir"
+if TYPE_CHECKING:
+    from lir_agent.container import Container
+
 # IAP prefixes the e-mail with the identity provider.
 _IAP_PREFIX = "accounts.google.com:"
 
@@ -50,25 +74,75 @@ class MessageResponse(BaseModel):
     reply: str
 
 
-def build_gateway(settings: Settings) -> AgentGateway:
-    """Wire the real agent behind an in-memory ADK runner, sharing one container."""
-    from lir_agent.container import build_container  # heavy imports, only when serving
-    from lir_agent.interface.adk import build_agent
+class CaseAcceptedResponse(BaseModel):
+    """`202` body of `POST /v1/cases` (lir-web contract)."""
 
-    container = build_container(settings)
-    runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
-    return AgentGateway(
-        runner,
-        customers=container.repository,
-        audit=container.audit,
-        session_ttl=timedelta(minutes=settings.session_ttl_minutes),
-        auth_method=settings.http_auth_method,
-    )
+    case_id: str
+    folio: str
+    status: str
+    telegram_start_url: str | None
 
 
-def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastAPI:
-    """Build the API. `gateway` is injected in tests; by default the real agent is wired."""
-    agent_gateway = gateway or build_gateway(settings)
+def _invalid_case() -> HTTPException:
+    return HTTPException(status.HTTP_400_BAD_REQUEST, "invalid case")
+
+
+def _field_errors(errors: dict[str, str]) -> JSONResponse:
+    return JSONResponse({"errors": errors}, status.HTTP_422_UNPROCESSABLE_CONTENT)
+
+
+def _real_container(settings: Settings) -> "Container":
+    """Case intake and its store wired from settings (local or Cloud Storage inbox)."""
+    from lir_agent.container import build_container
+
+    return build_container(settings)
+
+
+def _real_messenger(bot_token: str) -> Messenger:
+    """The Telegram Bot API."""
+    from lir_agent.infrastructure.messaging import TelegramBotMessenger
+
+    return TelegramBotMessenger(bot_token)
+
+
+def _telegram_credentials(settings: Settings) -> tuple[str, str] | None:
+    """Bot token and webhook secret, or None when the channel is not configured."""
+    token, secret = settings.telegram_bot_token, settings.telegram_webhook_secret
+    if token and secret and token.get_secret_value() and secret.get_secret_value():
+        return token.get_secret_value(), secret.get_secret_value()
+    return None
+
+
+def _push_verifier(
+    settings: Settings, injected: TokenVerifier | None
+) -> tuple[bool, TokenVerifier | None]:
+    """Whether the push route exists, and how its OIDC token is verified (None: it is not)."""
+    if not settings.pubsub_verify_token:
+        return True, None
+    if not settings.pubsub_push_audience:
+        return False, None
+    return True, injected or google_token_verifier(settings.pubsub_push_audience)
+
+
+def _real_conversations(settings: Settings) -> Conversations:
+    """The real agent behind ADK; imported lazily because the agent stack is heavy."""
+    from lir_agent.interface.adk import build_conversations
+
+    return build_conversations(settings)
+
+
+def create_app(
+    settings: Settings,
+    conversations: Conversations | None = None,
+    container: "Container | None" = None,
+    messenger: Messenger | None = None,
+    push_token_verifier: TokenVerifier | None = None,
+) -> FastAPI:
+    """Build the API; tests inject the agent, adapters and the push token verifier."""
+    agent = conversations or _real_conversations(settings)
+    deps = container or _real_container(settings)
+    intake = deps.submit_case
+    session_ttl = timedelta(minutes=settings.session_ttl_minutes)
     customer_id_pattern = re.compile(settings.customer_id_pattern)
 
     class MessageRequest(BaseModel):
@@ -84,7 +158,30 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing caller identity")
         return settings.local_operator
 
+    def customer(request: Request) -> str | None:
+        """The customer verified by API Gateway; None only on local runs without it."""
+        userinfo = request.headers.get(settings.customer_identity_header, "").strip()
+        if userinfo:
+            customer_id = customer_from_userinfo(userinfo, settings.customer_claim)
+            if customer_id is None:
+                raise HTTPException(
+                    status.HTTP_401_UNAUTHORIZED, "Unreadable customer identity"
+                )
+            return customer_id
+        if settings.require_identity:
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED, "Missing customer identity"
+            )
+        return None
+
     app = FastAPI(title="Lir agent API", version="1.0.0")
+    if origins := [o.strip() for o in settings.cors_origins.split(",") if o.strip()]:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type", "Idempotency-Key", "Authorization"],
+        )
 
     # Not /healthz: Cloud Run reserves public paths ending in "z".
     @app.get("/health")
@@ -100,7 +197,12 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
                 status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid customer_id"
             )
         try:
-            started = await agent_gateway.start_session(caller, body.customer_id)
+            started = await agent.start(
+                caller,
+                body.customer_id,
+                ttl=session_ttl,
+                auth_method=settings.http_auth_method,
+            )
         except CustomerNotFoundError:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND, "Customer not found"
@@ -114,11 +216,90 @@ def create_app(settings: Settings, gateway: AgentGateway | None = None) -> FastA
         session_id: str, body: MessageRequest, caller: Annotated[str, Depends(operator)]
     ) -> MessageResponse:
         try:
-            reply = await agent_gateway.send(caller, session_id, body.text.strip())
-        except SessionNotFoundError:
+            reply = await agent.send(caller, session_id, body.text.strip())
+        except ConversationNotFoundError:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND, "Session not found"
             ) from None
         return MessageResponse(reply=reply)
+
+    @app.post(
+        "/v1/cases",
+        status_code=status.HTTP_202_ACCEPTED,
+        response_model=CaseAcceptedResponse,
+    )
+    async def submit(
+        request: Request,
+        caller: Annotated[str | None, Depends(customer)],
+        idempotency_key: Annotated[str | None, Header()] = None,
+    ) -> CaseAcceptedResponse | JSONResponse:
+        try:
+            payload = await request.json()
+        except ValueError:
+            raise _invalid_case() from None
+        errors = schema_errors(payload)
+        if errors is not None:
+            if not errors:  # no error names a form field the client can show
+                raise _invalid_case()
+            return _field_errors(errors)
+        if not idempotency_key:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Missing Idempotency-Key")
+        customer_id = caller or payload["customer"]["customer_id"]
+        try:
+            # Sync adapters (Cloud Storage) must not block the event loop.
+            receipt = await run_in_threadpool(
+                intake.execute, customer_id, idempotency_key, payload
+            )
+        except IdempotencyKeyMismatchError:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "Idempotency-Key must be the case_id"
+            ) from None
+        except ForeignCaseError:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your case") from None
+        except CustomerNotFoundError:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND, "Customer not found"
+            ) from None
+        except UnknownTransactionError:
+            return _field_errors({"transaction_ids": "unknown"})
+        except CasePublishError:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Case not accepted, retry"
+            ) from None
+        return CaseAcceptedResponse(
+            case_id=receipt.case_id,
+            folio=receipt.folio,
+            status=receipt.status,
+            telegram_start_url=receipt.telegram_start_url,
+        )
+
+    credentials = _telegram_credentials(settings)
+    if messenger is None and credentials:
+        messenger = _real_messenger(credentials[0])
+
+    push_on, verifier = _push_verifier(settings, push_token_verifier)
+    if push_on:
+        process = ProcessCase(
+            agent,
+            deps.case_store,
+            messenger,
+            deps.audit,
+            session_ttl=timedelta(minutes=settings.case_session_ttl_minutes),
+        )
+        app.include_router(
+            pubsub_router(
+                process, deps.audit, verifier, settings.pubsub_push_service_account
+            )
+        )
+
+    if credentials and messenger is not None:
+        answer = AnswerTelegramMessage(
+            agent,
+            deps.case_store,
+            messenger,
+            deps.audit,
+            max_message_chars=settings.max_message_chars,
+        )
+        app.include_router(telegram_router(credentials[1], answer))
 
     return app

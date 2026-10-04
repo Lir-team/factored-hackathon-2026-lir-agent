@@ -1,0 +1,133 @@
+import asyncio
+from collections.abc import AsyncGenerator
+from datetime import timedelta
+
+import pytest
+from google.adk.agents import BaseAgent
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events import Event
+from google.adk.runners import InMemoryRunner
+from google.genai import types
+
+from lir_agent.application.ports import (
+    ConversationNotFoundError,
+    CustomerNotFoundError,
+)
+from lir_agent.domain.session import SessionState, utc_now
+from lir_agent.infrastructure.audit import InMemoryAuditSink
+from lir_agent.infrastructure.persistence import FixtureTransactionRepository
+from lir_agent.interface.adk import AdkConversations
+
+TTL = timedelta(minutes=15)
+AUTH = "iap_operator"
+
+
+class CustomerEchoAgent(BaseAgent):
+    """Replies with the customer bound to the session, so tests see the state the agent sees."""
+
+    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event]:
+        customer = SessionState(ctx.session.state).customer_id
+        yield Event(
+            author=self.name,
+            invocation_id=ctx.invocation_id,
+            content=types.Content(
+                role="model", parts=[types.Part(text=f"hi {customer}")]
+            ),
+        )
+
+
+@pytest.fixture
+def audit() -> InMemoryAuditSink:
+    return InMemoryAuditSink()
+
+
+@pytest.fixture
+def runner() -> InMemoryRunner:
+    return InMemoryRunner(agent=CustomerEchoAgent(name="echo"), app_name="lir-test")
+
+
+@pytest.fixture
+def conversations(settings, runner, audit) -> AdkConversations:
+    return AdkConversations(
+        runner,
+        customers=FixtureTransactionRepository(settings.fixture_path),
+        audit=audit,
+    )
+
+
+def test_session_binds_the_customer_and_the_agent_sees_it(conversations):
+    async def scenario() -> str:
+        started = await conversations.start(
+            "tester@example.com", "CLI-DEMO-001", ttl=TTL, auth_method=AUTH
+        )
+        assert timedelta(minutes=14) < started.expires_at - utc_now() <= TTL
+        return await conversations.send(
+            "tester@example.com", started.session_id, "hola"
+        )
+
+    assert asyncio.run(scenario()) == "hi CLI-DEMO-001"
+
+
+def test_ttl_and_auth_method_are_chosen_per_conversation(conversations, runner):
+    async def state_of(owner: str, session_id: str) -> dict:
+        session = await runner.session_service.get_session(
+            app_name=runner.app_name, user_id=owner, session_id=session_id
+        )
+        assert session is not None
+        return dict(session.state)
+
+    async def scenario() -> None:
+        short = await conversations.start(
+            "tester@example.com", "CLI-DEMO-001", ttl=TTL, auth_method=AUTH
+        )
+        long = await conversations.start(
+            "case:42", "CLI-DEMO-001", ttl=timedelta(days=7), auth_method="case_intake"
+        )
+        assert short.expires_at - utc_now() <= TTL
+        assert long.expires_at - utc_now() > timedelta(days=6)
+        short_state = await state_of("tester@example.com", short.session_id)
+        long_state = await state_of("case:42", long.session_id)
+        assert short_state["auth_method"] == AUTH
+        assert long_state["auth_method"] == "case_intake"
+
+    asyncio.run(scenario())
+
+
+def test_owner_cannot_use_another_owners_conversation(conversations):
+    async def scenario() -> None:
+        started = await conversations.start(
+            "tester@example.com", "CLI-DEMO-001", ttl=TTL, auth_method=AUTH
+        )
+        await conversations.send("intruder@example.com", started.session_id, "hola")
+
+    with pytest.raises(ConversationNotFoundError):
+        asyncio.run(scenario())
+
+
+def test_unknown_conversation_is_not_found(conversations):
+    with pytest.raises(ConversationNotFoundError):
+        asyncio.run(conversations.send("tester@example.com", "missing", "hola"))
+
+
+def test_unknown_customer_gets_no_conversation(conversations, audit):
+    with pytest.raises(CustomerNotFoundError):
+        asyncio.run(
+            conversations.start(
+                "tester@example.com", "CLI-UNKNOWN", ttl=TTL, auth_method=AUTH
+            )
+        )
+    assert audit.entries == []
+
+
+def test_conversation_start_is_audited_without_the_customer_id(conversations, audit):
+    started = asyncio.run(
+        conversations.start(
+            "tester@example.com", "CLI-DEMO-001", ttl=TTL, auth_method=AUTH
+        )
+    )
+    [entry] = audit.entries
+    assert entry["event"] == "session_started"
+    assert entry["session_id"] == started.session_id
+    assert entry["owner"] == "tester@example.com"
+    assert entry["auth_method"] == AUTH
+    assert "CLI-DEMO-001" not in str(entry)
