@@ -87,7 +87,7 @@ for the demo, and a lost session is rebuilt from the case record.
 - [ ] **T4 `/pubsub/push`.** OIDC check, GCS notification parsing, load case,
   dedupe by `case_id`, case-bound session with long TTL, first agent turn,
   reply queued or sent. Route: delegated.
-- [ ] **T5 Telegram channel.** `Messenger` port + Bot API adapter (httpx);
+- [x] **T5 Telegram channel.** `Messenger` port + Bot API adapter (httpx);
   `/channels/telegram` webhook: secret check, `/start <token>` linking and
   flush, message relay to the session, reply via `sendMessage`. Route:
   delegated.
@@ -150,3 +150,21 @@ strategy applies: chain strategy to be chosen before the first PR.
   (needs `rfc3339-validator`); `create_app` builds a second container for case
   intake besides the agent's one; Cloud Run must set `CASES_INBOX=gcs`;
   Firestore `consume_start_token` must be transactional (T3).
+- 2026-10-04: receipt-driven review turned off by the user (global). CORS made
+  opt-in (`CORS_ORIGINS`, `03ea3d6`) for local runs with lir-web; lir-web mock
+  aligned with the fixture on its branch `fix/mock-data-matches-agent-fixture`.
+  Local end-to-end submit verified (202, case stored). Reordered: T5 before T3
+  and T4, because the bot answering is the visible part of the demo; the
+  in-memory store with `max-instances=1` is enough until T3. T5 on
+  `feat/telegram-channel`, stacked on `feat/case-intake-endpoint`. Until T4,
+  `/start` triggers the agent's first turn from a case summary kept with the
+  start token.
+- 2026-10-04: T5 done (delegated writer). Webhook `/channels/telegram`
+  (secret header, update_id dedupe), `AnswerTelegramMessage` use case,
+  `Messenger` port + Bot API adapter (httpx), `CaseStart` carried with the start
+  token, `ChatLink` per chat; owner `case:<case_id>`, auth method
+  `telegram_case_link`. RED: 4 collection errors before the change. Checks:
+  pytest 259 passed (44 new), ruff clean, pyright 0 errors. Open risks: httpx
+  logs the bot token in URLs at DEBUG; a failing `conversations.start` burns the
+  token and returns 500; once T4 runs the agent from Pub/Sub, `/start` must stop
+  running the first turn.

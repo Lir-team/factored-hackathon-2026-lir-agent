@@ -99,9 +99,7 @@ class Intake:
         container = build_container(
             settings, audit=self.audit, case_inbox=self.inbox, case_store=self.store
         )
-        app = create_app(
-            settings, conversations=NoConversations(), submit_case=container.submit_case
-        )
+        app = create_app(settings, conversations=NoConversations(), container=container)
         self.client = TestClient(app)
 
     def post(self, payload: dict, request_headers: dict[str, str] | None = None):
@@ -133,7 +131,15 @@ def test_telegram_case_is_accepted_with_a_start_link(intake):
     assert body["status"] == "received"
     token = start_token(body["telegram_start_url"])
     assert re.fullmatch(r"[A-Za-z0-9_-]{1,64}", token)
-    assert intake.store.consume_start_token(token, datetime.now(UTC)) == CASE_ID
+    start = intake.store.consume_start_token(token, datetime.now(UTC))
+    assert start is not None
+    assert (start.case_id, start.customer_id, start.folio, start.language) == (
+        CASE_ID,
+        CUSTOMER,
+        "LB-2026-6F1C2D",
+        "es",
+    )
+    assert start.summary.startswith(PAYLOAD["description"])
 
 
 def test_accepted_case_is_stored_with_its_attributes(intake):

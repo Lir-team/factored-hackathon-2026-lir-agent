@@ -2,7 +2,8 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from lir_agent.application.ports import StoredReceipt
-from lir_agent.domain.case_intake import CaseReceipt
+from lir_agent.domain.case_intake import CaseReceipt, CaseStart
+from lir_agent.domain.telegram import ChatLink
 from lir_agent.infrastructure.case_store import InMemoryCaseStore
 from lir_agent.infrastructure.cases_inbox import GcsCaseInbox, LocalCaseInbox
 
@@ -73,10 +74,22 @@ def test_store_keeps_receipts_by_idempotency_key():
 def test_start_tokens_are_single_use_and_expire():
     store = InMemoryCaseStore()
     now = datetime(2026, 10, 4, tzinfo=UTC)
-    store.add_start_token("t1", CASE_ID, now + timedelta(minutes=5))
-    store.add_start_token("t2", CASE_ID, now + timedelta(minutes=5))
+    start = CaseStart(CASE_ID, "CLI-DEMO-001", "LB-2026-6F1C2D", "es", "summary")
+    store.add_start_token("t1", start, now + timedelta(minutes=5))
+    store.add_start_token("t2", start, now + timedelta(minutes=5))
 
-    assert store.consume_start_token("t1", now) == CASE_ID
+    assert store.consume_start_token("t1", now) == start
     assert store.consume_start_token("t1", now) is None
     assert store.consume_start_token("t2", now + timedelta(minutes=5)) is None
     assert store.consume_start_token("unknown", now) is None
+
+
+def test_a_chat_keeps_its_latest_link():
+    store = InMemoryCaseStore()
+    first = ChatLink(CASE_ID, "LB-2026-6F1C2D", f"case:{CASE_ID}", "s1", "es")
+    latest = ChatLink("other", "LB-2026-000000", "case:other", "s2", "pt")
+
+    assert store.get_chat_link(42) is None
+    store.link_chat(42, first)
+    store.link_chat(42, latest)
+    assert store.get_chat_link(42) == latest

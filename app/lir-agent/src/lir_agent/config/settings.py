@@ -131,6 +131,14 @@ class Settings(BaseSettings):
     # How long a Telegram start link stays usable.
     start_token_ttl_minutes: int = Field(default=1440, gt=0)
 
+    # ---- Telegram channel (`POST /channels/telegram`) ------------------------------------
+    # Bot API token (from BotFather) and the `secret_token` registered with `setWebhook`.
+    # Without both, the webhook route does not exist (404).
+    telegram_bot_token: SecretStr | None = None
+    telegram_webhook_secret: SecretStr | None = None
+    # How long a conversation opened from a Telegram start link stays valid (7 days).
+    case_session_ttl_minutes: int = Field(default=10080, gt=0)
+
     @field_validator("reference_date", mode="before")
     @classmethod
     def _empty_reference_date_is_today(cls, value: object) -> object:

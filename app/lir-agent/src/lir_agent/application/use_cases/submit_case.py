@@ -14,10 +14,12 @@ from lir_agent.application.ports import (
 )
 from lir_agent.domain.case_intake import (
     CaseReceipt,
+    CaseStart,
     ForeignCaseError,
     IdempotencyKeyMismatchError,
     UnknownTransactionError,
     case_attributes,
+    case_summary,
     folio_for,
     new_start_token,
     telegram_start_url,
@@ -77,10 +79,20 @@ class SubmitCase:
             raise UnknownTransactionError(case_id)
 
         self._inbox.put(case_id, payload, case_attributes(payload))
+        folio = folio_for(case_id, payload["submitted_at"])
         receipt = CaseReceipt(
             case_id=case_id,
-            folio=folio_for(case_id, payload["submitted_at"]),
-            telegram_start_url=self._start_link(case_id, payload),
+            folio=folio,
+            telegram_start_url=self._start_link(
+                CaseStart(
+                    case_id=case_id,
+                    customer_id=customer_id,
+                    folio=folio,
+                    language=payload["language"],
+                    summary=case_summary(payload),
+                ),
+                payload,
+            ),
         )
         # Only successful answers are kept: a failed attempt is processed again.
         self._store.save_receipt(idempotency_key, StoredReceipt(customer_id, receipt))
@@ -93,11 +105,14 @@ class SubmitCase:
         )
         return receipt
 
-    def _start_link(self, case_id: str, payload: dict[str, Any]) -> str | None:
-        """A Telegram start link when the customer chose Telegram and a bot is configured."""
+    def _start_link(self, start: CaseStart, payload: dict[str, Any]) -> str | None:
+        """A Telegram start link when the customer chose Telegram and a bot is configured.
+
+        The token keeps what `/start` needs to open the case's conversation.
+        """
         channel = payload["customer"]["preferred_contact"]["channel"]
         if channel != "telegram" or not self._bot:
             return None
         token = new_start_token()
-        self._store.add_start_token(token, case_id, self._now() + self._token_ttl)
+        self._store.add_start_token(token, start, self._now() + self._token_ttl)
         return telegram_start_url(self._bot, token)

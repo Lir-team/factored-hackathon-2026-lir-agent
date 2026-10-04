@@ -68,6 +68,7 @@ class Container:
     open_dispute: OpenDispute
     request_handoff: RequestHandoff
     route_turn: RouteTurn
+    case_store: CaseStore
     submit_case: SubmitCase
 
 
@@ -163,6 +164,7 @@ def build_container(
     )
     dispute_guard = DisputeGuard()
     request_handoff = RequestHandoff(cases, policy.config)
+    case_store = case_store or InMemoryCaseStore()
     return Container(
         settings=settings,
         resources=resources,
@@ -187,10 +189,11 @@ def build_container(
         open_dispute=OpenDispute(cases, dispute_guard),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
+        case_store=case_store,
         submit_case=SubmitCase(
             repository,
             case_inbox or build_case_inbox(settings),
-            case_store or InMemoryCaseStore(),
+            case_store,
             audit,
             telegram_bot_username=settings.telegram_bot_username,
             start_token_ttl=timedelta(minutes=settings.start_token_ttl_minutes),

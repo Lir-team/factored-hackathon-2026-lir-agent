@@ -25,6 +25,17 @@ class CaseReceipt:
     status: str = "received"
 
 
+@dataclass(frozen=True)
+class CaseStart:
+    """What a Telegram start token opens: the case, its customer and the agent's first turn."""
+
+    case_id: str
+    customer_id: str
+    folio: str
+    language: str
+    summary: str
+
+
 class IdempotencyKeyMismatchError(DomainError):
     """The `Idempotency-Key` is not the payload's `case_id`."""
 
@@ -53,6 +64,27 @@ def case_attributes(payload: dict[str, Any]) -> dict[str, str]:
         "language": payload["language"],
         "schema_version": payload["schema_version"],
     }
+
+
+# Written as the customer, in the case language (`en` reads as Spanish, like the agent).
+_REPORTED_CHARGES = {"pt": "Cobranças que reporto"}
+_DEFAULT_REPORTED_CHARGES = "Cargos que reporto"
+
+
+def case_summary(payload: dict[str, Any]) -> str:
+    """The case as the customer's first message to the agent: description and charges.
+
+    Charges are described as the customer saw them (merchant, amount, date), never by
+    internal transaction id: the agent only sees opaque references to records.
+    """
+    charges = "; ".join(
+        f"{t['merchant']}, {t['amount']} {t['currency']}, {t['occurred_at'][:10]}"
+        for t in payload["transactions"]
+    )
+    if not charges:
+        return payload["description"]
+    label = _REPORTED_CHARGES.get(payload["language"], _DEFAULT_REPORTED_CHARGES)
+    return f"{payload['description']}\n{label}: {charges}."
 
 
 def new_start_token() -> str:

@@ -94,6 +94,7 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "..."}` |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` |
+| `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
 
 `POST /v1/cases` is the web form's entry point and does not use IAP: API Gateway verifies the
 customer's JWT and forwards its claims in `X-Apigateway-Api-Userinfo` (missing or unreadable:
@@ -105,6 +106,33 @@ The `Idempotency-Key` must equal `case_id` (`400`), and repeating it replays the
 Accepted cases go to the inbox chosen by `CASES_INBOX` (`cases/<case_id>.json`, attributes as
 object metadata). `telegram_start_url` is a single-use `https://t.me/<bot>?start=<token>` link
 when the customer chose Telegram and `TELEGRAM_BOT_USERNAME` is set, otherwise `null`.
+
+### Telegram channel
+
+The customer taps the start link and Telegram sends `/start <token>` to the webhook. The
+token is single-use: it opens a conversation for the case (owner `case:<case_id>`, valid for
+`CASE_SESSION_TTL_MINUTES`, 7 days by default), links the chat to it (a later link replaces
+it), confirms the case folio and runs the agent's first turn from the case description and
+reported charges. Later messages from that chat go to the same conversation and the reply is
+sent back (split at Telegram's 4096 characters). Messages longer than `MAX_MESSAGE_CHARS`
+are refused with a short note; unlinked chats are asked to use the link from the form; used
+or expired links and lost conversations get a short message in Spanish or Portuguese. Only
+text from private chats is read, and repeated updates are handled once.
+
+Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 characters of
+`A-Z a-z 0-9 _ -`), then register the webhook once; Telegram sends the secret back in
+`X-Telegram-Bot-Api-Secret-Token`, compared in constant time:
+
+```bash
+curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+  -d "url=https://<public base URL>/channels/telegram" \
+  -d "secret_token=$TELEGRAM_WEBHOOK_SECRET" \
+  -d 'allowed_updates=["message"]'
+```
+
+Telegram only calls HTTPS URLs: locally, expose the API with a tunnel (e.g.
+`ngrok http 8080`) and register its URL. The bot token is part of every Bot API URL, so
+keep `LOG_LEVEL` above `DEBUG` outside local runs: at `DEBUG`, `httpx` logs request URLs.
 
 Locally, without IAP:
 
@@ -154,7 +182,8 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 ## Known limitations
 
 - `open_dispute` and the handoff queue are in-memory mocks with documented contracts; no money moves.
-- Sessions are in memory; production needs a persistent session service (Firestore). The
+- Sessions, start tokens and Telegram chat links are in memory; production needs a
+  persistent store (Firestore). The
   audit log is a local JSONL file, or Cloud Logging on Cloud Run (`AUDIT_SINK=stdout`). On Cloud Run this means
   one instance (`max-instances=1`) so a session's messages reach the instance that holds it.
 - The HTTP API trusts the identity header set by IAP; it must only be reachable through IAP
