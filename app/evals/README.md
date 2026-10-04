@@ -20,6 +20,18 @@ The design follows Anthropic's
 | Capability vs regression | `metadata.kind`: regression tasks must stay at ~100%, capability tasks show what to build next |
 | pass^k / pass@k | `--repeat k`; `report.py` reports both per task |
 
+## Typed decisions against labels (EVAL-01)
+
+`decision_eval/` scores the decision layer (D1 intent, D2 wants a person, D3 theft) on the
+held-out labeled set `data/eval/decisions/seeds.yaml`, split by seed (validation for
+thresholds, test reported once):
+
+```bash
+uv run python -m decision_eval.run --model keywords        # the baseline, free
+uv run python -m decision_eval.run --model llm --repeat 3  # the LLM, ~US$0.04 per pass
+uv run python -m decision_eval.report                      # -> data/reports/decision_eval.md
+```
+
 ## Run locally
 
 Prerequisites: [uv](https://docs.astral.sh/uv/), Node.js ≥ 22 (promptfoo runs through `npx`),

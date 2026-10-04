@@ -1,0 +1,2395 @@
+{
+ "labeling": {
+  "status": "pending",
+  "sample": 40
+ },
+ "results": {
+  "keywords": [
+   {
+    "model": "keywords-v1",
+    "run": 1,
+    "failures": 0,
+    "intent": {
+     "accuracy": 0.44375,
+     "accuracy_ci": [
+      0.368981375420442,
+      0.5211564162026865
+     ],
+     "macro_f1": 0.4096151214933304,
+     "per_class": [
+      {
+       "label": "cargo_no_reconocido",
+       "precision": 0.31746031746031744,
+       "recall": 1.0,
+       "f1": 0.4819277108433735,
+       "support": 40
+      },
+      {
+       "label": "cobro_indebido",
+       "precision": 1.0,
+       "recall": 0.40625,
+       "f1": 0.5777777777777777,
+       "support": 32
+      },
+      {
+       "label": "consulta_movimiento",
+       "precision": 1.0,
+       "recall": 0.1875,
+       "f1": 0.3157894736842105,
+       "support": 32
+      },
+      {
+       "label": "otra_queja",
+       "precision": 0.7142857142857143,
+       "recall": 0.20833333333333334,
+       "f1": 0.3225806451612903,
+       "support": 24
+      },
+      {
+       "label": "fuera_de_alcance",
+       "precision": 0.875,
+       "recall": 0.21875,
+       "f1": 0.35,
+       "support": 32
+      }
+     ],
+     "ece": 0.034374999999999975,
+     "reliability": [
+      [
+       "0.0-0.2",
+       110,
+       0.2,
+       0.21818181818181817
+      ],
+      [
+       "0.4-0.6",
+       1,
+       0.5,
+       1.0
+      ],
+      [
+       "0.8-1.0",
+       49,
+       1.0,
+       0.9387755102040817
+      ]
+     ],
+     "confusion": {
+      "cargo_no_reconocido": {
+       "cargo_no_reconocido": 40,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "cobro_indebido": {
+       "cargo_no_reconocido": 19,
+       "cobro_indebido": 13,
+       "consulta_movimiento": 0,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "consulta_movimiento": {
+       "cargo_no_reconocido": 25,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 6,
+       "otra_queja": 0,
+       "fuera_de_alcance": 1,
+       "none": 0
+      },
+      "otra_queja": {
+       "cargo_no_reconocido": 19,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 5,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "fuera_de_alcance": {
+       "cargo_no_reconocido": 23,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 2,
+       "fuera_de_alcance": 7,
+       "none": 0
+      }
+     },
+     "chosen": {
+      "threshold": 0.25,
+      "coverage": 0.3125,
+      "accuracy": 0.94,
+      "decided": 50
+     },
+     "policy": {
+      "threshold": 0.5,
+      "coverage": 0.3125,
+      "accuracy": 0.94,
+      "decided": 50
+     },
+     "curve": [
+      {
+       "threshold": 0.0,
+       "coverage": 1.0,
+       "accuracy": 0.44375,
+       "decided": 160
+      },
+      {
+       "threshold": 0.05,
+       "coverage": 1.0,
+       "accuracy": 0.44375,
+       "decided": 160
+      },
+      {
+       "threshold": 0.1,
+       "coverage": 1.0,
+       "accuracy": 0.44375,
+       "decided": 160
+      },
+      {
+       "threshold": 0.15,
+       "coverage": 1.0,
+       "accuracy": 0.44375,
+       "decided": 160
+      },
+      {
+       "threshold": 0.2,
+       "coverage": 1.0,
+       "accuracy": 0.44375,
+       "decided": 160
+      },
+      {
+       "threshold": 0.25,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.3,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.35,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.4,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.45,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.5,
+       "coverage": 0.3125,
+       "accuracy": 0.94,
+       "decided": 50
+      },
+      {
+       "threshold": 0.55,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.6,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.65,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.7,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.75,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.8,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.85,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.9,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      },
+      {
+       "threshold": 0.95,
+       "coverage": 0.30625,
+       "accuracy": 0.9387755102040817,
+       "decided": 49
+      }
+     ],
+     "by_language": {
+      "es": {
+       "n": 108,
+       "correct": 45,
+       "ci": [
+        0.32811348003440627,
+        0.5109446164162883
+       ],
+       "macro_f1": 0.4013920719803073
+      },
+      "pt": {
+       "n": 44,
+       "correct": 20,
+       "ci": [
+        0.3170500778685361,
+        0.599340678293465
+       ],
+       "macro_f1": 0.44401154401154397
+      },
+      "mixed": {
+       "n": 8,
+       "correct": 6,
+       "ci": [
+        0.40926987910258916,
+        0.9285223111419724
+       ],
+       "macro_f1": 0.29333333333333333
+      }
+     },
+     "errors": [
+      {
+       "item_id": "s24-2",
+       "lang": "pt-BR",
+       "text": "A mesma corrida do Uber apareceu duplicada",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s24-3",
+       "lang": "pt-BR",
+       "text": "Paguei uma vez só, mas a cobrança veio em dobro",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s25-2",
+       "lang": "pt-BR",
+       "text": "Veio uma taxa de anuidade que eu não devia pagar",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s25-3",
+       "lang": "pt-BR",
+       "text": "Me cobraram juros indevidos na fatura",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s25-4",
+       "lang": "pt-BR",
+       "text": "O valor da compra está certo, mas cobraram uma taxa a mais",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s29-2",
+       "lang": "mixed",
+       "text": "Hay una taxa que não deveria estar en mi fatura",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s29-3",
+       "lang": "mixed",
+       "text": "Pagué una vez pero cobraram em dobro",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s31-1",
+       "lang": "es-MX",
+       "text": "Cancelé la compra pero igual me la cobraron",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s31-2",
+       "lang": "es-MX",
+       "text": "Devolví el producto y no me han regresado el dinero, me siguen cobrando",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s31-3",
+       "lang": "es-MX",
+       "text": "La tienda canceló el pedido y el cargo sigue ahí",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s31-4",
+       "lang": "es-MX",
+       "text": "Me cobraron una compra que ya había cancelado",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s32-1",
+       "lang": "es-CO",
+       "text": "Me cobraron intereses aunque pagué el total a tiempo",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s32-2",
+       "lang": "es-CO",
+       "text": "Pagué la tarjeta completa y aun así me cobraron intereses",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s32-3",
+       "lang": "es-CO",
+       "text": "Me aparece un cobro de mora pero pagué antes de la fecha",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s32-4",
+       "lang": "es-CO",
+       "text": "Me pusieron un recargo por pago tardío y pagué a tiempo",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s34-2",
+       "lang": "es-AR",
+       "text": "La compra en el exterior me la cobraron más cara de lo que era",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s34-4",
+       "lang": "es-AR",
+       "text": "El tipo de cambio que me cobraron está mal",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s35-2",
+       "lang": "es-MX",
+       "text": "Por qué me cobran por sacar dinero del cajero del banco si es gratis",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s35-4",
+       "lang": "es-MX",
+       "text": "Me cobraron una penalización que no corresponde",
+       "true": "cobro_indebido",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s37-2",
+       "lang": "es-MX",
+       "text": "Quiero saber cuánto tengo en la cuenta",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s37-4",
+       "lang": "es-MX",
+       "text": "¿Cuánto me queda disponible para gastar?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s38-1",
+       "lang": "es-CO",
+       "text": "¿Ya se acreditó la transferencia que me hicieron?",
+       "true": "consulta_movimiento",
+       "pred": "fuera_de_alcance",
+       "p": 1.0
+      },
+      {
+       "item_id": "s38-2",
+       "lang": "es-CO",
+       "text": "¿Cuándo se ve reflejado el pago que hice ayer?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s38-3",
+       "lang": "es-CO",
+       "text": "Quiero saber si ya entró la plata de mi nómina",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s38-4",
+       "lang": "es-CO",
+       "text": "¿Ya me llegó el abono que esperaba?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s41-1",
+       "lang": "es-MX",
+       "text": "¿Ya se aplicó el pago de mi tarjeta?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s41-2",
+       "lang": "es-MX",
+       "text": "Hice el pago de la tarjeta, ¿ya se ve?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s41-3",
+       "lang": "es-MX",
+       "text": "¿Cuándo vence el pago de mi tarjeta?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s41-4",
+       "lang": "es-MX",
+       "text": "¿Cuánto debo pagar este mes de la tarjeta?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s43-1",
+       "lang": "pt-BR",
+       "text": "A compra aparece como pendente, quando confirma?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s43-2",
+       "lang": "pt-BR",
+       "text": "Por que esse lançamento está em processamento?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s43-3",
+       "lang": "pt-BR",
+       "text": "Quanto tempo demora para uma compra sair de pendente?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s43-4",
+       "lang": "pt-BR",
+       "text": "O estorno da loja já entrou na fatura?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s47-2",
+       "lang": "pt-BR",
+       "text": "Me passa para alguém para ver se o pagamento caiu",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s47-3",
+       "lang": "pt-BR",
+       "text": "Prefiro que uma pessoa me explique meus lançamentos",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s48-2",
+       "lang": "es-CO",
+       "text": "Me salió un cargo de Spotify, ¿es la mensualidad normal?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s48-3",
+       "lang": "es-CO",
+       "text": "Veo un cobro de Uber, ¿es el viaje del sábado?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s48-4",
+       "lang": "es-CO",
+       "text": "¿Este cargo de Rappi es el pedido que hice anoche?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s49-1",
+       "lang": "es-AR",
+       "text": "¿Cuándo cierra el resumen de la tarjeta?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s49-2",
+       "lang": "es-AR",
+       "text": "¿Qué fecha vence el resumen de este mes?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s49-4",
+       "lang": "es-AR",
+       "text": "¿Cuánto es el pago mínimo de la tarjeta?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s50-1",
+       "lang": "pt-BR",
+       "text": "Essa compra da Amazon é o pedido que eu fiz? Só quero confirmar",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s50-2",
+       "lang": "pt-BR",
+       "text": "O débito do iFood é do pedido de ontem?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s50-3",
+       "lang": "pt-BR",
+       "text": "Esse lançamento da Netflix é minha assinatura normal?",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s50-4",
+       "lang": "pt-BR",
+       "text": "Só quero confirmar se essa cobrança do Uber é da minha corrida",
+       "true": "consulta_movimiento",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s55-1",
+       "lang": "es-AR",
+       "text": "El homebanking anda pésimo, no puedo entrar",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s55-2",
+       "lang": "es-AR",
+       "text": "La app del banco no funciona hace días",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s55-3",
+       "lang": "es-AR",
+       "text": "Me rebota el login del homebanking todo el tiempo",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s55-4",
+       "lang": "es-AR",
+       "text": "No me llega el código para entrar a la app",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s57-2",
+       "lang": "es-MX",
+       "text": "Quiero poner una queja con una persona por cómo me trataron",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s57-3",
+       "lang": "es-MX",
+       "text": "Pásenme con un gerente, la atención fue horrible",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s57-4",
+       "lang": "es-MX",
+       "text": "Quiero hablar con alguien sobre el mal servicio que recibí",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s58-1",
+       "lang": "pt-BR",
+       "text": "O app não funciona, quero falar com um atendente",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s58-3",
+       "lang": "pt-BR",
+       "text": "Quero reclamar com alguém do atendimento",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s58-4",
+       "lang": "pt-BR",
+       "text": "Preciso falar com um humano sobre o problema no aplicativo",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s59-1",
+       "lang": "es-CO",
+       "text": "El cajero automático estaba dañado y no pude retirar",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s59-3",
+       "lang": "es-CO",
+       "text": "El cajero se tragó mi tarjeta",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s59-4",
+       "lang": "es-CO",
+       "text": "Fui al cajero y estaba fuera de servicio otra vez",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s63-2",
+       "lang": "es-CO",
+       "text": "Quiero hablar con un asesor porque el cajero se tragó mi tarjeta",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s63-4",
+       "lang": "es-CO",
+       "text": "Pásame con un humano, la aplicación no deja entrar",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s64-1",
+       "lang": "pt-BR",
+       "text": "O caixa eletrônico engoliu meu cartão",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s64-2",
+       "lang": "pt-BR",
+       "text": "Liguei várias vezes e ninguém resolveu",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s64-3",
+       "lang": "pt-BR",
+       "text": "O chat do banco nunca responde",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s64-4",
+       "lang": "pt-BR",
+       "text": "Não aguento mais as ligações oferecendo seguro",
+       "true": "otra_queja",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s66-4",
+       "lang": "es-CO",
+       "text": "¿Cuánto me prestan si gano dos millones?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s67-1",
+       "lang": "es-AR",
+       "text": "Quiero abrir una caja de ahorro en dólares",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s67-2",
+       "lang": "es-AR",
+       "text": "¿Cómo abro una cuenta corriente?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s67-3",
+       "lang": "es-AR",
+       "text": "Quiero sacar una tarjeta adicional para mi hijo",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s69-1",
+       "lang": "es-MX",
+       "text": "Quiero invertir en un pagaré, ¿qué tasas tienen?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s69-2",
+       "lang": "es-MX",
+       "text": "¿Qué rendimiento da la cuenta de inversión?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s69-3",
+       "lang": "es-MX",
+       "text": "Quiero contratar un seguro de vida",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s69-4",
+       "lang": "es-MX",
+       "text": "¿Tienen fondos de inversión?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s71-1",
+       "lang": "es-AR",
+       "text": "¿Cómo cambio la dirección de mi domicilio?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s71-2",
+       "lang": "es-AR",
+       "text": "Quiero actualizar mi número de teléfono",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s71-3",
+       "lang": "es-AR",
+       "text": "¿Cómo cambio el mail registrado?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s71-4",
+       "lang": "es-AR",
+       "text": "Necesito actualizar mis datos personales",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s72-2",
+       "lang": "pt-BR",
+       "text": "Me passa para alguém para abrir conta",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s72-4",
+       "lang": "pt-BR",
+       "text": "Preciso falar com uma pessoa sobre investimentos",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s74-1",
+       "lang": "es-MX",
+       "text": "¿A qué hora abre la sucursal del centro?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 1.0
+      },
+      {
+       "item_id": "s74-2",
+       "lang": "es-MX",
+       "text": "¿Dónde está el cajero más cercano?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s74-3",
+       "lang": "es-MX",
+       "text": "¿La sucursal abre los sábados?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 1.0
+      },
+      {
+       "item_id": "s74-4",
+       "lang": "es-MX",
+       "text": "¿Cuál es el horario de atención en ventanilla?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s75-2",
+       "lang": "es-CO",
+       "text": "Cómo hago para cerrar mi cuenta de ahorros",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s75-3",
+       "lang": "es-CO",
+       "text": "Quiero dar de baja la tarjeta",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s75-4",
+       "lang": "es-CO",
+       "text": "Ya no quiero la tarjeta, ¿cómo la cancelo?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s77-1",
+       "lang": "es-AR",
+       "text": "¿Me hacen un plazo fijo?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s77-2",
+       "lang": "es-AR",
+       "text": "Quiero comprar dólares desde la app, ¿cómo hago?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s77-3",
+       "lang": "es-AR",
+       "text": "¿Cómo invierto en un fondo común?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      },
+      {
+       "item_id": "s77-4",
+       "lang": "es-AR",
+       "text": "¿Qué tasa paga el plazo fijo?",
+       "true": "fuera_de_alcance",
+       "pred": "cargo_no_reconocido",
+       "p": 0.2
+      }
+     ]
+    },
+    "human": {
+     "chosen_threshold": 0.05,
+     "valid_range": null,
+     "policy_in_range": false,
+     "chosen": {
+      "threshold": 0.05,
+      "precision": 0.9047619047619048,
+      "recall": 0.6785714285714286,
+      "f1": 0.7755102040816326,
+      "positives": 28,
+      "tp": 19,
+      "recall_ci": [
+       0.4933850455563118,
+       0.8206695245657927
+      ]
+     },
+     "policy": {
+      "threshold": 0.5,
+      "precision": 0.9047619047619048,
+      "recall": 0.6785714285714286,
+      "f1": 0.7755102040816326,
+      "positives": 28,
+      "tp": 19,
+      "recall_ci": [
+       0.4933850455563118,
+       0.8206695245657927
+      ]
+     },
+     "ece": 0.06874999999999998,
+     "errors": [
+      {
+       "item_id": "s14-2",
+       "text": "Sin pasarme con un asesor por favor: no sé qué es esta compra",
+       "true": false,
+       "p": 1.0
+      },
+      {
+       "item_id": "s20-1",
+       "text": "Hay un consumo que no hice, quiero hablar con alguien del banco",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s47-2",
+       "text": "Me passa para alguém para ver se o pagamento caiu",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s57-1",
+       "text": "Me atendieron fatal en la sucursal, quiero hablar con un supervisor",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s57-3",
+       "text": "Pásenme con un gerente, la atención fue horrible",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s57-4",
+       "text": "Quiero hablar con alguien sobre el mal servicio que recibí",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s58-3",
+       "text": "Quero reclamar com alguém do atendimento",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s63-3",
+       "text": "Necesito que me atienda alguien, la sucursal me trató mal",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s71-4",
+       "text": "Necesito actualizar mis datos personales",
+       "true": false,
+       "p": 1.0
+      },
+      {
+       "item_id": "s72-1",
+       "text": "Quero falar com um gerente sobre empréstimo",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s72-2",
+       "text": "Me passa para alguém para abrir conta",
+       "true": true,
+       "p": 0.0
+      }
+     ]
+    },
+    "theft": {
+     "chosen_threshold": 0.05,
+     "valid_range": null,
+     "policy_in_range": false,
+     "chosen": {
+      "threshold": 0.05,
+      "precision": 1.0,
+      "recall": 0.6875,
+      "f1": 0.8148148148148148,
+      "positives": 16,
+      "tp": 11,
+      "recall_ci": [
+       0.4440393186673406,
+       0.8583556494803894
+      ]
+     },
+     "policy": {
+      "threshold": 0.3,
+      "precision": 1.0,
+      "recall": 0.6875,
+      "f1": 0.8148148148148148,
+      "positives": 16,
+      "tp": 11,
+      "recall_ci": [
+       0.4440393186673406,
+       0.8583556494803894
+      ]
+     },
+     "ece": 0.03125,
+     "errors": [
+      {
+       "item_id": "s05-3",
+       "text": "Alguien está usando mi tarjeta, aparecen compras en otra ciudad",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s07-1",
+       "text": "Me afanaron la billetera y ya hay consumos con mi tarjeta",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s08-3",
+       "text": "Caí num golpe e estão usando meus dados para comprar",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s10-3",
+       "text": "Estão usando meus dados, preciso falar com alguém do banco",
+       "true": true,
+       "p": 0.0
+      },
+      {
+       "item_id": "s10-4",
+       "text": "Fui vítima de golpe, quero atendimento humano agora",
+       "true": true,
+       "p": 0.0
+      }
+     ]
+    },
+    "latency_p50_ms": 0.014899997040629387,
+    "latency_p95_ms": 0.025399960577487946,
+    "cost_per_1000_messages_usd": 0.0
+   }
+  ],
+  "llm": [
+   {
+    "model": "llm:openai/gpt-6-luna",
+    "run": 1,
+    "failures": 0,
+    "intent": {
+     "accuracy": 0.96875,
+     "accuracy_ci": [
+      0.9289387218951194,
+      0.9865796812454749
+     ],
+     "macro_f1": 0.966574190836486,
+     "per_class": [
+      {
+       "label": "cargo_no_reconocido",
+       "precision": 1.0,
+       "recall": 0.95,
+       "f1": 0.9743589743589743,
+       "support": 40
+      },
+      {
+       "label": "cobro_indebido",
+       "precision": 1.0,
+       "recall": 1.0,
+       "f1": 1.0,
+       "support": 32
+      },
+      {
+       "label": "consulta_movimiento",
+       "precision": 0.9696969696969697,
+       "recall": 1.0,
+       "f1": 0.9846153846153847,
+       "support": 32
+      },
+      {
+       "label": "otra_queja",
+       "precision": 0.8571428571428571,
+       "recall": 1.0,
+       "f1": 0.923076923076923,
+       "support": 24
+      },
+      {
+       "label": "fuera_de_alcance",
+       "precision": 1.0,
+       "recall": 0.90625,
+       "f1": 0.9508196721311475,
+       "support": 32
+      }
+     ],
+     "ece": 0.05021874999999997,
+     "reliability": [
+      [
+       "0.4-0.6",
+       2,
+       0.555,
+       0.0
+      ],
+      [
+       "0.6-0.8",
+       7,
+       0.7371428571428572,
+       0.8571428571428571
+      ],
+      [
+       "0.8-1.0",
+       151,
+       0.9548013245033111,
+       0.9867549668874173
+      ]
+     ],
+     "confusion": {
+      "cargo_no_reconocido": {
+       "cargo_no_reconocido": 38,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 1,
+       "otra_queja": 1,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "cobro_indebido": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 32,
+       "consulta_movimiento": 0,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "consulta_movimiento": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 32,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "otra_queja": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 24,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "fuera_de_alcance": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 3,
+       "fuera_de_alcance": 29,
+       "none": 0
+      }
+     },
+     "chosen": {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.96875,
+      "decided": 160
+     },
+     "policy": {
+      "threshold": 0.5,
+      "coverage": 1.0,
+      "accuracy": 0.96875,
+      "decided": 160
+     },
+     "curve": [
+      {
+       "threshold": 0.0,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.05,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.1,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.15,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.2,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.25,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.3,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.35,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.4,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.45,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.5,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.55,
+       "coverage": 1.0,
+       "accuracy": 0.96875,
+       "decided": 160
+      },
+      {
+       "threshold": 0.6,
+       "coverage": 0.9875,
+       "accuracy": 0.9810126582278481,
+       "decided": 158
+      },
+      {
+       "threshold": 0.65,
+       "coverage": 0.98125,
+       "accuracy": 0.9872611464968153,
+       "decided": 157
+      },
+      {
+       "threshold": 0.7,
+       "coverage": 0.975,
+       "accuracy": 0.9871794871794872,
+       "decided": 156
+      },
+      {
+       "threshold": 0.75,
+       "coverage": 0.96875,
+       "accuracy": 0.9870967741935484,
+       "decided": 155
+      },
+      {
+       "threshold": 0.8,
+       "coverage": 0.94375,
+       "accuracy": 0.9867549668874173,
+       "decided": 151
+      },
+      {
+       "threshold": 0.85,
+       "coverage": 0.9125,
+       "accuracy": 1.0,
+       "decided": 146
+      },
+      {
+       "threshold": 0.9,
+       "coverage": 0.88125,
+       "accuracy": 1.0,
+       "decided": 141
+      },
+      {
+       "threshold": 0.95,
+       "coverage": 0.70625,
+       "accuracy": 1.0,
+       "decided": 113
+      }
+     ],
+     "by_language": {
+      "es": {
+       "n": 108,
+       "correct": 104,
+       "ci": [
+        0.9086169931912852,
+        0.9855046931937449
+       ],
+       "macro_f1": 0.9624030202107378
+      },
+      "pt": {
+       "n": 44,
+       "correct": 43,
+       "ci": [
+        0.8819202086846235,
+        0.9959768516143629
+       ],
+       "macro_f1": 0.979539641943734
+      },
+      "mixed": {
+       "n": 8,
+       "correct": 8,
+       "ci": [
+        0.6755843804891231,
+        1.0
+       ],
+       "macro_f1": 0.4
+      }
+     },
+     "errors": [
+      {
+       "item_id": "s10-3",
+       "lang": "pt-BR",
+       "text": "Estão usando meus dados, preciso falar com alguém do banco",
+       "true": "cargo_no_reconocido",
+       "pred": "otra_queja",
+       "p": 0.64
+      },
+      {
+       "item_id": "s14-3",
+       "lang": "es-MX",
+       "text": "No necesito un ejecutivo, nada más quiero saber qué es este cobro raro",
+       "true": "cargo_no_reconocido",
+       "pred": "consulta_movimiento",
+       "p": 0.56
+      },
+      {
+       "item_id": "s74-1",
+       "lang": "es-MX",
+       "text": "¿A qué hora abre la sucursal del centro?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.82
+      },
+      {
+       "item_id": "s74-3",
+       "lang": "es-MX",
+       "text": "¿La sucursal abre los sábados?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.83
+      },
+      {
+       "item_id": "s74-4",
+       "lang": "es-MX",
+       "text": "¿Cuál es el horario de atención en ventanilla?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.55
+      }
+     ]
+    },
+    "human": {
+     "chosen_threshold": 0.95,
+     "valid_range": [
+      0.05,
+      0.95
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.95,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "positives": 28,
+      "tp": 28,
+      "recall_ci": [
+       0.8793527963418923,
+       1.0
+      ]
+     },
+     "policy": {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "positives": 28,
+      "tp": 28,
+      "recall_ci": [
+       0.8793527963418923,
+       1.0
+      ]
+     },
+     "ece": 0.008637500000000076,
+     "errors": []
+    },
+    "theft": {
+     "chosen_threshold": 0.8,
+     "valid_range": [
+      0.05,
+      0.8
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.8,
+      "precision": 1.0,
+      "recall": 0.9375,
+      "f1": 0.967741935483871,
+      "positives": 16,
+      "tp": 15,
+      "recall_ci": [
+       0.7167073163197013,
+       0.9888809426916687
+      ]
+     },
+     "policy": {
+      "threshold": 0.3,
+      "precision": 0.6956521739130435,
+      "recall": 1.0,
+      "f1": 0.8205128205128205,
+      "positives": 16,
+      "tp": 16,
+      "recall_ci": [
+       0.8063865817272802,
+       1.0
+      ]
+     },
+     "ece": 0.020581249999999926,
+     "errors": [
+      {
+       "item_id": "s02-1",
+       "text": "Parce, me aparece una compra en la tarjeta que yo no hice",
+       "true": false,
+       "p": 0.7
+      },
+      {
+       "item_id": "s02-3",
+       "text": "Me sale un débito de 80.000 que no es mío",
+       "true": false,
+       "p": 0.3
+      },
+      {
+       "item_id": "s02-4",
+       "text": "No sé qué es esa compra que me aparece del martes, yo no fui",
+       "true": false,
+       "p": 0.72
+      },
+      {
+       "item_id": "s12-1",
+       "text": "Oi, tengo una compra no cartão que eu não fiz",
+       "true": false,
+       "p": 0.72
+      },
+      {
+       "item_id": "s12-3",
+       "text": "Me aparece uma cobrança que yo no hice",
+       "true": false,
+       "p": 0.3
+      },
+      {
+       "item_id": "s12-4",
+       "text": "Hay un débito estranho que não é meu",
+       "true": false,
+       "p": 0.35
+      },
+      {
+       "item_id": "s20-3",
+       "text": "Me aparece una compra que no es mía, necesito un asesor",
+       "true": false,
+       "p": 0.68
+      }
+     ]
+    },
+    "latency_p50_ms": 2010.3776500327513,
+    "latency_p95_ms": 3115.7416000496596,
+    "cost_per_1000_messages_usd": 0.12295312499999998
+   },
+   {
+    "model": "llm:openai/gpt-6-luna",
+    "run": 2,
+    "failures": 0,
+    "intent": {
+     "accuracy": 0.975,
+     "accuracy_ci": [
+      0.9374891497798977,
+      0.990236165402571
+     ],
+     "macro_f1": 0.973005235849614,
+     "per_class": [
+      {
+       "label": "cargo_no_reconocido",
+       "precision": 1.0,
+       "recall": 0.975,
+       "f1": 0.9873417721518987,
+       "support": 40
+      },
+      {
+       "label": "cobro_indebido",
+       "precision": 1.0,
+       "recall": 1.0,
+       "f1": 1.0,
+       "support": 32
+      },
+      {
+       "label": "consulta_movimiento",
+       "precision": 1.0,
+       "recall": 0.96875,
+       "f1": 0.9841269841269841,
+       "support": 32
+      },
+      {
+       "label": "otra_queja",
+       "precision": 0.8888888888888888,
+       "recall": 1.0,
+       "f1": 0.9411764705882353,
+       "support": 24
+      },
+      {
+       "label": "fuera_de_alcance",
+       "precision": 0.967741935483871,
+       "recall": 0.9375,
+       "f1": 0.9523809523809523,
+       "support": 32
+      }
+     ],
+     "ece": 0.05456249999999996,
+     "reliability": [
+      [
+       "0.4-0.6",
+       1,
+       0.6,
+       1.0
+      ],
+      [
+       "0.6-0.8",
+       8,
+       0.73375,
+       0.5
+      ],
+      [
+       "0.8-1.0",
+       151,
+       0.9572185430463576,
+       1.0
+      ]
+     ],
+     "confusion": {
+      "cargo_no_reconocido": {
+       "cargo_no_reconocido": 39,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 1,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "cobro_indebido": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 32,
+       "consulta_movimiento": 0,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "consulta_movimiento": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 31,
+       "otra_queja": 0,
+       "fuera_de_alcance": 1,
+       "none": 0
+      },
+      "otra_queja": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 24,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "fuera_de_alcance": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 2,
+       "fuera_de_alcance": 30,
+       "none": 0
+      }
+     },
+     "chosen": {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.975,
+      "decided": 160
+     },
+     "policy": {
+      "threshold": 0.5,
+      "coverage": 1.0,
+      "accuracy": 0.975,
+      "decided": 160
+     },
+     "curve": [
+      {
+       "threshold": 0.0,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.05,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.1,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.15,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.2,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.25,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.3,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.35,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.4,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.45,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.5,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.55,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.6,
+       "coverage": 1.0,
+       "accuracy": 0.975,
+       "decided": 160
+      },
+      {
+       "threshold": 0.65,
+       "coverage": 0.99375,
+       "accuracy": 0.9748427672955975,
+       "decided": 159
+      },
+      {
+       "threshold": 0.7,
+       "coverage": 0.975,
+       "accuracy": 0.9807692307692307,
+       "decided": 156
+      },
+      {
+       "threshold": 0.75,
+       "coverage": 0.975,
+       "accuracy": 0.9807692307692307,
+       "decided": 156
+      },
+      {
+       "threshold": 0.8,
+       "coverage": 0.94375,
+       "accuracy": 1.0,
+       "decided": 151
+      },
+      {
+       "threshold": 0.85,
+       "coverage": 0.9375,
+       "accuracy": 1.0,
+       "decided": 150
+      },
+      {
+       "threshold": 0.9,
+       "coverage": 0.875,
+       "accuracy": 1.0,
+       "decided": 140
+      },
+      {
+       "threshold": 0.95,
+       "coverage": 0.7,
+       "accuracy": 1.0,
+       "decided": 112
+      }
+     ],
+     "by_language": {
+      "es": {
+       "n": 108,
+       "correct": 105,
+       "ci": [
+        0.9214952880548753,
+        0.9905088320578553
+       ],
+       "macro_f1": 0.972197998080351
+      },
+      "pt": {
+       "n": 44,
+       "correct": 43,
+       "ci": [
+        0.8819202086846235,
+        0.9959768516143629
+       ],
+       "macro_f1": 0.979539641943734
+      },
+      "mixed": {
+       "n": 8,
+       "correct": 8,
+       "ci": [
+        0.6755843804891231,
+        1.0
+       ],
+       "macro_f1": 0.4
+      }
+     },
+     "errors": [
+      {
+       "item_id": "s10-3",
+       "lang": "pt-BR",
+       "text": "Estão usando meus dados, preciso falar com alguém do banco",
+       "true": "cargo_no_reconocido",
+       "pred": "otra_queja",
+       "p": 0.78
+      },
+      {
+       "item_id": "s37-4",
+       "lang": "es-MX",
+       "text": "¿Cuánto me queda disponible para gastar?",
+       "true": "consulta_movimiento",
+       "pred": "fuera_de_alcance",
+       "p": 0.69
+      },
+      {
+       "item_id": "s74-1",
+       "lang": "es-MX",
+       "text": "¿A qué hora abre la sucursal del centro?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.75
+      },
+      {
+       "item_id": "s74-3",
+       "lang": "es-MX",
+       "text": "¿La sucursal abre los sábados?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.76
+      }
+     ]
+    },
+    "human": {
+     "chosen_threshold": 0.95,
+     "valid_range": [
+      0.05,
+      0.95
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.95,
+      "precision": 1.0,
+      "recall": 0.9642857142857143,
+      "f1": 0.9818181818181818,
+      "positives": 28,
+      "tp": 27,
+      "recall_ci": [
+       0.8228742388150135,
+       0.9936676435024582
+      ]
+     },
+     "policy": {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "positives": 28,
+      "tp": 28,
+      "recall_ci": [
+       0.8793527963418923,
+       1.0
+      ]
+     },
+     "ece": 0.01000000000000002,
+     "errors": []
+    },
+    "theft": {
+     "chosen_threshold": 0.8,
+     "valid_range": [
+      0.05,
+      0.8
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.8,
+      "precision": 0.9375,
+      "recall": 0.9375,
+      "f1": 0.9375,
+      "positives": 16,
+      "tp": 15,
+      "recall_ci": [
+       0.7167073163197013,
+       0.9888809426916687
+      ]
+     },
+     "policy": {
+      "threshold": 0.3,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.888888888888889,
+      "positives": 16,
+      "tp": 16,
+      "recall_ci": [
+       0.8063865817272802,
+       1.0
+      ]
+     },
+     "ece": 0.024387500000000038,
+     "errors": [
+      {
+       "item_id": "s02-1",
+       "text": "Parce, me aparece una compra en la tarjeta que yo no hice",
+       "true": false,
+       "p": 0.9
+      },
+      {
+       "item_id": "s02-4",
+       "text": "No sé qué es esa compra que me aparece del martes, yo no fui",
+       "true": false,
+       "p": 0.72
+      },
+      {
+       "item_id": "s12-4",
+       "text": "Hay un débito estranho que não é meu",
+       "true": false,
+       "p": 0.65
+      },
+      {
+       "item_id": "s20-3",
+       "text": "Me aparece una compra que no es mía, necesito un asesor",
+       "true": false,
+       "p": 0.7
+      }
+     ]
+    },
+    "latency_p50_ms": 2117.35410001711,
+    "latency_p95_ms": 3112.555599946063,
+    "cost_per_1000_messages_usd": 0.12205937500000001
+   },
+   {
+    "model": "llm:openai/gpt-6-luna",
+    "run": 3,
+    "failures": 0,
+    "intent": {
+     "accuracy": 0.98125,
+     "accuracy_ci": [
+      0.9463289621260206,
+      0.9936032650983228
+     ],
+     "macro_f1": 0.979252035644801,
+     "per_class": [
+      {
+       "label": "cargo_no_reconocido",
+       "precision": 1.0,
+       "recall": 0.975,
+       "f1": 0.9873417721518987,
+       "support": 40
+      },
+      {
+       "label": "cobro_indebido",
+       "precision": 1.0,
+       "recall": 1.0,
+       "f1": 1.0,
+       "support": 32
+      },
+      {
+       "label": "consulta_movimiento",
+       "precision": 1.0,
+       "recall": 1.0,
+       "f1": 1.0,
+       "support": 32
+      },
+      {
+       "label": "otra_queja",
+       "precision": 0.8888888888888888,
+       "recall": 1.0,
+       "f1": 0.9411764705882353,
+       "support": 24
+      },
+      {
+       "label": "fuera_de_alcance",
+       "precision": 1.0,
+       "recall": 0.9375,
+       "f1": 0.967741935483871,
+       "support": 32
+      }
+     ],
+     "ece": 0.03486874999999999,
+     "reliability": [
+      [
+       "0.6-0.8",
+       6,
+       0.7200000000000001,
+       0.8333333333333334
+      ],
+      [
+       "0.8-1.0",
+       154,
+       0.9552012987012987,
+       0.987012987012987
+      ]
+     ],
+     "confusion": {
+      "cargo_no_reconocido": {
+       "cargo_no_reconocido": 39,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 1,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "cobro_indebido": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 32,
+       "consulta_movimiento": 0,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "consulta_movimiento": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 32,
+       "otra_queja": 0,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "otra_queja": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 24,
+       "fuera_de_alcance": 0,
+       "none": 0
+      },
+      "fuera_de_alcance": {
+       "cargo_no_reconocido": 0,
+       "cobro_indebido": 0,
+       "consulta_movimiento": 0,
+       "otra_queja": 2,
+       "fuera_de_alcance": 30,
+       "none": 0
+      }
+     },
+     "chosen": {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.98125,
+      "decided": 160
+     },
+     "policy": {
+      "threshold": 0.5,
+      "coverage": 1.0,
+      "accuracy": 0.98125,
+      "decided": 160
+     },
+     "curve": [
+      {
+       "threshold": 0.0,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.05,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.1,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.15,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.2,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.25,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.3,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.35,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.4,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.45,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.5,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.55,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.6,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.65,
+       "coverage": 1.0,
+       "accuracy": 0.98125,
+       "decided": 160
+      },
+      {
+       "threshold": 0.7,
+       "coverage": 0.98125,
+       "accuracy": 0.9872611464968153,
+       "decided": 157
+      },
+      {
+       "threshold": 0.75,
+       "coverage": 0.98125,
+       "accuracy": 0.9872611464968153,
+       "decided": 157
+      },
+      {
+       "threshold": 0.8,
+       "coverage": 0.9625,
+       "accuracy": 0.987012987012987,
+       "decided": 154
+      },
+      {
+       "threshold": 0.85,
+       "coverage": 0.9375,
+       "accuracy": 0.9866666666666667,
+       "decided": 150
+      },
+      {
+       "threshold": 0.9,
+       "coverage": 0.9125,
+       "accuracy": 0.9931506849315068,
+       "decided": 146
+      },
+      {
+       "threshold": 0.95,
+       "coverage": 0.70625,
+       "accuracy": 1.0,
+       "decided": 113
+      }
+     ],
+     "by_language": {
+      "es": {
+       "n": 108,
+       "correct": 106,
+       "ci": [
+        0.9349796714470743,
+        0.9949068823933572
+       ],
+       "macro_f1": 0.9808278867102397
+      },
+      "pt": {
+       "n": 44,
+       "correct": 43,
+       "ci": [
+        0.8819202086846235,
+        0.9959768516143629
+       ],
+       "macro_f1": 0.979539641943734
+      },
+      "mixed": {
+       "n": 8,
+       "correct": 8,
+       "ci": [
+        0.6755843804891231,
+        1.0
+       ],
+       "macro_f1": 0.4
+      }
+     },
+     "errors": [
+      {
+       "item_id": "s10-3",
+       "lang": "pt-BR",
+       "text": "Estão usando meus dados, preciso falar com alguém do banco",
+       "true": "cargo_no_reconocido",
+       "pred": "otra_queja",
+       "p": 0.65
+      },
+      {
+       "item_id": "s74-1",
+       "lang": "es-MX",
+       "text": "¿A qué hora abre la sucursal del centro?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.94
+      },
+      {
+       "item_id": "s74-3",
+       "lang": "es-MX",
+       "text": "¿La sucursal abre los sábados?",
+       "true": "fuera_de_alcance",
+       "pred": "otra_queja",
+       "p": 0.88
+      }
+     ]
+    },
+    "human": {
+     "chosen_threshold": 0.95,
+     "valid_range": [
+      0.05,
+      0.95
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.95,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "positives": 28,
+      "tp": 28,
+      "recall_ci": [
+       0.8793527963418923,
+       1.0
+      ]
+     },
+     "policy": {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "positives": 28,
+      "tp": 28,
+      "recall_ci": [
+       0.8793527963418923,
+       1.0
+      ]
+     },
+     "ece": 0.008593749999999956,
+     "errors": []
+    },
+    "theft": {
+     "chosen_threshold": 0.6,
+     "valid_range": [
+      0.05,
+      0.6
+     ],
+     "policy_in_range": true,
+     "chosen": {
+      "threshold": 0.6,
+      "precision": 0.7894736842105263,
+      "recall": 0.9375,
+      "f1": 0.8571428571428572,
+      "positives": 16,
+      "tp": 15,
+      "recall_ci": [
+       0.7167073163197013,
+       0.9888809426916687
+      ]
+     },
+     "policy": {
+      "threshold": 0.3,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.888888888888889,
+      "positives": 16,
+      "tp": 16,
+      "recall_ci": [
+       0.8063865817272802,
+       1.0
+      ]
+     },
+     "ece": 0.03472500000000002,
+     "errors": [
+      {
+       "item_id": "s02-4",
+       "text": "No sé qué es esa compra que me aparece del martes, yo no fui",
+       "true": false,
+       "p": 0.88
+      },
+      {
+       "item_id": "s12-1",
+       "text": "Oi, tengo una compra no cartão que eu não fiz",
+       "true": false,
+       "p": 0.85
+      },
+      {
+       "item_id": "s20-1",
+       "text": "Hay un consumo que no hice, quiero hablar con alguien del banco",
+       "true": false,
+       "p": 0.65
+      },
+      {
+       "item_id": "s20-3",
+       "text": "Me aparece una compra que no es mía, necesito un asesor",
+       "true": false,
+       "p": 0.87
+      }
+     ]
+    },
+    "latency_p50_ms": 2093.398349999916,
+    "latency_p95_ms": 4081.45220001461,
+    "cost_per_1000_messages_usd": 0.121371875
+   }
+  ]
+ }
+}

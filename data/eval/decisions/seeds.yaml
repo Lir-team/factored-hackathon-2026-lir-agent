@@ -1,0 +1,823 @@
+# Labeled set for the typed decisions D1-D3 (EVAL-01). HELD-OUT: never tune prompts, keywords or
+# models on it (data/AGENTS.md rule 5); only thresholds are chosen, on the validation split.
+#
+# Provenance: team-generated synthetic text (written for this evaluation, not customer data,
+# not taken from the dataset, whose texts are templates: insights.md §5). Labels follow the
+# question definitions in app/decision-layer/src/decision_layer/questions.py:
+#   intent  D1  cargo_no_reconocido | cobro_indebido | consulta_movimiento | otra_queja | fuera_de_alcance
+#   human   D2  the customer explicitly asks for a person
+#   theft   D3  the customer says or suggests their card or data were stolen or used by others
+# Every seed is one situation; its texts are paraphrases with the same labels. The split is by
+# seed, so paraphrases never leak between validation and test.
+# Hard cases on purpose: negations ("no quiero hablar con nadie"), figurative theft ("me están
+# robando con la comisión"), slang (MX, CO, AR, BR) and portuñol.
+
+# ---- cargo_no_reconocido ----------------------------------------------------------------
+- id: s01
+  lang: es-MX
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Me salió un cargo de una tienda que no conozco, yo no compré nada ahí"
+    - "Hay una compra en mi tarjeta que no hice, no sé qué es"
+    - "No reconozco un cobro que aparece en mi estado de cuenta"
+    - "Veo un cargo raro de 450 pesos, neta no sé de dónde salió"
+- id: s02
+  lang: es-CO
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Parce, me aparece una compra en la tarjeta que yo no hice"
+    - "Tengo un cobro en la cuenta que no reconozco, de un comercio que no sé cuál es"
+    - "Me sale un débito de 80.000 que no es mío"
+    - "No sé qué es esa compra que me aparece del martes, yo no fui"
+- id: s03
+  lang: es-AR
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Che, me figura un consumo en la tarjeta que no hice"
+    - "Hay un cargo en el resumen que no reconozco para nada"
+    - "Me aparece una compra en un comercio que ni sé dónde queda"
+    - "No tengo idea de qué es este consumo de 12.000 pesos"
+- id: s04
+  lang: pt-BR
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Apareceu uma compra no meu cartão que eu não fiz"
+    - "Não reconheço essa cobrança na minha fatura"
+    - "Tem um débito estranho na conta, não sei de onde veio"
+    - "Vi uma compra de 230 reais que não é minha"
+- id: s05
+  lang: es-MX
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Creo que me clonaron la tarjeta, hay compras que no hice"
+    - "Me robaron la cartera y ahora veo cargos que no son míos"
+    - "Alguien está usando mi tarjeta, aparecen compras en otra ciudad"
+    - "Me hackearon, hay cargos en internet que yo no hice"
+- id: s06
+  lang: es-CO
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Me robaron el celular y aparecieron compras con mi tarjeta"
+    - "Me clonaron la tarjeta, hay varias compras que no reconozco"
+    - "Alguien sacó mis datos y está comprando a mi nombre"
+    - "Me atracaron ayer y hoy veo compras que no hice"
+- id: s07
+  lang: es-AR
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Me afanaron la billetera y ya hay consumos con mi tarjeta"
+    - "Me clonaron la tarjeta, tengo compras en el exterior que no hice"
+    - "Alguien me robó los datos y hay cargos que no son míos"
+    - "Me hackearon el homebanking y aparecen consumos raros"
+- id: s08
+  lang: pt-BR
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Acho que clonaram meu cartão, tem compras que não fiz"
+    - "Roubaram minha carteira e já apareceram compras no cartão"
+    - "Caí num golpe e estão usando meus dados para comprar"
+    - "Hackearam minha conta e tem débitos que não reconheço"
+- id: s09
+  lang: es-MX
+  intent: cargo_no_reconocido
+  human: true
+  theft: true
+  texts:
+    - "Me clonaron la tarjeta, quiero hablar con un asesor ya"
+    - "Me robaron la tarjeta y hay compras, pásenme con una persona por favor"
+    - "Alguien está usando mi tarjeta, necesito que me atienda un humano"
+    - "Hay cargos de un fraude, comuníquenme con un ejecutivo"
+- id: s10
+  lang: pt-BR
+  intent: cargo_no_reconocido
+  human: true
+  theft: true
+  texts:
+    - "Clonaram meu cartão, quero falar com um atendente"
+    - "Roubaram meu cartão e tem compras, me passa para uma pessoa"
+    - "Estão usando meus dados, preciso falar com alguém do banco"
+    - "Fui vítima de golpe, quero atendimento humano agora"
+- id: s11
+  lang: es-CO
+  intent: cargo_no_reconocido
+  human: true
+  theft: false
+  texts:
+    - "No reconozco una compra y prefiero hablar con un asesor"
+    - "Me aparece un cobro que no hice, quiero que me atienda una persona"
+    - "Hay un débito que no es mío, comuníqueme con alguien por favor"
+    - "No sé qué es este cargo, quiero hablar con un humano"
+- id: s12
+  lang: mixed
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Oi, tengo una compra no cartão que eu não fiz"
+    - "Não reconheço un cargo de 300 que aparece en mi conta"
+    - "Me aparece uma cobrança que yo no hice"
+    - "Hay un débito estranho que não é meu"
+- id: s13
+  lang: mixed
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Me roubaron el cartão y hay compras raras"
+    - "Clonaram mi tarjeta, tengo compras que no hice"
+    - "Alguien usó meu cartão sem permissão"
+    - "Fui assaltado y ya usaron mi tarjeta"
+- id: s14
+  lang: es-MX
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "No quiero hablar con nadie, solo díganme qué es este cargo que no reconozco"
+    - "Sin pasarme con un asesor por favor: no sé qué es esta compra"
+    - "No necesito un ejecutivo, nada más quiero saber qué es este cobro raro"
+    - "Ahorita no quiero que me llame nadie, solo explíquenme este cargo que no hice"
+- id: s15
+  lang: pt-BR
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Não precisa me passar para atendente, só quero saber que compra é essa que eu não fiz"
+    - "Sem falar com ninguém, por favor: não reconheço esse débito"
+    - "Não quero ligação, só me expliquem essa cobrança desconhecida"
+    - "Não preciso de pessoa, só quero entender essa compra estranha"
+- id: s16
+  lang: es-AR
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Me llegó una notificación de una compra que no hice recién"
+    - "Me avisaron por SMS de un consumo que yo no realicé"
+    - "Me llegó un aviso de compra en una web que no uso"
+    - "Recibí una alerta de consumo que no es mío"
+- id: s17
+  lang: es-CO
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron una suscripción de una app que nunca contraté"
+    - "Aparece un cobro mensual de un servicio que no conozco"
+    - "Tengo un débito automático de algo que yo no autoricé"
+    - "Me están cobrando una membresía que nunca pedí"
+- id: s18
+  lang: pt-BR
+  intent: cargo_no_reconocido
+  human: false
+  theft: false
+  texts:
+    - "Tem uma assinatura cobrando no meu cartão que eu nunca fiz"
+    - "Estão debitando um serviço que eu não contratei"
+    - "Aparece uma cobrança mensal de um app que eu não conheço"
+    - "Me cobraram uma mensalidade que eu nunca autorizei"
+- id: s19
+  lang: es-MX
+  intent: cargo_no_reconocido
+  human: false
+  theft: true
+  texts:
+    - "Perdí mi tarjeta el fin de semana y ya hay compras"
+    - "Se me cayó la tarjeta y alguien la está usando"
+    - "Extravié mi tarjeta y aparecieron cargos que no hice"
+    - "No encuentro mi tarjeta y veo compras de hoy que no son mías"
+- id: s20
+  lang: es-AR
+  intent: cargo_no_reconocido
+  human: true
+  theft: false
+  texts:
+    - "Hay un consumo que no hice, quiero hablar con alguien del banco"
+    - "No reconozco un cargo, pasame con un operador"
+    - "Me aparece una compra que no es mía, necesito un asesor"
+    - "Quiero que me atienda una persona por un consumo que no reconozco"
+
+# ---- cobro_indebido ----------------------------------------------------------------------
+- id: s21
+  lang: es-MX
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron dos veces la misma compra en el Oxxo"
+    - "Pagué una vez pero me salen dos cargos iguales"
+    - "Se duplicó el cobro de mi compra de ayer"
+    - "Me cargaron doble la misma compra en el súper"
+- id: s22
+  lang: es-CO
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron una comisión que no me corresponde"
+    - "Me aparece un cobro de cuota de manejo que no debería pagar"
+    - "Me descontaron una comisión por retiro que no es justa"
+    - "No entiendo por qué me cobraron esa tarifa"
+- id: s23
+  lang: es-AR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Compré algo de 5.000 y me cobraron 50.000"
+    - "El monto que me debitaron no es el que pagué"
+    - "Me cobraron de más en una compra que sí hice"
+    - "La compra está bien pero el importe está mal"
+- id: s24
+  lang: pt-BR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Fui cobrado duas vezes pela mesma compra"
+    - "A mesma corrida do Uber apareceu duplicada"
+    - "Paguei uma vez só, mas a cobrança veio em dobro"
+    - "Debitaram duas vezes o mesmo valor"
+- id: s25
+  lang: pt-BR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Cobraram uma tarifa que não deveriam cobrar"
+    - "Veio uma taxa de anuidade que eu não devia pagar"
+    - "Me cobraram juros indevidos na fatura"
+    - "O valor da compra está certo, mas cobraram uma taxa a mais"
+- id: s26
+  lang: es-MX
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me están robando con esa comisión por anualidad"
+    - "Esto es un robo, me cobraron comisión por consultar saldo"
+    - "Qué robo la comisión que me cargaron por el retiro"
+    - "Me roban con los intereses que me cobraron este mes"
+- id: s27
+  lang: es-CO
+  intent: cobro_indebido
+  human: true
+  theft: false
+  texts:
+    - "Me cobraron doble una compra, quiero hablar con un asesor"
+    - "Me descontaron una comisión injusta, pásenme con una persona"
+    - "El cobro está mal, necesito que me atienda alguien"
+    - "Me cobraron de más y quiero hablar con un humano"
+- id: s28
+  lang: es-AR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me debitaron el mantenimiento de la cuenta y la tenía bonificada"
+    - "Me cobraron un cargo de mantenimiento que no corresponde"
+    - "Me sacaron plata por un seguro que di de baja"
+    - "Me siguen cobrando un seguro que cancelé"
+- id: s29
+  lang: mixed
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron duas vezes o mismo valor"
+    - "Hay una taxa que não deveria estar en mi fatura"
+    - "Pagué una vez pero cobraram em dobro"
+    - "O valor está mal, me cobraron de más"
+- id: s30
+  lang: pt-BR
+  intent: cobro_indebido
+  human: true
+  theft: false
+  texts:
+    - "Cobraram em dobro, quero falar com um atendente"
+    - "Essa taxa é indevida, me passa para uma pessoa"
+    - "O valor veio errado, preciso de atendimento humano"
+    - "Cobraram a mais e quero falar com alguém"
+- id: s31
+  lang: es-MX
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Cancelé la compra pero igual me la cobraron"
+    - "Devolví el producto y no me han regresado el dinero, me siguen cobrando"
+    - "La tienda canceló el pedido y el cargo sigue ahí"
+    - "Me cobraron una compra que ya había cancelado"
+- id: s32
+  lang: es-CO
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron intereses aunque pagué el total a tiempo"
+    - "Pagué la tarjeta completa y aun así me cobraron intereses"
+    - "Me aparece un cobro de mora pero pagué antes de la fecha"
+    - "Me pusieron un recargo por pago tardío y pagué a tiempo"
+- id: s33
+  lang: pt-BR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Cancelei a compra e mesmo assim fui cobrado"
+    - "Devolvi o produto e a cobrança continua"
+    - "A loja cancelou o pedido mas o débito continua aí"
+    - "Paguei a fatura em dia e cobraram juros de atraso"
+- id: s34
+  lang: es-AR
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron el dólar a otra cotización, me cobraron de más"
+    - "La compra en el exterior me la cobraron más cara de lo que era"
+    - "Me aplicaron un impuesto dos veces en la compra en dólares"
+    - "El tipo de cambio que me cobraron está mal"
+- id: s35
+  lang: es-MX
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron comisión por un retiro en mi propio banco"
+    - "Por qué me cobran por sacar dinero del cajero del banco si es gratis"
+    - "Me aplicaron una comisión por saldo mínimo y sí tenía el saldo"
+    - "Me cobraron una penalización que no corresponde"
+- id: s36
+  lang: es-CO
+  intent: cobro_indebido
+  human: false
+  theft: false
+  texts:
+    - "Me cobraron el seguro dos veces este mes"
+    - "Me está saliendo doble la cuota de manejo"
+    - "Me descontaron dos veces la misma transferencia"
+    - "La misma compra aparece dos veces en el extracto"
+
+# ---- consulta_movimiento -----------------------------------------------------------------
+- id: s37
+  lang: es-MX
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Cuál es mi saldo disponible?"
+    - "Quiero saber cuánto tengo en la cuenta"
+    - "¿Me dices mi saldo de la tarjeta?"
+    - "¿Cuánto me queda disponible para gastar?"
+- id: s38
+  lang: es-CO
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Ya se acreditó la transferencia que me hicieron?"
+    - "¿Cuándo se ve reflejado el pago que hice ayer?"
+    - "Quiero saber si ya entró la plata de mi nómina"
+    - "¿Ya me llegó el abono que esperaba?"
+- id: s39
+  lang: es-AR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Me podés mostrar los últimos movimientos de la cuenta?"
+    - "Quiero ver los consumos de esta semana"
+    - "¿Qué movimientos tuve en el último mes?"
+    - "Pasame el detalle de los gastos de la tarjeta"
+- id: s40
+  lang: pt-BR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "Qual é o meu saldo?"
+    - "Quero ver o extrato da semana"
+    - "O pix que mandei já caiu na outra conta?"
+    - "Quando cai o pagamento do boleto que paguei?"
+- id: s41
+  lang: es-MX
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Ya se aplicó el pago de mi tarjeta?"
+    - "Hice el pago de la tarjeta, ¿ya se ve?"
+    - "¿Cuándo vence el pago de mi tarjeta?"
+    - "¿Cuánto debo pagar este mes de la tarjeta?"
+- id: s42
+  lang: es-CO
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "La compra en la tienda aparece pendiente, ¿cuándo se confirma?"
+    - "¿Por qué un movimiento sale como pendiente?"
+    - "Tengo una compra en proceso, ¿qué significa?"
+    - "¿Cuánto tarda en salir de pendiente una compra?"
+- id: s43
+  lang: pt-BR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "A compra aparece como pendente, quando confirma?"
+    - "Por que esse lançamento está em processamento?"
+    - "Quanto tempo demora para uma compra sair de pendente?"
+    - "O estorno da loja já entrou na fatura?"
+- id: s44
+  lang: es-AR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Ya entró la devolución que me hizo la tienda?"
+    - "¿Cuándo me acreditan el reintegro de la compra cancelada?"
+    - "Quiero saber si me devolvieron la plata del pedido"
+    - "¿Se reflejó el reembolso en mi cuenta?"
+- id: s45
+  lang: es-MX
+  intent: consulta_movimiento
+  human: true
+  theft: false
+  texts:
+    - "Quiero saber mi saldo, ¿me comunicas con un asesor?"
+    - "¿Me pasas con una persona para revisar mis movimientos?"
+    - "Prefiero que un ejecutivo me diga si ya entró mi depósito"
+    - "Quiero hablar con alguien para consultar un movimiento"
+- id: s46
+  lang: mixed
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "Qual es mi saldo disponível?"
+    - "Quero ver mis movimientos de la semana"
+    - "¿El pix que mandé ya caiu?"
+    - "Quanto tengo en la conta?"
+- id: s47
+  lang: pt-BR
+  intent: consulta_movimiento
+  human: true
+  theft: false
+  texts:
+    - "Quero falar com um atendente sobre meu extrato"
+    - "Me passa para alguém para ver se o pagamento caiu"
+    - "Prefiro que uma pessoa me explique meus lançamentos"
+    - "Quero atendimento humano para ver meu saldo"
+- id: s48
+  lang: es-CO
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Qué es este movimiento de Netflix? Creo que es mi suscripción, solo quiero confirmar"
+    - "Me salió un cargo de Spotify, ¿es la mensualidad normal?"
+    - "Veo un cobro de Uber, ¿es el viaje del sábado?"
+    - "¿Este cargo de Rappi es el pedido que hice anoche?"
+- id: s49
+  lang: es-AR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿Cuándo cierra el resumen de la tarjeta?"
+    - "¿Qué fecha vence el resumen de este mes?"
+    - "Quiero saber el saldo del resumen"
+    - "¿Cuánto es el pago mínimo de la tarjeta?"
+- id: s50
+  lang: pt-BR
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "Essa compra da Amazon é o pedido que eu fiz? Só quero confirmar"
+    - "O débito do iFood é do pedido de ontem?"
+    - "Esse lançamento da Netflix é minha assinatura normal?"
+    - "Só quero confirmar se essa cobrança do Uber é da minha corrida"
+- id: s51
+  lang: es-MX
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "¿En cuánto tiempo llega una transferencia SPEI?"
+    - "Mandé una transferencia, ¿cuándo la recibe la otra persona?"
+    - "¿Ya salió la transferencia que hice hace rato?"
+    - "¿Por qué no aparece todavía mi transferencia?"
+- id: s52
+  lang: es-CO
+  intent: consulta_movimiento
+  human: false
+  theft: false
+  texts:
+    - "Quiero saber cuánto gasté este mes con la tarjeta"
+    - "¿Cuánto llevo gastado en el mes?"
+    - "¿Me dices los gastos de la tarjeta de crédito?"
+    - "Quiero un resumen de mis compras del mes"
+
+# ---- otra_queja --------------------------------------------------------------------------
+- id: s53
+  lang: es-MX
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "La atención en la sucursal fue pésima"
+    - "Me trataron muy mal en la sucursal de Insurgentes"
+    - "Esperé dos horas en el banco y nadie me atendió"
+    - "El cajero de la sucursal fue grosero conmigo"
+- id: s54
+  lang: es-CO
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "La app no me deja entrar desde ayer"
+    - "La aplicación se cierra cada vez que quiero pagar"
+    - "No puedo hacer transferencias desde la app, sale error"
+    - "La app está lentísima y no carga los movimientos"
+- id: s55
+  lang: es-AR
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "El homebanking anda pésimo, no puedo entrar"
+    - "La app del banco no funciona hace días"
+    - "Me rebota el login del homebanking todo el tiempo"
+    - "No me llega el código para entrar a la app"
+- id: s56
+  lang: pt-BR
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "O aplicativo não abre de jeito nenhum"
+    - "O app trava toda vez que tento fazer um pix"
+    - "O atendimento na agência foi péssimo"
+    - "Fiquei uma hora na fila da agência e ninguém me atendeu"
+- id: s57
+  lang: es-MX
+  intent: otra_queja
+  human: true
+  theft: false
+  texts:
+    - "Me atendieron fatal en la sucursal, quiero hablar con un supervisor"
+    - "Quiero poner una queja con una persona por cómo me trataron"
+    - "Pásenme con un gerente, la atención fue horrible"
+    - "Quiero hablar con alguien sobre el mal servicio que recibí"
+- id: s58
+  lang: pt-BR
+  intent: otra_queja
+  human: true
+  theft: false
+  texts:
+    - "O app não funciona, quero falar com um atendente"
+    - "Fui mal atendido na agência, me passa para uma pessoa"
+    - "Quero reclamar com alguém do atendimento"
+    - "Preciso falar com um humano sobre o problema no aplicativo"
+- id: s59
+  lang: es-CO
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "El cajero automático estaba dañado y no pude retirar"
+    - "Los cajeros de la sucursal nunca tienen plata"
+    - "El cajero se tragó mi tarjeta"
+    - "Fui al cajero y estaba fuera de servicio otra vez"
+- id: s60
+  lang: es-AR
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "Me llaman todo el tiempo para venderme seguros, quiero que dejen de molestar"
+    - "No paran de mandarme publicidad del banco"
+    - "Estoy harto de las llamadas comerciales del banco"
+    - "Me llegan mails de promociones que nunca pedí"
+- id: s61
+  lang: mixed
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "O app no funciona desde ayer"
+    - "La atención na agência fue horrível"
+    - "No consigo entrar no aplicativo"
+    - "El aplicativo trava cuando quero pagar"
+- id: s62
+  lang: es-MX
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "El chat del banco nunca contesta"
+    - "Llamé tres veces y me colgaron"
+    - "La línea de atención siempre está saturada"
+    - "Me dejaron en espera media hora y luego se cortó"
+- id: s63
+  lang: es-CO
+  intent: otra_queja
+  human: true
+  theft: false
+  texts:
+    - "La app no sirve, comuníquenme con una persona"
+    - "Quiero hablar con un asesor porque el cajero se tragó mi tarjeta"
+    - "Necesito que me atienda alguien, la sucursal me trató mal"
+    - "Pásame con un humano, la aplicación no deja entrar"
+- id: s64
+  lang: pt-BR
+  intent: otra_queja
+  human: false
+  theft: false
+  texts:
+    - "O caixa eletrônico engoliu meu cartão"
+    - "Liguei várias vezes e ninguém resolveu"
+    - "O chat do banco nunca responde"
+    - "Não aguento mais as ligações oferecendo seguro"
+
+# ---- fuera_de_alcance --------------------------------------------------------------------
+- id: s65
+  lang: es-MX
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quiero un aumento de límite de crédito"
+    - "¿Me pueden subir el límite de la tarjeta?"
+    - "Necesito más crédito en mi tarjeta"
+    - "¿Cómo pido que me aumenten la línea de crédito?"
+- id: s66
+  lang: es-CO
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quiero pedir un préstamo de libre inversión"
+    - "¿Qué necesito para un crédito de vivienda?"
+    - "Me interesa un préstamo para comprar carro"
+    - "¿Cuánto me prestan si gano dos millones?"
+- id: s67
+  lang: es-AR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quiero abrir una caja de ahorro en dólares"
+    - "¿Cómo abro una cuenta corriente?"
+    - "Quiero sacar una tarjeta adicional para mi hijo"
+    - "¿Puedo abrir una cuenta para mi empresa?"
+- id: s68
+  lang: pt-BR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quero aumentar o limite do cartão"
+    - "Como faço para pedir um empréstimo?"
+    - "Quero abrir uma conta poupança"
+    - "Vocês têm financiamento de carro?"
+- id: s69
+  lang: es-MX
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quiero invertir en un pagaré, ¿qué tasas tienen?"
+    - "¿Qué rendimiento da la cuenta de inversión?"
+    - "Quiero contratar un seguro de vida"
+    - "¿Tienen fondos de inversión?"
+- id: s70
+  lang: es-CO
+  intent: fuera_de_alcance
+  human: true
+  theft: false
+  texts:
+    - "Quiero un crédito, comuníqueme con un asesor comercial"
+    - "Pásame con una persona para abrir una cuenta"
+    - "Quiero hablar con alguien sobre un préstamo"
+    - "Necesito un asesor para aumentar mi cupo"
+- id: s71
+  lang: es-AR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "¿Cómo cambio la dirección de mi domicilio?"
+    - "Quiero actualizar mi número de teléfono"
+    - "¿Cómo cambio el mail registrado?"
+    - "Necesito actualizar mis datos personales"
+- id: s72
+  lang: pt-BR
+  intent: fuera_de_alcance
+  human: true
+  theft: false
+  texts:
+    - "Quero falar com um gerente sobre empréstimo"
+    - "Me passa para alguém para abrir conta"
+    - "Quero um atendente para aumentar meu limite"
+    - "Preciso falar com uma pessoa sobre investimentos"
+- id: s73
+  lang: mixed
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quero subir el límite de mi cartão"
+    - "¿Cómo peço um préstamo?"
+    - "Quiero abrir uma conta en dólares"
+    - "Vocês tienen crédito para carro?"
+- id: s74
+  lang: es-MX
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "¿A qué hora abre la sucursal del centro?"
+    - "¿Dónde está el cajero más cercano?"
+    - "¿La sucursal abre los sábados?"
+    - "¿Cuál es el horario de atención en ventanilla?"
+- id: s75
+  lang: es-CO
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quiero cancelar mi tarjeta de crédito"
+    - "Cómo hago para cerrar mi cuenta de ahorros"
+    - "Quiero dar de baja la tarjeta"
+    - "Ya no quiero la tarjeta, ¿cómo la cancelo?"
+- id: s76
+  lang: pt-BR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Como mudo meu endereço cadastrado?"
+    - "Quero atualizar meu telefone"
+    - "Que horas abre a agência?"
+    - "Quero cancelar meu cartão de crédito"
+- id: s77
+  lang: es-AR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "¿Me hacen un plazo fijo?"
+    - "Quiero comprar dólares desde la app, ¿cómo hago?"
+    - "¿Cómo invierto en un fondo común?"
+    - "¿Qué tasa paga el plazo fijo?"
+- id: s78
+  lang: es-MX
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Necesito una constancia de mi cuenta para un trámite"
+    - "¿Me pueden dar un estado de cuenta certificado?"
+    - "Quiero una carta de referencia bancaria"
+    - "¿Cómo saco la constancia de mi CLABE?"
+- id: s79
+  lang: es-CO
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "¿Qué beneficios tiene la tarjeta platino?"
+    - "Quiero saber cómo acumulo millas con la tarjeta"
+    - "¿Cómo redimo mis puntos?"
+    - "¿Qué promociones tienen este mes?"
+- id: s80
+  lang: pt-BR
+  intent: fuera_de_alcance
+  human: false
+  theft: false
+  texts:
+    - "Quais são os benefícios do cartão black?"
+    - "Como troco meus pontos?"
+    - "Vocês têm cashback no cartão?"
+    - "Quero saber das promoções do mês"

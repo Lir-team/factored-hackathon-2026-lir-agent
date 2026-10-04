@@ -17,6 +17,9 @@ decision_keys:
 
 # Turn-level routing, from the typed decisions on the customer's message (before any lookup).
 # Asymmetric thresholds: failing to route someone who needs a human is worse than routing too often.
+# Validated in data/reports/decision_eval.md (EVAL-01, LLM decisions): wants_human 0.50 and theft
+# 0.30 are inside the ranges that keep >=95% recall on validation (test recall 100% for both);
+# intent 0.50 decides 100% of test messages with 96.9% accuracy.
 turn_rules:
   - id: T0_decisions_unavailable
     lane: escalate
