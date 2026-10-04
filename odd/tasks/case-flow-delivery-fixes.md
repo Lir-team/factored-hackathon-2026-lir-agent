@@ -1,7 +1,7 @@
 # Case flow delivery fixes
 
 Locator: `odd/tasks/case-flow-delivery-fixes.md` · Engram mirror: `odd/case-flow-delivery-fixes/tasks`
-Branch: `fix/case-flow-delivery` · Status: in progress (T1) · Delivery: `single-pr` (target `v0.1.0-beta.2`)
+Branch: `fix/case-flow-delivery` · Status: T1-T3 done, pending review · Delivery: `single-pr` (target `v0.1.0-beta.2`)
 
 ## Objective
 
@@ -20,7 +20,7 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
 
 ## Tasks
 
-- [ ] **T1 Reply lost when Telegram send fails** — `application/use_cases/process_case.py`
+- [x] **T1 Reply lost when Telegram send fails** — `application/use_cases/process_case.py`
   `deliver_replies` pops queued replies before sending; on a send error Pub/Sub
   redelivers but the case is skipped as already worked. Fix: never lose a reply
   that was not sent (send then remove, or re-queue the unsent ones on failure).
@@ -51,7 +51,7 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
 - T2 done (delegated writer). RED: `tests/interface/test_telegram_webhook.py::test_an_update_that_failed_is_answered_when_telegram_retries_it`
   (retry got 200 but nothing was sent). Fix: `_RecentUpdates.remember` runs only after
   `execute()` succeeds. GREEN: 294 passed, 12 skipped; ruff and pyright clean.
-  Commit: `fix(agent): retry a Telegram update whose handling failed`.
+  Commit: `d6f8ba2`.
 - T3 done (delegated writer). RED: `tests/application/test_submit_case.py::test_a_concurrent_duplicate_is_refused_and_the_case_published_once`
   (DID NOT RAISE `CaseInProgressError`), plus the new `claim_key` contract tests and
   `tests/interface/test_cases_api.py::test_a_key_still_being_accepted_is_a_conflict`.
@@ -59,4 +59,19 @@ Found in the review of PRs #23-#29 (2026-10-04). None was fixed later in the cha
   claims taken over in a transaction), claimed in `SubmitCase` before any side effect and
   released on failure; `409` for a key still in flight. GREEN: 300 passed, 16 skipped;
   `test_case_store.py` 34 passed against the Firestore emulator; ruff and pyright clean.
-  Commit: `fix(agent): claim the idempotency key before accepting a case`.
+  Commit: `e711a7a`.
+- T1 done (delegated writer; the messenger adapter was added to the surface on request).
+  RED: `tests/interface/test_pubsub_push.py::test_a_reply_that_failed_to_send_is_sent_once_on_redelivery`
+  (nothing sent on redelivery), plus `test_telegram_messenger.py` raise tests,
+  `test_case_store.py::test_requeued_replies_go_back_before_newer_ones` and two webhook
+  tests for `/start` and answers. Fix: `TelegramBotMessenger.send` raises
+  `MessageNotSentError` (no URL, no chained httpx error); `deliver_replies` puts unsent
+  replies back with `CaseStore.requeue_replies` (Firestore transaction) and re-raises, so
+  the push answers 500; a redelivered case sends its waiting replies. On Telegram updates,
+  notices are best effort and an unsent agent reply is queued and sent before the chat's
+  next answer (the update is never failed: the `/start` token is already burned).
+  Kept atomic pop + requeue instead of remove-after-send, so concurrent deliverers
+  (worker and `/start`) still never send the same reply twice. GREEN: 304 passed,
+  17 skipped; `test_case_store.py` 36 passed on the Firestore emulator; ruff, pyright and
+  `scripts/check.sh` clean. Commit: `9fd1ba0`.
+- Next: review the branch and open the PR (human decision).
