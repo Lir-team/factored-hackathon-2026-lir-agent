@@ -169,10 +169,31 @@ def create_app(
     session_ttl = timedelta(minutes=settings.session_ttl_minutes)
     customer_id_pattern = re.compile(settings.customer_id_pattern)
 
+    class SessionRequest(StartSessionRequest):
+        """Body of `POST /v1/sessions`: the customer the bank already verified (KYC, mocked)."""
+
+        customer_id: str = Field(
+            description=(
+                f"Customer to open the session for: {settings.customer_id_format}. "
+                "Stands in for the bank's identity check; the agent only sees this "
+                "customer's records."
+            ),
+            examples=[settings.api_example_customer_id],
+        )
+
     class MessageRequest(BaseModel):
         """Body of `POST /v1/sessions/{session_id}/messages`."""
 
-        text: str = Field(min_length=1, max_length=settings.max_message_chars)
+        text: str = Field(
+            min_length=1,
+            max_length=settings.max_message_chars,
+            description="What the customer writes, in Spanish or Portuguese.",
+            examples=[settings.api_example_message],
+        )
+
+    identity_error = {
+        401: {"description": "No caller identity (the service is reached through IAP)"}
+    }
 
     def operator(request: Request) -> str:
         identity = request.headers.get(settings.identity_header, "").strip()
@@ -198,7 +219,18 @@ def create_app(
             )
         return None
 
-    app = FastAPI(title="Lir agent API", version="1.0.0")
+    app = FastAPI(
+        title="Lir agent API",
+        version="1.0.0",
+        description=(
+            "Customer service agent for charges the customer does not recognize.\n\n"
+            "1. `POST /v1/sessions` with a `customer_id` "
+            f"({settings.customer_id_format}); try `{settings.api_example_customer_id}`.\n"
+            "2. `POST /v1/sessions/{session_id}/messages` with what the customer writes.\n"
+            "3. If the agent hands the case to a specialist, read the case file at "
+            "`GET /v1/handoffs/{handoff_id}/report.md`."
+        ),
+    )
     if origins := [o.strip() for o in settings.cors_origins.split(",") if o.strip()]:
         app.add_middleware(
             CORSMiddleware,
@@ -212,13 +244,22 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.post("/v1/sessions", status_code=status.HTTP_201_CREATED)
+    @app.post(
+        "/v1/sessions",
+        status_code=status.HTTP_201_CREATED,
+        responses={
+            **identity_error,
+            404: {"description": "No customer with this id in the data"},
+            422: {"description": f"customer_id is not {settings.customer_id_format}"},
+        },
+    )
     async def start_session(
-        body: StartSessionRequest, caller: Annotated[str, Depends(operator)]
+        body: SessionRequest, caller: Annotated[str, Depends(operator)]
     ) -> StartSessionResponse:
         if not customer_id_pattern.fullmatch(body.customer_id):
             raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid customer_id"
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"Invalid customer_id: expected {settings.customer_id_format}",
             )
         try:
             started = await agent.start(
@@ -229,13 +270,21 @@ def create_app(
             )
         except CustomerNotFoundError:
             raise HTTPException(
-                status.HTTP_404_NOT_FOUND, "Customer not found"
+                status.HTTP_404_NOT_FOUND,
+                f"Customer not found: expected {settings.customer_id_format}",
             ) from None
         return StartSessionResponse(
             session_id=started.session_id, expires_at=started.expires_at.isoformat()
         )
 
-    @app.post("/v1/sessions/{session_id}/messages")
+    @app.post(
+        "/v1/sessions/{session_id}/messages",
+        responses={
+            **identity_error,
+            404: {"description": "No session with this id for the caller (or expired)"},
+            422: {"description": "Empty message or longer than the allowed length"},
+        },
+    )
     async def send_message(
         session_id: str, body: MessageRequest, caller: Annotated[str, Depends(operator)]
     ) -> MessageResponse:
@@ -251,7 +300,7 @@ def create_app(
     @app.get(
         "/v1/handoffs/{handoff_id}/report.md",
         response_class=PlainTextResponse,
-        responses={404: {"description": "Handoff not found"}},
+        responses={**identity_error, 404: {"description": "Handoff not found"}},
     )
     async def handoff_report(
         handoff_id: str,

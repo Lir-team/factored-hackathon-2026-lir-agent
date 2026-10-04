@@ -116,6 +116,11 @@ class Settings(BaseSettings):
     expose_trace: bool = False
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
+    # Shown in the API docs and in validation errors: what a customer id looks like, and one
+    # that exists in the configured data (the demo fixture locally, real data on Cloud Run).
+    customer_id_format: str = "the bank customer id, e.g. CLI-0A1B2C3D4E5F (not a name)"
+    api_example_customer_id: str = "CLI-DEMO-001"
+    api_example_message: str = "No reconozco un cargo de 245.50 en OXXO"
     # Comma-separated browser origins allowed to call the API (CORS). Empty: CORS off,
     # as on Cloud Run where API Gateway answers it. Set it for local runs with lir-web.
     cors_origins: str = ""
