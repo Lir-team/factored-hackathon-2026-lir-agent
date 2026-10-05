@@ -19,6 +19,7 @@ dependencies = [
     "httpx>=0.28.1",
     "jsonschema>=4.26.0",
     "litellm>=1.103.2",
+    "opentelemetry-exporter-gcp-trace>=1.9.0",
     "pydantic-settings>=2.7.0",
     "pyyaml>=6",
     "uvicorn>=0.54.0",

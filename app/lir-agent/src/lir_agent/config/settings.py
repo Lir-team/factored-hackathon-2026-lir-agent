@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_DIR = Path(__file__).resolve().parents[1]
@@ -123,6 +123,12 @@ class Settings(BaseSettings):
     # Return how each turn was decided (decision model, probabilities, lanes, tools, cost)
     # with the reply. Only for the operator API behind IAP, never for customer channels.
     expose_trace: bool = False
+    # Export Google ADK's spans (each turn, LLM call and tool) to Cloud Trace in
+    # GOOGLE_CLOUD_PROJECT. The service name defaults to Cloud Run's K_SERVICE.
+    trace_to_cloud: bool = False
+    trace_service_name: str = Field(
+        default="lir-agent", validation_alias=AliasChoices("TRACE_SERVICE_NAME", "K_SERVICE")
+    )
     # Serve the specialist back office page (GET /backoffice). Only for the operator API
     # behind IAP: the page calls the approval review routes with the IAP identity.
     backoffice_enabled: bool = False
