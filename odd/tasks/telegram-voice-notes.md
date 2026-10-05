@@ -59,5 +59,5 @@ silently ignored today.
 
 ## Follow-ups
 
-- lir-infra: enable `speech.googleapis.com`, grant `roles/speech.client` to the runtime SA, set `SPEECH_TO_TEXT=google`.
+- lir-infra: written on `feat/speech-to-text` (`5d33507`, not pushed, not applied): API enabled, `speech_to_text_enabled` grants `roles/speech.client` and adds `SPEECH_TO_TEXT=google` to `cases_env`. After apply, run `gcloud run services update lir-agent-cases --update-env-vars SPEECH_TO_TEXT=google`.
 - Fix review points left open on merged PRs #50 and #53 (evals lockfile, hardcoded conclusions, retry scope).
