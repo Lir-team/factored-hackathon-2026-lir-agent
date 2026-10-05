@@ -219,6 +219,10 @@ output_guard:
     - '(?i)\breembols\w*\s+(aprobad|confirmad|garantizad)'
     - '(?i)\b(vamos|iremos)\s+(devolver|reembolsar|estornar)'
     - '(?i)\bestorno\s+(aprovad|confirmad|garantid)'
+    # Completed refunds: no tool refunds money, so a reply saying one was made is never true.
+    - '(?i)\b(se|ya|j[aá]|foi)\s+(ha\s+|han\s+|sido\s+)?(gener|proces|realiz|emit|efectu|acredit|aprob|inici|ger|aprov)\w*\s+((la|el|un|una|tu|su|o|a|um|uma|seu|sua)\s+)?(devoluci|reembols|reintegr|estorn)'
+    - '(?i)\b(devoluci[oó]n|reembolso|reintegro|estorno)\s+(ya\s+|j[aá]\s+)?(fue|ha\s+sido|est[aá]|qued[oó]|foi|ficou)\s+(generad|procesad|realizad|aprobad|emitid|acreditad|confirmad|gerad|processad|aprovad|feit|en\s+proceso|em\s+andamento)'
+    - '(?i)\b(devolvimos|reembolsamos|reintegramos|estornamos|hemos\s+(devuelto|reembolsado|reintegrado))\b'
     # Card freezes: no tool freezes a card, so a reply saying one is frozen is never true.
     - '(?i)\b(tarjeta|cart[aã]o)\s+(ya\s+|j[aá]\s+)?(est[aá]|qued[oó]|fue|foi|ficou)\s+(bloquead|congelad)'
     - '(?i)\b(bloqueamos|congelamos|bloqueei|congelei)\b'
