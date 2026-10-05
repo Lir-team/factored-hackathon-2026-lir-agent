@@ -61,6 +61,7 @@ from lir_agent.infrastructure.decisions import LlmDecisionModel
 from lir_agent.infrastructure.persistence import (
     DuckDbTransactionRepository,
     FixtureTransactionRepository,
+    RetryingTransactionRepository,
 )
 from lir_agent.infrastructure.publishing import (
     InMemoryCasePublisher,
@@ -264,7 +265,8 @@ def build_container(
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
     policy = resources.load_policy(settings.policy_path)
-    repository = repository or build_repository(settings)
+    # Bounded retries, then "records unavailable": the agent hands off instead of guessing.
+    repository = RetryingTransactionRepository(repository or build_repository(settings))
     cases = cases or InMemoryCaseRepository()
     audit = audit or build_audit(settings)
     decisions = decisions or build_decisions(settings)

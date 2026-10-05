@@ -24,17 +24,19 @@ from pathlib import Path
 from typing import Any
 
 import litellm
+from decision_layer import DecisionError, DecisionResult
 from dotenv import load_dotenv
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 from lir_agent.chat import APP_NAME, USER_ID
 from lir_agent.config.settings import Settings
 from lir_agent.container import build_container, build_decisions
-from lir_agent.domain.models import DisputeCase, HandoffPacket
+from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 from lir_agent.domain.pseudonyms import Pseudonyms
 from lir_agent.domain.session import SessionState
 from lir_agent.infrastructure.audit import InMemoryAuditSink
 from lir_agent.infrastructure.cases import InMemoryCaseRepository
+from lir_agent.infrastructure.persistence import FixtureTransactionRepository
 from lir_agent.interface.adk import build_agent
 
 EVALS_DIR = Path(__file__).resolve().parent
@@ -148,6 +150,66 @@ def scenario_turns(scenario: dict) -> list[str] | None:
     return turns
 
 
+# ---- injected faults and data updates (Bases §5 failure cases, §4 freshness) ------------
+# Test fixtures, labeled as such: they replace a dependency for one scenario only.
+FAULTS = {"decisions_down", "records_down"}
+
+
+class _DecisionsDown:
+    """Every decision model failed (provider down, quota, billing)."""
+
+    name = "down"
+
+    def decide(self, state: str, questions: dict) -> DecisionResult:
+        raise DecisionError("decision provider unavailable (injected fault)")
+
+
+class _RecordsDown:
+    """The bank's records cannot be read at all."""
+
+    name = "down"
+
+    def list_transactions(self, customer_id: str) -> list[Transaction]:
+        raise ConnectionError("records store unavailable (injected fault)")
+
+    def get_customer(self, customer_id: str) -> Customer | None:
+        raise ConnectionError("records store unavailable (injected fault)")
+
+
+class _UpdatableRecords:
+    """The fixture plus transactions that arrive during the conversation (late postings)."""
+
+    def __init__(self, inner: FixtureTransactionRepository) -> None:
+        self._inner = inner
+        self._late: list[tuple[str, Transaction]] = []  # (customer id, transaction)
+        self.name = inner.name
+
+    def post(self, rows: list[dict]) -> None:
+        self._late += [(row["customer_id"], Transaction.model_validate(row)) for row in rows]
+
+    def list_transactions(self, customer_id: str) -> list[Transaction]:
+        rows = self._inner.list_transactions(customer_id)
+        rows += [t for owner, t in self._late if owner == customer_id]
+        return sorted(rows, key=lambda t: t.transaction_date, reverse=True)
+
+    def get_customer(self, customer_id: str) -> Customer | None:
+        return self._inner.get_customer(customer_id)
+
+
+def _faults(scenario: dict) -> set[str]:
+    faults = set((scenario.get("world") or {}).get("faults") or [])
+    unknown = faults - FAULTS
+    if unknown:
+        raise ValueError(f"{scenario.get('id')}: unknown faults {sorted(unknown)}")
+    return faults
+
+
+def _updates(scenario: dict) -> dict[int, list[dict]]:
+    """Transactions posted after a given turn: {after_turn: [rows]}."""
+    updates = (scenario.get("world") or {}).get("updates") or []
+    return {int(u["after_turn"]): list(u["transactions"]) for u in updates}
+
+
 def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
     """Run one isolated trial of `scenario` and return what happened."""
     settings_kwargs: dict[str, Any] = {
@@ -165,7 +227,15 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
     usage = {"in": 0, "out": 0, "calls": 0, "cost": 0.0, "decision_calls": 0, "decision_cost": 0.0}
     # LLM decisions call LiteLLM directly (not through ADK events): meter them too.
     decisions = build_decisions(settings, completion=_metered_completion(usage))
-    container = build_container(settings, audit=audit, cases=cases, decisions=decisions)
+    faults, updates = _faults(scenario), _updates(scenario)
+    records = _UpdatableRecords(FixtureTransactionRepository(WORLD))
+    container = build_container(
+        settings,
+        audit=audit,
+        cases=cases,
+        decisions=_DecisionsDown() if "decisions_down" in faults else decisions,
+        repository=_RecordsDown() if "records_down" in faults else records,
+    )
     runner = InMemoryRunner(agent=build_agent(container=container), app_name=APP_NAME)
     customer_id = scenario.get("customer_id")
     session_id = _start_session(runner, customer_id, scenario.get("session", "ok"))
@@ -175,8 +245,9 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
     stopped_by = "script_end"
     script = scenario_turns(scenario)
     if script:
-        for text in script:
+        for n, text in enumerate(script, start=1):
             turns.append(_send(runner, session_id, text, settings.llm_model, usage))
+            records.post(updates.get(n, []))
     else:
         stopped_by = _simulate(runner, session_id, scenario, settings.llm_model, usage, turns)
     latency_ms = (time.perf_counter() - t0) * 1000

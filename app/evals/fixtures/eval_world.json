@@ -408,6 +408,24 @@
    "transaction_city": "Buenos Aires",
    "transaction_status": "Reversed",
    "fraud_score": 4.0
+  },
+  {
+   "customer_id": "CLI-EVAL-AR1",
+   "transaction_id": "TXN-A1-UNK",
+   "transaction_date": "2026-06-15T13:20:00",
+   "product_id": "PRD-A1-TD",
+   "transaction_type": "Purchase",
+   "transaction_category": "Food",
+   "amount": 480000.0,
+   "currency": "ARS",
+   "amount_usd": 520.0,
+   "channel": "Web",
+   "merchant_name": "TECNO SHOP GLOBAL",
+   "merchant_category": "Electronics",
+   "transaction_country": "Atlantis",
+   "transaction_city": null,
+   "transaction_status": "Approved",
+   "fraud_score": 25.0
   }
  ]
 }
