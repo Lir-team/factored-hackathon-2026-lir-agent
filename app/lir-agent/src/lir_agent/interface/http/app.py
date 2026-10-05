@@ -28,6 +28,7 @@ from lir_agent.application.ports import (
     Conversations,
     CustomerNotFoundError,
     Messenger,
+    SigningError,
 )
 from lir_agent.application.use_cases import AnswerTelegramMessage, ProcessCase
 from lir_agent.config.settings import Settings
@@ -91,6 +92,13 @@ class MyTransactionsResponse(BaseModel):
     first_name: str | None
     country: str | None
     transactions: list[TransactionView]
+
+
+class DemoSignInResponse(BaseModel):
+    """A short-lived customer JWT from the demo bank sign-in."""
+
+    token: str
+    expires_at: str
 
 
 class TraceView(BaseModel):
@@ -394,6 +402,25 @@ def create_app(
                 for t in rows[:limit]
             ],
         )
+
+    if deps.demo_sign_in is not None:
+        demo_sign_in = deps.demo_sign_in
+
+        @app.post(
+            "/v1/demo/sign-in",
+            responses={503: {"description": "The token could not be signed"}},
+        )
+        async def sign_in_demo_customer() -> DemoSignInResponse:
+            """The demo bank sign-in: a short-lived JWT for the configured demo customer."""
+            try:
+                session = await run_in_threadpool(demo_sign_in.execute)
+            except SigningError:
+                raise HTTPException(
+                    status.HTTP_503_SERVICE_UNAVAILABLE, "Sign-in unavailable, retry"
+                ) from None
+            return DemoSignInResponse(
+                token=session.token, expires_at=session.expires_at.isoformat()
+            )
 
     @app.get(
         "/v1/handoffs/{handoff_id}/report.md",

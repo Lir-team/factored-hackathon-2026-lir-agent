@@ -162,6 +162,13 @@ class Settings(BaseSettings):
     customer_identity_header: str = "X-Apigateway-Api-Userinfo"
     # JWT claim holding the customer id.
     customer_claim: str = "sub"
+    # Demo bank sign-in (POST /v1/demo/sign-in): a short-lived JWT for one customer, signed
+    # by the mocked identity provider's service account. Both unset: the route is absent.
+    demo_sign_in_customer_id: str | None = None
+    demo_sign_in_issuer: str | None = None
+    demo_sign_in_audience: str = "lir-web"
+    # IAM signJwt accepts at most 12 hours.
+    demo_sign_in_ttl_minutes: int = Field(default=60, gt=0, le=720)
     # Where accepted cases are archived: a local directory, or a Cloud Storage bucket.
     cases_inbox: Literal["local", "gcs"] = "local"
     cases_bucket: str = "cases-inbox"

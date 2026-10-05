@@ -28,6 +28,7 @@ from lir_agent.application.ports import (
     ChatChannel,
     ChatFiles,
     HandoffNotifier,
+    JwtSigner,
     SpeechToText,
     TransactionRepository,
 )
@@ -38,6 +39,7 @@ from lir_agent.application.use_cases import (
     FindCandidateTransactions,
     GatherTransactionEvidence,
     GetCustomerProfile,
+    IssueDemoSession,
     OpenDisputeAction,
     PresentApprovals,
     RequestActionApproval,
@@ -108,6 +110,8 @@ class Container:
     route_turn: RouteTurn
     case_store: CaseStore
     submit_case: SubmitCase
+    # The demo bank sign-in (None unless its customer and issuer are configured).
+    demo_sign_in: IssueDemoSession | None
 
 
 def build_repository(settings: Settings) -> TransactionRepository:
@@ -197,6 +201,27 @@ def build_speech_to_text(settings: Settings) -> SpeechToText | None:
 
         return GoogleSpeechToText()
     return None
+
+
+def build_demo_sign_in(
+    settings: Settings, audit: AuditSink, signer: JwtSigner | None = None
+) -> IssueDemoSession | None:
+    """The demo bank sign-in when DEMO_SIGN_IN_CUSTOMER_ID and DEMO_SIGN_IN_ISSUER are set."""
+    customer_id, issuer = settings.demo_sign_in_customer_id, settings.demo_sign_in_issuer
+    if not (customer_id and issuer):
+        return None
+    if signer is None:
+        from lir_agent.infrastructure.identity import IamJwtSigner
+
+        signer = IamJwtSigner(issuer)
+    return IssueDemoSession(
+        signer,
+        audit,
+        customer_id=customer_id,
+        issuer=issuer,
+        audience=settings.demo_sign_in_audience,
+        ttl=timedelta(minutes=settings.demo_sign_in_ttl_minutes),
+    )
 
 
 def build_messenger(settings: Settings) -> "TelegramBotMessenger | None":
@@ -310,6 +335,7 @@ def build_container(
     messenger: ChatChannel | None = None,
     chat_files: ChatFiles | None = None,
     speech_to_text: SpeechToText | None = None,
+    demo_signer: JwtSigner | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
@@ -411,4 +437,5 @@ def build_container(
             telegram_bot_username=settings.telegram_bot_username,
             start_token_ttl=timedelta(minutes=settings.start_token_ttl_minutes),
         ),
+        demo_sign_in=build_demo_sign_in(settings, audit, demo_signer),
     )
