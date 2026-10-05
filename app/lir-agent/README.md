@@ -185,8 +185,19 @@ are refused with a short note; unlinked chats are asked to use the link from the
 or expired links and lost conversations get a short message in Spanish or Portuguese. These
 notices are best effort; an agent reply Telegram did not accept stays queued and is sent
 before the chat's next answer. Only
-text from private chats is read, and repeated updates are handled once; an update whose
-handling failed answers `500`, so Telegram's retry is handled again.
+text and voice notes from private chats are read, and repeated updates are handled once; an
+update whose handling failed answers `500`, so Telegram's retry is handled again.
+
+Voice notes from a linked chat are transcribed with Google Cloud Speech-to-Text (`latest_short`
+model, `es-US` or `pt-BR` by the case language) and answered as if the customer had typed the
+transcript; it is never read as a `/start` command, and the length cap applies to it. With
+`SPEECH_TO_TEXT=off` (the default) the bot asks for text instead; notes longer than
+`VOICE_MAX_SECONDS` (60, the synchronous recognition limit) are refused before download; a
+note that could not be downloaded or understood gets a short "send it again or type it"
+reply and the update is acknowledged, not retried. Audio and transcripts are never logged
+or audited. `SPEECH_TO_TEXT=google` uses Application Default Credentials: the deployment
+(`lir-infra`) must enable `speech.googleapis.com` and grant `roles/speech.client` to the
+runtime service account.
 
 Set `TELEGRAM_BOT_TOKEN` (BotFather) and `TELEGRAM_WEBHOOK_SECRET` (any 1-256 characters of
 `A-Z a-z 0-9 _ -`), then register the webhook once; Telegram sends the secret back in

@@ -35,8 +35,8 @@ silently ignored today.
 ## Tasks
 
 - [x] T1 Port, Google adapter, setting, container wiring, dependency, adapter tests. Route: delegated (writer trigger: 2+ non-trivial files). Commit: `afa5a70`.
-- [x] T2 Telegram file download, webhook voice parsing, use-case voice path, es/pt replies, webhook tests. Route: delegated (same writer).
-- [ ] T3 Docs: `.env.example`, README Telegram section (needs `speech.googleapis.com` + `roles/speech.client` in lir-infra). Route: delegated (same writer).
+- [x] T2 Telegram file download, webhook voice parsing, use-case voice path, es/pt replies, webhook tests. Route: delegated (same writer). Commit: `684c636`.
+- [x] T3 Docs: `.env.example`, README Telegram section (needs `speech.googleapis.com` + `roles/speech.client` in lir-infra). Route: delegated (same writer).
 
 ## Acceptance criteria
 
@@ -54,7 +54,8 @@ silently ignored today.
 
 - T1 done: `SpeechToText`/`TranscriptionError` and `ChatFiles`/`FileNotDownloadedError` ports, `GoogleSpeechToText` (v1 async, OGG_OPUS 48 kHz, `latest_short`), `SPEECH_TO_TEXT`/`VOICE_MAX_SECONDS`, `build_speech_to_text`. Checks: pytest 425 passed; ruff/pyright clean except pre-existing errors in `tests/infrastructure/test_retrying_repository.py`.
 - T2 done: `TelegramBotMessenger.download_file` (`getFile` + file URL, token never logged), webhook parses `message.voice`, `AnswerTelegramMessage.execute_voice` (link -> off -> duration -> download/transcribe -> length cap -> converse), es/pt `voice_off`/`voice_too_long`/`voice_not_understood`; container wires the built bot as `chat_files`. Checks: pytest 441 passed; ruff/pyright clean except the same pre-existing errors.
-- Next: T3.
+- T3 done: `SPEECH_TO_TEXT`/`VOICE_MAX_SECONDS` in `.env.example`, voice-note paragraph in `app/lir-agent/README.md` Telegram section, one sentence in the root README. Commit: see `git log` (this commit holds the doc).
+- Next: review; then lir-infra follow-up.
 
 ## Follow-ups
 
