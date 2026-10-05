@@ -220,6 +220,22 @@ def test_other_channels_get_no_start_link(intake):
     assert response.json()["telegram_start_url"] is None
 
 
+def test_a_charge_without_a_merchant_is_accepted(intake):
+    transfer = {**PAYLOAD["transactions"][0], "merchant": None}
+    response = intake.post(case(transactions=[transfer]))
+
+    assert response.status_code == 202
+    assert intake.inbox.puts[0][1]["transactions"][0]["merchant"] is None
+
+
+def test_an_empty_merchant_is_still_invalid(intake):
+    blank = {**PAYLOAD["transactions"][0], "merchant": ""}
+    response = intake.post(case(transactions=[blank]))
+
+    assert response.status_code == 422
+    assert "transaction_ids" in response.json()["errors"]
+
+
 def test_no_start_link_without_a_configured_bot(settings):
     response = Intake(settings).post(case())
 

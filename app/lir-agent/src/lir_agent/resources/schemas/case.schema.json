@@ -168,7 +168,7 @@
         "transaction_id": { "type": "string", "minLength": 1, "maxLength": 64 },
         "amount": { "type": "number", "exclusiveMinimum": 0 },
         "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
-        "merchant": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "merchant": { "type": ["string", "null"], "minLength": 1, "maxLength": 120 },
         "occurred_at": { "type": "string", "format": "date-time" }
       }
     },
