@@ -131,6 +131,13 @@ class Settings(BaseSettings):
     # Comma-separated Slack member ids that take handoffs in rotation.
     slack_assignees: str = ""
     slack_fallback_mention: str = "<!here>"
+    # Approval outcomes emailed to the customer (SMTP, e.g. Gmail with an app password).
+    # The dataset has no real customer addresses: the demo sends to CUSTOMER_EMAIL_OVERRIDE.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = Field(default=587, gt=0, lt=65536)
+    smtp_user: str | None = None
+    smtp_app_password: SecretStr | None = None
+    customer_email_override: str | None = None
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
     # Shown in the API docs and in validation errors: what a customer id looks like, and one
