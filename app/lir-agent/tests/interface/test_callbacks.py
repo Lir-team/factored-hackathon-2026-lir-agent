@@ -54,7 +54,7 @@ def test_opening_a_dispute_becomes_a_request_for_the_customers_approval(harness,
     assert result is not None and result["status"] == "approval_requested"
     request = harness.container.approvals.get(result["approval_id"])
     assert request is not None
-    assert (request.approver, request.status, request.then) == ("customer", "pending", [])
+    assert (request.approver, request.status, request.then) == ("customer", "pending", ["specialist"])
     assert request.params == {"transaction_id": "TXN-D1-006", "reason": "Cobro duplicado"}
     assert [d.label for d in request.details] == ["Comercio", "Fecha", "Monto", "Motivo"]
     assert session.approval_ids == [request.approval_id]

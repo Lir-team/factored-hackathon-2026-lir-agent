@@ -179,7 +179,7 @@ search:
 approvals:
   ttl_minutes: 60
   actions:
-    open_dispute: [customer]
+    open_dispute: [customer, specialist]
 
 # Data minimization for external model requests (Bases, data boundaries; data/AGENTS.md rule 3).
 # Tool results sent to the LLM include only these fields. Internal ids, risk scores and country

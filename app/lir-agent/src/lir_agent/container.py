@@ -154,6 +154,21 @@ def build_case_repository(settings: Settings) -> CaseRepository:
     return InMemoryCaseRepository()
 
 
+def build_approval_repository(settings: Settings) -> ApprovalRepository:
+    """The approval request store chosen by `APPROVAL_REPOSITORY`."""
+    if settings.approval_repository == "firestore":
+        if not settings.google_cloud_project:
+            raise ValueError("APPROVAL_REPOSITORY=firestore needs GOOGLE_CLOUD_PROJECT")
+        from lir_agent.infrastructure.approvals import FirestoreApprovalRepository
+
+        client = firestore.Client(
+            project=settings.google_cloud_project,
+            database=settings.firestore_database,
+        )
+        return FirestoreApprovalRepository(client, settings.firestore_collection_prefix)
+    return InMemoryApprovalRepository()
+
+
 def build_case_store(settings: Settings) -> CaseStore:
     """The case store chosen by `CASE_STORE`."""
     if settings.case_store == "firestore":
@@ -295,7 +310,7 @@ def build_container(
     dispute_guard = DisputeGuard()
     request_handoff = RequestHandoff(cases, policy.config, build_notifier(settings))
     case_store = case_store or build_case_store(settings)
-    approvals = approvals or InMemoryApprovalRepository()
+    approvals = approvals or build_approval_repository(settings)
     approval_labels = resources.load_labels(settings.approval_labels_path)
     messenger = messenger or build_messenger(settings)
     surfaces = [*approval_surfaces, *build_notice_surfaces(settings, approval_labels)]

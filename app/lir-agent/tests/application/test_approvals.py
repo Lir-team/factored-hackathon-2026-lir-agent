@@ -226,7 +226,8 @@ def test_a_customer_who_rejects_an_explanation_may_approve_a_dispute(make_harnes
     )
     assert result is not None and result["status"] == "approval_requested"
     request = h.container.approvals.get(result["approval_id"])
-    assert request is not None and (request.approver, request.then) == ("customer", [])
+    assert request is not None
+    assert (request.approver, request.then) == ("customer", ["specialist"])
 
 
 def test_accepting_an_explanation_puts_nothing_to_approval(make_harness):

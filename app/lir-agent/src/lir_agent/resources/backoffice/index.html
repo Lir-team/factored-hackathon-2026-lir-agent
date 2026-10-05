@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lir back office</title>
+  <style>
+    :root {
+      --bg: #f5f7f6; --surface: #ffffff; --text: #17201c; --muted: #5b6862;
+      --border: #d9e0dc; --accent: #1f7a4d; --danger: #b3261e; --warn-bg: #fff4e5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111614; --surface: #1a211e; --text: #e6ece9; --muted: #9aa8a1;
+        --border: #2c3631; --accent: #4cc38a; --danger: #f2827b; --warn-bg: #3a2f1c;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    h1 { margin: 0; font-size: 18px; }
+    main { max-width: 760px; margin: 0 auto; padding: 16px; }
+    .status { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; margin-bottom: 12px; }
+    .card h2 { margin: 0 0 4px; font-size: 16px; }
+    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0 0 12px; }
+    dt { color: var(--muted); }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    textarea { width: 100%; min-height: 56px; padding: 8px; border-radius: 6px; resize: vertical;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
+    .actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    button { border: 0; border-radius: 6px; padding: 8px 16px; font: inherit; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    .approve { background: var(--accent); color: #fff; }
+    .reject { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .refresh { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .message { margin-top: 8px; font-size: 13px; }
+    .error { background: var(--warn-bg); padding: 8px 12px; border-radius: 6px; }
+    .empty { text-align: center; color: var(--muted); padding: 32px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lir · Specialist reviews</h1>
+    <button class="refresh" id="refresh" type="button">Refresh</button>
+  </header>
+  <main>
+    <p class="status" id="status">Loading…</p>
+    <div id="list"></div>
+  </main>
+  <script>
+    "use strict";
+    const API = "/v1/approvals";
+    const REFRESH_MS = 15000;
+    const ERRORS = {
+      401: "Your session has no verified identity. Reload the page to sign in again.",
+      403: "This request is not waiting for a specialist.",
+      404: "This request no longer exists.",
+      409: "Someone already decided it, or its content changed. Refresh the list.",
+      410: "This request expired. The customer must ask again.",
+      503: "The action could not be verified. Try again in a moment.",
+    };
+    const list = document.getElementById("list");
+    const statusLine = document.getElementById("status");
+    const busy = new Set();
+
+    function el(tag, props = {}, children = []) {
+      const node = Object.assign(document.createElement(tag), props);
+      node.append(...children);
+      return node;
+    }
+
+    function when(iso) {
+      return new Date(iso).toLocaleString();
+    }
+
+    function card(request) {
+      const note = el("textarea", { placeholder: "Internal note (optional)", maxLength: 500 });
+      const message = el("div", { className: "message" });
+      const approve = el("button", { className: "approve", type: "button", textContent: "Approve" });
+      const reject = el("button", { className: "reject", type: "button", textContent: "Reject" });
+      const decide = async (decision) => {
+        approve.disabled = reject.disabled = true;
+        busy.add(request.approval_id);
+        message.textContent = "Saving…";
+        message.className = "message";
+        try {
+          const response = await fetch(`${API}/${encodeURIComponent(request.approval_id)}/review`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              decision,
+              content_hash: request.content_hash,
+              note: note.value.trim() || null,
+            }),
+          });
+          if (!response.ok) throw Object.assign(new Error(), { status: response.status });
+          const decided = await response.json();
+          const dispute = decided.result && decided.result.dispute_case_id;
+          message.textContent = decision === "approve"
+            ? `Approved${dispute ? `: dispute ${dispute} opened` : ""}. The customer was notified.`
+            : "Rejected. The customer was notified.";
+          setTimeout(() => load(), 2500);
+        } catch (error) {
+          message.textContent = ERRORS[error.status] || "The decision was not saved. Try again.";
+          message.className = "message error";
+          approve.disabled = reject.disabled = false;
+        } finally {
+          busy.delete(request.approval_id);
+        }
+      };
+      approve.addEventListener("click", () => decide("approve"));
+      reject.addEventListener("click", () => decide("reject"));
+      const details = el("dl", {}, request.details.flatMap((d) => [
+        el("dt", { textContent: d.label }),
+        el("dd", { textContent: d.value }),
+      ]));
+      return el("article", { className: "card" }, [
+        el("h2", { textContent: request.title }),
+        el("p", {
+          className: "meta",
+          textContent: `${request.approval_id} · ${request.action} · expires ${when(request.expires_at)}`,
+        }),
+        details,
+        note,
+        el("div", { className: "actions" }, [approve, reject]),
+        message,
+      ]);
+    }
+
+    async function load(auto = false) {
+      const drafting = [...list.querySelectorAll("textarea")]
+        .some((note) => note.value || note === document.activeElement);
+      if (busy.size || (auto && drafting)) return;
+      try {
+        const response = await fetch(API, { headers: { Accept: "application/json" } });
+        if (!response.ok) throw Object.assign(new Error(), { status: response.status });
+        const pending = await response.json();
+        list.replaceChildren(...(pending.length
+          ? pending.map(card)
+          : [el("p", { className: "empty", textContent: "No requests waiting for a specialist." })]));
+        statusLine.textContent = `${pending.length} pending · updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        statusLine.textContent = ERRORS[error.status] || "Could not load the requests. Reload the page.";
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", () => load());
+    load();
+    setInterval(() => load(true), REFRESH_MS);
+  </script>
+</body>
+</html>
