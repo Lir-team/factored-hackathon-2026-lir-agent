@@ -32,6 +32,9 @@ uv run python -m decision_eval.run --model llm --repeat 3  # the LLM, ~US$0.04 p
 uv run python -m decision_eval.report                      # -> data/reports/decision_eval.md
 ```
 
+The raw answers of every run are versioned in `data/reports/decision_eval_runs/`, so the report
+can be recomputed without calling any model. Thresholds are read from `policy.yaml`.
+
 ## Run locally
 
 Prerequisites: [uv](https://docs.astral.sh/uv/), Node.js ≥ 22 (promptfoo runs through `npx`),

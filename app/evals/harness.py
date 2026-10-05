@@ -153,6 +153,7 @@ def scenario_turns(scenario: dict) -> list[str] | None:
 # ---- injected faults and data updates (Bases §5 failure cases, §4 freshness) ------------
 # Test fixtures, labeled as such: they replace a dependency for one scenario only.
 FAULTS = {"decisions_down", "records_down"}
+WORLD_KEYS = {"faults", "updates"}
 
 
 class _DecisionsDown:
@@ -196,8 +197,17 @@ class _UpdatableRecords:
         return self._inner.get_customer(customer_id)
 
 
+def _world(scenario: dict) -> dict:
+    """The scenario's world changes; a misspelled key is an error, never silently ignored."""
+    world = scenario.get("world") or {}
+    unknown = set(world) - WORLD_KEYS
+    if unknown:
+        raise ValueError(f"{scenario.get('id')}: unknown world keys {sorted(unknown)}")
+    return world
+
+
 def _faults(scenario: dict) -> set[str]:
-    faults = set((scenario.get("world") or {}).get("faults") or [])
+    faults = set(_world(scenario).get("faults") or [])
     unknown = faults - FAULTS
     if unknown:
         raise ValueError(f"{scenario.get('id')}: unknown faults {sorted(unknown)}")
@@ -206,7 +216,7 @@ def _faults(scenario: dict) -> set[str]:
 
 def _updates(scenario: dict) -> dict[int, list[dict]]:
     """Transactions posted after a given turn: {after_turn: [rows]}."""
-    updates = (scenario.get("world") or {}).get("updates") or []
+    updates = _world(scenario).get("updates") or []
     return {int(u["after_turn"]): list(u["transactions"]) for u in updates}
 
 
@@ -249,7 +259,15 @@ def run_trial(scenario: dict, agent_model: str | None = None) -> Trial:
             turns.append(_send(runner, session_id, text, settings.llm_model, usage))
             records.post(updates.get(n, []))
     else:
-        stopped_by = _simulate(runner, session_id, scenario, settings.llm_model, usage, turns)
+        stopped_by = _simulate(
+            runner,
+            session_id,
+            scenario,
+            settings.llm_model,
+            usage,
+            turns,
+            after_turn=lambda n: records.post(updates.get(n, [])),
+        )
     latency_ms = (time.perf_counter() - t0) * 1000
 
     state = SessionState(_session_state(runner, session_id))
@@ -339,8 +357,11 @@ def _send(runner: InMemoryRunner, session_id: str, text: str, model: str, usage:
     return turn
 
 
-def _simulate(runner, session_id, scenario, model, usage, turns) -> str:
-    """Let a simulated customer talk to the agent until it stops or runs out of turns."""
+def _simulate(runner, session_id, scenario, model, usage, turns, after_turn=None) -> str:
+    """Let a simulated customer talk to the agent until it stops or runs out of turns.
+
+    `after_turn(n)` runs after the n-th turn (late postings from `world.updates`).
+    """
     sim_model = scenario.get("sim_model") or _env("SIM_MODEL") or DEFAULT_SIM_MODEL
     system = SIMULATOR_PROMPT.format(persona=scenario["persona"], lang=scenario.get("lang", "es"))
     history: list[dict] = [{"role": "system", "content": system}]
@@ -355,6 +376,8 @@ def _simulate(runner, session_id, scenario, model, usage, turns) -> str:
             return "simulator_stop"
         turn = _send(runner, session_id, text, model, usage)
         turns.append(turn)
+        if after_turn:
+            after_turn(len(turns))
         history += [{"role": "assistant", "content": text}, {"role": "user", "content": turn.agent}]
     return "max_turns"
 

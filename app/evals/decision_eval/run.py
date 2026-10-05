@@ -3,7 +3,8 @@
     uv run python -m decision_eval.run --model keywords
     uv run python -m decision_eval.run --model llm --repeat 3
 
-Results go to out/decisions/<model>-<run>.json (gitignored). The model sees only the
+Results go to data/reports/decision_eval_runs/<model>-<run>.json (versioned: the report is
+recomputed from them). The model sees only the
 customer's text, as in production; the labels never leave this process.
 """
 
@@ -21,7 +22,8 @@ from dotenv import load_dotenv
 
 from decision_eval.dataset import Item, load
 
-OUT = Path(__file__).resolve().parents[1] / "out" / "decisions"
+# Versioned next to the report, so every number in it can be recomputed (decision_eval.report).
+OUT = Path(__file__).resolve().parents[3] / "data" / "reports" / "decision_eval_runs"
 AGENT_ENV = Path(__file__).resolve().parents[2] / "lir-agent" / ".env"
 
 

@@ -62,3 +62,48 @@ def test_world_loads_through_the_agent_repository():
     repository = FixtureTransactionRepository(SCENARIOS[0].parents[1] / "fixtures" / "eval_world.json")
     adjustment = next(t for t in repository.list_transactions("CLI-EVAL-AR1") if t.transaction_id == "TXN-A1-003")
     assert (adjustment.transaction_type, adjustment.channel, adjustment.merchant_name) == ("Adjustment", "Web", None)
+
+
+def test_world_faults_updates_and_late_postings():
+    from lir_agent.infrastructure.persistence import FixtureTransactionRepository
+
+    import harness
+
+    scenario = {
+        "id": "x",
+        "world": {
+            "faults": ["records_down"],
+            "updates": [{"after_turn": 1, "transactions": [_late("CLI-DEMO-001")]}],
+        },
+    }
+    assert harness._faults(scenario) == {"records_down"}
+    updates = harness._updates(scenario)
+    assert list(updates) == [1]
+
+    records = harness._UpdatableRecords(FixtureTransactionRepository(harness.WORLD))
+    before = [t.transaction_id for t in records.list_transactions("CLI-DEMO-001")]
+    records.post(updates[1])
+    after = [t.transaction_id for t in records.list_transactions("CLI-DEMO-001")]
+    assert after[0] == "TXN-LATE-1" and after[1:] == before
+    assert "TXN-LATE-1" not in [t.transaction_id for t in records.list_transactions("CLI-DEMO-002")]
+
+
+def test_a_misspelled_world_key_or_fault_is_an_error():
+    import harness
+
+    with pytest.raises(ValueError, match="unknown world keys"):
+        harness._faults({"id": "x", "world": {"fault": ["records_down"]}})
+    with pytest.raises(ValueError, match="unknown faults"):
+        harness._faults({"id": "x", "world": {"faults": ["record_down"]}})
+
+
+def _late(customer_id: str) -> dict:
+    return {
+        "customer_id": customer_id,
+        "transaction_id": "TXN-LATE-1",
+        "transaction_date": "2026-06-30T10:00:00",
+        "amount": 10.0,
+        "currency": "MXN",
+        "merchant_name": "LATE SHOP",
+        "transaction_status": "Approved",
+    }

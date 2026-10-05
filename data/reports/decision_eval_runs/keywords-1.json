@@ -1,0 +1,5132 @@
+{
+ "model": "keywords-v1",
+ "run": 1,
+ "items": 320,
+ "failures": 0,
+ "cost_usd": 0.0,
+ "unpriced_calls": 0,
+ "wall_s": 0.0,
+ "latency_p50_ms": 0.014899997040629387,
+ "answers": [
+  {
+   "item_id": "s01-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.09439996210858226,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s01-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.040199956856667995,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s01-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.02640002639964223,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s01-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.028699985705316067,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s02-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.037999998312443495,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s02-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.1294999965466559,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s02-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.028600043151527643,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s02-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.021899992134422064,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s03-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01780001912266016,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s03-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020199979189783335,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s03-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.027799978852272034,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s03-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01939997309818864,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s04-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.019000028260052204,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s04-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017200014553964138,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s04-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020900042727589607,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s04-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.049200025387108326,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s05-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.018599967006593943,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s05-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.019099970813840628,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s05-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.02139998832717538,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s05-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.01650000922381878,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s06-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.020799983758479357,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s06-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.025800021830946207,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s06-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020499981474131346,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s06-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.0171000137925148,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s07-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017300015315413475,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s07-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.018599967006593943,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s07-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.018700025975704193,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s07-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.018300022929906845,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s08-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.027399975806474686,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s08-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.02039998071268201,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s08-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.019099970813840628,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s08-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.018899969290941954,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s09-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.016200006939470768,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s09-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.019799976143985987,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s09-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018700025975704193,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s09-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.019499973859637976,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s10-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.030800001695752144,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s10-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.01950003206729889,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s10-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.021099986042827368,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s10-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017200014553964138,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s11-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01650000922381878,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s11-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01680001150816679,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s11-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017900019884109497,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s11-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.037999998312443495,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s12-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.02139998832717538,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s12-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018899969290941954,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s12-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015500001609325409,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s12-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015600002370774746,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s13-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s13-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s13-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s13-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s14-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.02010003663599491,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s14-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016900012269616127,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s14-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01939997309818864,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s14-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.022299995180219412,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s15-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020599982235580683,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s15-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01729995710775256,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s15-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018700025975704193,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s15-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01850002445280552,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s16-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01650000922381878,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s16-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s16-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.08379999781027436,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s16-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018700025975704193,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s17-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018400023691356182,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s17-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016000005416572094,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s17-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016600009985268116,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s17-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015600002370774746,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s18-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016499951016157866,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s18-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s18-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016300007700920105,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s18-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014300050679594278,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s19-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s19-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s19-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016200006939470768,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s19-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.0171000137925148,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s20-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015600002370774746,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s20-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016499951016157866,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s20-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017400016076862812,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s20-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 1.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016799953300505877,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s21-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s21-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s21-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016799953300505877,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s21-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015500001609325409,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s22-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015199999324977398,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s22-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017199956346303225,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s22-3",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016000005416572094,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s22-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01409999094903469,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s23-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s23-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014700053725391626,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s23-3",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s23-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s24-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012899981811642647,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s24-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s24-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s24-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012599979527294636,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s25-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01479999627918005,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s25-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015199999324977398,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s25-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012899981811642647,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s25-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01599994720891118,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s26-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s26-2",
+   "intent": "cobro_indebido",
+   "intent_p": 0.5,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.5,
+    "consulta_movimiento": 0.5,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s26-3",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 1.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s26-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01610000617802143,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s27-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s27-2",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016200006939470768,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s27-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s27-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s28-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017300015315413475,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s28-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01479999627918005,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s28-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013400043826550245,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s28-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.0149000552482903,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s29-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014199991710484028,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s29-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017499958630651236,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s29-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s29-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s30-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013899989426136017,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s30-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s30-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013599987141788006,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s30-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s31-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.0149000552482903,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s31-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018400023691356182,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s31-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015099998563528061,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s31-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s32-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.0171000137925148,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s32-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01599994720891118,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s32-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016400008462369442,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s32-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016600009985268116,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s33-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013800046872347593,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s33-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014199991710484028,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s33-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016600009985268116,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s33-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s34-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01869996776804328,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s34-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01650000922381878,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s34-3",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.024699955247342587,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s34-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s35-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s35-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.025399960577487946,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s35-3",
+   "intent": "cobro_indebido",
+   "intent_p": 0.5,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.5,
+    "consulta_movimiento": 0.5,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.07569999434053898,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s35-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020899984519928694,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s36-1",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s36-2",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s36-3",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s36-4",
+   "intent": "cobro_indebido",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 1.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014399993233382702,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s37-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013399985618889332,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s37-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s37-3",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01610000617802143,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s37-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s38-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s38-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s38-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015600002370774746,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s38-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01409999094903469,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s39-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017600017599761486,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s39-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013500044587999582,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s39-3",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014300050679594278,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s39-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s40-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01190003240481019,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s40-2",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012300035450607538,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s40-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013800046872347593,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s40-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013400043826550245,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s41-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013300043065100908,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s41-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013300043065100908,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s41-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013100041542202234,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s41-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013800046872347593,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s42-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016400008462369442,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s42-2",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s42-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s42-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01629994949325919,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s43-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01409999094903469,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s43-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014999997802078724,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s43-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014399993233382702,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s43-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s44-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s44-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016000005416572094,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s44-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s44-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013899989426136017,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s45-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s45-2",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s45-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s45-4",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s46-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01279998105019331,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s46-2",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01279998105019331,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s46-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012200034689158201,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s46-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.011700030881911516,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s47-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013699987903237343,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s47-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015199999324977398,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s47-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s47-4",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01279998105019331,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s48-1",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.020899984519928694,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s48-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016200006939470768,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s48-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014999997802078724,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s48-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016799953300505877,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s49-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01409999094903469,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s49-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013899989426136017,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s49-3",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01379998866468668,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s49-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014000048395246267,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s50-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017000013031065464,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s50-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s50-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015600002370774746,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s50-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01699995482340455,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s51-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s51-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016400008462369442,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s51-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s51-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014199991710484028,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s52-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s52-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01279998105019331,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s52-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s52-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s53-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013899989426136017,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s53-2",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s53-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01639995025470853,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s53-4",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01379998866468668,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s54-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012599979527294636,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s54-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014999997802078724,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s54-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s54-4",
+   "intent": "consulta_movimiento",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 1.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015199999324977398,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s55-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015099998563528061,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s55-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013599987141788006,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s55-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013699987903237343,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s55-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01379998866468668,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s56-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013399985618889332,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s56-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013199984095990658,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s56-3",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013299984857439995,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s56-4",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s57-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s57-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016499951016157866,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s57-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018300022929906845,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s57-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s58-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s58-2",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s58-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s58-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015700003132224083,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s59-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016000005416572094,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s59-2",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s59-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012899981811642647,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s59-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s60-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01650000922381878,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s60-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013100041542202234,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s60-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01390004763379693,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s60-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s61-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012100033927708864,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s61-2",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013300043065100908,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s61-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012100033927708864,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s61-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012499978765845299,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s62-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.011999974958598614,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s62-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s62-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s62-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s63-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014500052202492952,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s63-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.07090001599863172,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s63-3",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.018600025214254856,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s63-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015500001609325409,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s64-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016900012269616127,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s64-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s64-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013299984857439995,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s64-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s65-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014700053725391626,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s65-2",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s65-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s65-4",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s66-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014499993994832039,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s66-2",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014100049156695604,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s66-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01409999094903469,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s66-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s67-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013899989426136017,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s67-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01309998333454132,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s67-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013599987141788006,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s67-4",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013399985618889332,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s68-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014199991710484028,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s68-2",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015400000847876072,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s68-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s68-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013199984095990658,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s69-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s69-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015900004655122757,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s69-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01279998105019331,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s69-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012800039257854223,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s70-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s70-2",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s70-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014699995517730713,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s70-4",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s71-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s71-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01390004763379693,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s71-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013100041542202234,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s71-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012700038496404886,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s72-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s72-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013299984857439995,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s72-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013199984095990658,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s72-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 1.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013599987141788006,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s73-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014399993233382702,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s73-2",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s73-3",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013299984857439995,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s73-4",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013199984095990658,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s74-1",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s74-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013199984095990658,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s74-3",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.017499958630651236,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s74-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015300000086426735,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s75-1",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013699987903237343,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s75-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014299992471933365,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s75-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.011899974197149277,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s75-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s76-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01309998333454132,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s76-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.011599971912801266,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s76-3",
+   "intent": "otra_queja",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 1.0,
+    "fuera_de_alcance": 0.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012399978004395962,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s76-4",
+   "intent": "fuera_de_alcance",
+   "intent_p": 1.0,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.0,
+    "cobro_indebido": 0.0,
+    "consulta_movimiento": 0.0,
+    "otra_queja": 0.0,
+    "fuera_de_alcance": 1.0
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013599987141788006,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s77-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01179997343569994,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s77-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01580000389367342,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s77-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s77-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012599979527294636,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s78-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.016899954061955214,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s78-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014599994756281376,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s78-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s78-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013499986380338669,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s79-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013999990187585354,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s79-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.014899997040629387,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s79-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.011899974197149277,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s79-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012899981811642647,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s80-1",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.015099998563528061,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s80-2",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.01190003240481019,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s80-3",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.012999982573091984,
+   "input_tokens": null
+  },
+  {
+   "item_id": "s80-4",
+   "intent": "cargo_no_reconocido",
+   "intent_p": 0.2,
+   "intent_probs": {
+    "cargo_no_reconocido": 0.2,
+    "cobro_indebido": 0.2,
+    "consulta_movimiento": 0.2,
+    "otra_queja": 0.2,
+    "fuera_de_alcance": 0.2
+   },
+   "human_p": 0.0,
+   "theft_p": 0.0,
+   "latency_ms": 0.013299984857439995,
+   "input_tokens": null
+  }
+ ]
+}

@@ -36,6 +36,7 @@ from lir_agent.domain.case_intake import (
     IdempotencyKeyMismatchError,
     UnknownTransactionError,
 )
+from lir_agent.domain.errors import DataUnavailableError
 from lir_agent.interface.http.approvals import ApprovalView, approvals_router
 from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
 from lir_agent.interface.http.pubsub import (
@@ -282,6 +283,13 @@ def create_app(
             require_sign_in=settings.approval_requires_sign_in,
         )
     )
+
+    @app.exception_handler(DataUnavailableError)
+    async def records_unavailable(_: Request, __: DataUnavailableError) -> JSONResponse:
+        """The bank's records are unreachable (after the bounded retries): retry later."""
+        return JSONResponse(
+            {"detail": "records_unavailable"}, status.HTTP_503_SERVICE_UNAVAILABLE
+        )
 
     # Not /healthz: Cloud Run reserves public paths ending in "z".
     @app.get("/health")

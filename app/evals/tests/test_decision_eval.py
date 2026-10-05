@@ -73,3 +73,50 @@ def test_the_recall_range_is_every_threshold_that_keeps_the_positives():
     p_yes = [0.9, 0.6, 0.2]
     assert m.recall_range(y_true, p_yes, 1.0, [0.1, 0.3, 0.5, 0.7]) == (0.1, 0.5)
     assert m.recall_range(y_true, [0.1, 0.1, 0.1], 1.0, [0.5]) is None
+
+
+def test_the_cluster_interval_counts_seeds_not_paraphrases():
+    four_seeds_all_right = [[True] * 4] * 4
+    low, high = m.cluster_interval(four_seeds_all_right)
+    assert high == pytest.approx(1.0) and low < 0.6  # 4 seeds, not 16 messages
+    assert m.cluster_interval(four_seeds_all_right)[0] < m.wilson(16, 16)[0]
+
+
+def test_thresholds_come_from_the_policy():
+    from decision_eval.report import policy_thresholds
+
+    assert policy_thresholds() == {"intent": 0.5, "human": 0.5, "theft": 0.3}
+
+
+def _fake(items, wrong: set[str] = frozenset()):
+    answers = []
+    for i in items:
+        intent = "otra_queja" if i.item_id in wrong else i.intent
+        answers.append({
+            "item_id": i.item_id, "intent": intent, "intent_p": 0.9,
+            "human_p": 0.9 if i.human else 0.1, "theft_p": 0.9 if i.theft else 0.1,
+            "latency_ms": 1.0,
+        })
+    return {"model": "fake", "run": 1, "failures": 0, "items": len(items), "cost_usd": 0.0,
+            "answers": answers}
+
+
+def test_a_perfect_run_scores_one_per_language_even_with_absent_classes():
+    from decision_eval.report import evaluate_run
+
+    result = evaluate_run(load(), _fake(load()))
+    for lang, scores in result["intent"]["by_language"].items():
+        assert scores["macro_f1"] == pytest.approx(1.0), lang
+    assert result["human"]["policy"]["recall"] == 1.0
+
+
+def test_the_report_renders_and_derives_its_conclusions():
+    from decision_eval.report import evaluate_run, render
+
+    items = load()
+    results = {"keywords": [evaluate_run(items, _fake(items, {i.item_id for i in items[:200]}))],
+               "llm": [evaluate_run(items, _fake(items))]}
+    text = render(items, results, {"status": "pending", "sample": 40})
+    assert "## Qué dicen los resultados" in text
+    assert "usar `DECISIONS=llm`" in text
+    assert "quedan respaldados" in text

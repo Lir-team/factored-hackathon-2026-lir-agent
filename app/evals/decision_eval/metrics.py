@@ -21,6 +21,31 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return (max(0.0, centre - half), min(1.0, centre + half))
 
 
+def cluster_interval(clusters: Sequence[Sequence[bool]], z: float = 1.96) -> tuple[float, float]:
+    """95% interval of a pooled proportion when items come in correlated clusters.
+
+    The paraphrases of one seed are not independent observations, so a Wilson interval over
+    items is too narrow. This one is conservative: the pooled proportion with an effective
+    sample size of one per cluster (seed). Unlike a bootstrap, it stays honest at 0% or 100%
+    (4 seeds all right give [51-100], not [100-100]).
+    """
+    groups = [list(g) for g in clusters if g]
+    if not groups:
+        return (0.0, 1.0)
+    n = len(groups)
+    p = sum(sum(g) for g in groups) / sum(len(g) for g in groups)
+    return wilson_p(p, n, z)
+
+
+def wilson_p(p: float, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson interval for a proportion p observed on n units."""
+    if n == 0:
+        return (0.0, 1.0)
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return (max(0.0, centre - half), min(1.0, centre + half))
+
+
 @dataclass(frozen=True)
 class ClassScore:
     label: str

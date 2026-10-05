@@ -329,3 +329,17 @@ def test_a_reply_carries_the_approvals_the_turn_created(settings, conversations)
     [card] = response["approvals"]
     assert card["approval_id"] == request.approval_id
     assert card["link"].startswith("https://web.example/a?id=")
+
+
+def test_an_outage_of_the_records_is_a_503_not_a_500(settings, conversations):
+    from lir_agent.domain.errors import DataUnavailableError
+
+    class Down(FakeConversations):
+        async def start(self, *args, **kwargs):
+            raise DataUnavailableError("get_customer")
+
+    client = TestClient(create_app(settings, conversations=Down()), raise_server_exceptions=False)
+    response = client.post(
+        "/v1/sessions", json={"customer_id": "CLI-DEMO-001"}, headers=IAP_HEADER
+    )
+    assert (response.status_code, response.json()["detail"]) == (503, "records_unavailable")

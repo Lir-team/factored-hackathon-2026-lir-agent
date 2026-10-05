@@ -2,8 +2,8 @@
 
     uv run python -m decision_eval.report
 
-Reads out/decisions/*.json (decision_eval.run) and writes data/reports/decision_eval.md and
-.json. Thresholds are chosen on the validation split only; the test split is reported once,
+Reads data/reports/decision_eval_runs/*.json (decision_eval.run) and writes
+data/reports/decision_eval.md. Thresholds are chosen on the validation split only; the test split is reported once,
 at those thresholds. Never edit the report by hand (data/AGENTS.md rule 9): change this code.
 """
 
@@ -15,14 +15,28 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
+import yaml
+
 from decision_eval import metrics as m
 from decision_eval.dataset import INTENTS, REPO, TEST, VALIDATION, Item, load
+from decision_eval.run import OUT
 
-OUT = Path(__file__).resolve().parents[1] / "out" / "decisions"
 REPORT_MD = REPO / "data" / "reports" / "decision_eval.md"
-REPORT_JSON = REPO / "data" / "reports" / "decision_eval.json"
 SECOND_LABELING = REPO / "data" / "eval" / "decisions" / "second_labeling.csv"
-POLICY = {"intent": 0.50, "human": 0.50, "theft": 0.30}  # policy.yaml today
+POLICY_PATH = REPO / "app" / "lir-agent" / "src" / "lir_agent" / "resources" / "policy.yaml"
+
+
+def policy_thresholds(path: Path = POLICY_PATH) -> dict[str, float]:
+    """The thresholds the agent runs with, read from policy.yaml (never copied by hand)."""
+    rules = {r["id"]: r["when"] for r in yaml.safe_load(path.read_text(encoding="utf-8"))["turn_rules"]}
+    return {
+        "intent": rules["T4_uncertain_intent"]["intent_p"]["lt"],
+        "human": rules["T1_wants_human"]["wants_human_p"]["gte"],
+        "theft": rules["T3_theft_suspected"]["theft_suspected_p"]["gte"],
+    }
+
+
+POLICY = policy_thresholds()
 TARGET_INTENT_ACCURACY = 0.95  # decided automatically only when it is right 95% of the time
 MIN_RECALL = {"human": 0.95, "theft": 0.95}  # missing these is worse than over-routing
 LANGUAGES = ("es", "pt", "mixed")
@@ -55,6 +69,26 @@ def _binary_view(items: Sequence[Item], answers: dict[str, dict], key: str):
     return y_true, p_yes, conf, correct
 
 
+def _clusters(items: Sequence[Item], flags: Sequence[bool]) -> list[list[bool]]:
+    """Flags grouped by seed: the unit the intervals resample (paraphrases are correlated)."""
+    groups: dict[str, list[bool]] = {}
+    for item, flag in zip(items, flags, strict=True):
+        groups.setdefault(item.seed_id, []).append(flag)
+    return list(groups.values())
+
+
+def _present(y_true: Sequence[str], y_pred: Sequence[str | None]) -> list[str]:
+    """The classes that occur in a subset: an absent class must not count as F1 = 0."""
+    seen = set(y_true) | {p for p in y_pred if p}
+    return [label for label in INTENTS if label in seen]
+
+
+def _recall_ci(items: Sequence[Item], key: str, p_yes: Sequence[float | None], threshold: float):
+    positives = [(i, p) for i, p in zip(items, p_yes, strict=True) if getattr(i, key)]
+    hits = [p is not None and p >= threshold for _, p in positives]
+    return m.cluster_interval(_clusters([i for i, _ in positives], hits))
+
+
 def evaluate_run(items: list[Item], run: dict) -> dict:
     """Every metric of one run: thresholds from validation, scores on test."""
     answers = _answers(run)
@@ -76,7 +110,7 @@ def evaluate_run(items: list[Item], run: dict) -> dict:
 
     out["intent"] = {
         "accuracy": m.accuracy(t_true, t_pred),
-        "accuracy_ci": m.wilson(sum(t_correct), len(t_correct)),
+        "accuracy_ci": m.cluster_interval(_clusters(test, t_correct)),
         "macro_f1": m.macro_f1(t_true, t_pred, INTENTS),
         "per_class": [s.__dict__ for s in m.per_class(t_true, t_pred, INTENTS)],
         "ece": m.ece(t_conf, t_correct),
@@ -89,8 +123,14 @@ def evaluate_run(items: list[Item], run: dict) -> dict:
             lang: {
                 "n": len(idx := [k for k, i in enumerate(test) if i.language == lang]),
                 "correct": sum(t_correct[k] for k in idx),
-                "ci": m.wilson(sum(t_correct[k] for k in idx), len(idx)),
-                "macro_f1": m.macro_f1([t_true[k] for k in idx], [t_pred[k] for k in idx], INTENTS),
+                "ci": m.cluster_interval(
+                    _clusters([test[k] for k in idx], [t_correct[k] for k in idx])
+                ),
+                "macro_f1": m.macro_f1(
+                    yt := [t_true[k] for k in idx],
+                    yp := [t_pred[k] for k in idx],
+                    _present(yt, yp),
+                ),
             }
             for lang in LANGUAGES
         },
@@ -114,8 +154,9 @@ def evaluate_run(items: list[Item], run: dict) -> dict:
             "chosen_threshold": chosen.threshold,
             "valid_range": valid,
             "policy_in_range": bool(valid and valid[0] <= POLICY[key] <= valid[1]),
-            "chosen": at_chosen.__dict__ | {"recall_ci": m.wilson(at_chosen.tp, at_chosen.positives)},
-            "policy": at_policy.__dict__ | {"recall_ci": m.wilson(at_policy.tp, at_policy.positives)},
+            "chosen": at_chosen.__dict__
+            | {"recall_ci": _recall_ci(test, key, t_p, chosen.threshold)},
+            "policy": at_policy.__dict__ | {"recall_ci": _recall_ci(test, key, t_p, POLICY[key])},
             "ece": m.ece(t_conf_b, t_correct_b),
             "errors": [
                 {"item_id": i.item_id, "text": i.text, "true": getattr(i, key),
@@ -143,14 +184,23 @@ def _second_labeling(items: list[Item]) -> dict:
                 writer.writerow([i.item_id, i.text, "", "", ""])
         return {"status": "pending", "sample": len(sample)}
     with SECOND_LABELING.open(encoding="utf-8") as f:
-        rows = [r for r in csv.DictReader(f) if r["intent"].strip()]
-    if not rows:
-        return {"status": "pending", "sample": sum(1 for _ in SECOND_LABELING.open()) - 1}
+        rows = list(csv.DictReader(f))
     by_id = {i.item_id: i for i in items}
-    first = [by_id[r["item_id"]].intent for r in rows]
-    second = [r["intent"].strip() for r in rows]
-    return {"status": "done", "n": len(rows), "agreement": m.accuracy(first, second),
-            "kappa": cohen_kappa(first, second)}
+    agreement = {}
+    for key in ("intent", "human", "theft"):  # D3 is the ambiguous one: it matters most
+        done = [r for r in rows if r[key].strip()]
+        if not done:
+            continue
+        first = [str(getattr(by_id[r["item_id"]], key)).lower() for r in done]
+        second = [r[key].strip().lower() for r in done]
+        agreement[key] = {
+            "n": len(done),
+            "agreement": m.accuracy(first, second),
+            "kappa": cohen_kappa(first, second),
+        }
+    if not agreement:
+        return {"status": "pending", "sample": len(rows)}
+    return {"status": "done", "by_question": agreement}
 
 
 def cohen_kappa(a: Sequence[str], b: Sequence[str]) -> float:
@@ -210,7 +260,12 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
         "no son datos de clientes ni salen del dataset, cuyos textos son plantillas (`insights.md` §5).",
         "- **Etiquetas:** un anotador, siguiendo las definiciones de `decision_layer/questions.py`. "
         + (
-            f"Segunda anotación ciega sobre {labeling['n']} mensajes: acuerdo {_pct(labeling['agreement'])}, kappa {labeling['kappa']:.2f}."
+            "Segunda anotación ciega: "
+            + "; ".join(
+                f"{key} acuerdo {_pct(a['agreement'])}, kappa {a['kappa']:.2f} (n={a['n']})"
+                for key, a in labeling["by_question"].items()
+            )
+            + "."
             if labeling["status"] == "done"
             else f"**Segunda anotación ciega pendiente:** `data/eval/decisions/second_labeling.csv` ({labeling['sample']} mensajes) "
             "para que otra persona etiquete sin ver las etiquetas; este reporte calcula el acuerdo (kappa) cuando se complete."
@@ -244,7 +299,9 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
     lines += ["",
               f"*Umbral elegido:* el más bajo con el que, en validación, lo decidido automáticamente acierta al menos el "
               f"{_pct(TARGET_INTENT_ACCURACY)}; por debajo, el agente pide aclaración (regla T4). "
-              "Exactitud e IC de la primera corrida; ± es la desviación entre corridas.", ""]
+              "Exactitud de la primera corrida; ± es la desviación entre corridas. Los IC 95% son de Wilson "
+              "con **una observación por semilla**, no por mensaje: las 4 paráfrasis de una semilla no son "
+              "independientes, así que el intervalo es conservador.", ""]
 
     for kind in ("keywords", "llm"):
         rows = model_rows(kind)
@@ -253,7 +310,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
         r0 = rows[0]["intent"]
         lines += [f"**{kind}: F1 por clase (corrida 1)**", "", "| Clase | Precisión | Recall | F1 | n |", "|---|---|---|---|---|"]
         lines += [f"| {c['label']} | {c['precision']:.2f} | {c['recall']:.2f} | {c['f1']:.2f} | {c['support']} |" for c in r0["per_class"]]
-        lines += ["", "| Política actual (umbral 0.50) | Cobertura | Exactitud de lo decidido |", "|---|---|---|",
+        lines += ["", f"| Política actual (umbral {POLICY['intent']:.2f}) | Cobertura | Exactitud de lo decidido |", "|---|---|---|",
                   f"| {kind} | {_pct(r0['policy']['coverage'])} | {_pct(r0['policy']['accuracy'])} |", ""]
         lines += ["Calibración (diagrama de confiabilidad):", "", "| Confianza | n | Confianza media | Exactitud |", "|---|---|---|---|"]
         lines += [f"| {b} | {n} | {c:.2f} | {a:.2f} |" for b, n, c, a in r0["reliability"]]
@@ -292,7 +349,8 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
             for lang in LANGUAGES
         ]
         lines.append(f"| {kind} | " + " | ".join(cells) + " |")
-    lines += ["", "Con n chicos, una diferencia solo cuenta si los intervalos no se solapan (`data/AGENTS.md` regla 10).", ""]
+    lines += ["", "Una diferencia solo cuenta si los intervalos (por semilla) no se solapan "
+              "(`data/AGENTS.md` regla 10).", ""]
 
     lines += ["### Latencia y costo", "", "| Candidato | p50 | p95 | Costo por 1.000 mensajes (D1+D2+D3 en una llamada) |", "|---|---|---|---|"]
     for kind in ("keywords", "llm"):
@@ -326,9 +384,9 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
 
     lines += _recommendation(results)
     lines += ["## Limitaciones", "",
-              "- **D3 tiene una guía de anotación ambigua:** la definición incluye \"uso por terceros\", y una "
-              "frase como \"una compra que yo no hice\" puede leerse así. Los falsos positivos de robo del LLM son "
-              "casi todos de ese tipo; la segunda anotación dirá si es error del modelo o de la etiqueta.",
+              "- **La guía de D3 admite dos lecturas:** incluye \"uso por terceros\", y una frase como "
+              "\"una compra que yo no hice\" puede leerse así. Al revisar los errores de robo listados arriba, la "
+              "segunda anotación (columna `theft`) dirá si son errores del modelo o de la etiqueta.",
               "- Un solo anotador hasta completar la segunda anotación; las etiquetas pueden tener sesgo del autor.",
               "- Texto sintético: no reemplaza mensajes reales de clientes; el portuñol y la jerga son una aproximación.",
               "- n pequeño en D3 (robo) y en portuñol: los intervalos son anchos.",
@@ -343,35 +401,59 @@ def _recommendation(results: dict[str, list[dict]]) -> list[str]:
     kw, llm = results.get("keywords"), results.get("llm")
     if not kw or not llm:
         return []
-    kw_acc = kw[0]["intent"]["accuracy"]
+    kw0, llm0 = kw[0]["intent"], llm[0]["intent"]
     llm_acc = statistics.mean(r["intent"]["accuracy"] for r in llm)
-    kw_cov = kw[0]["intent"]["policy"]["coverage"]
     cost = statistics.mean(r["cost_per_1000_messages_usd"] for r in llm)
     p50 = statistics.mean(r["latency_p50_ms"] for r in llm) / 1000
-    llm_intent_policy = llm[0]["intent"]["policy"]
+    llm_better = llm0["accuracy_ci"][0] > kw0["accuracy_ci"][1]  # intervals apart
+    thresholds_ok = [
+        (name, POLICY[key], llm[0][key]["policy_in_range"])
+        for key, name in (("human", "pide persona"), ("theft", "robo"))
+    ]
+    intent_ok = llm0["policy"]["accuracy"] >= TARGET_INTENT_ACCURACY
     lines = [
         "## Qué dicen los resultados",
         "",
-        f"1. **El baseline no alcanza para decidir:** acierta la intención el {_pct(kw_acc)} de las veces. "
-        f"Con el umbral de la política decide solo el {_pct(kw_cov)} de los mensajes y en el resto pide aclaración "
-        "(no rompe nada, pero alarga la conversación).",
-        f"2. **El LLM sí:** {_pct(llm_acc)} de exactitud en promedio, sin brecha significativa entre español, "
-        f"portugués y portuñol, a US${cost:.3f} por 1.000 mensajes y ~{p50:.1f} s de latencia (p50). "
-        f"Con el umbral actual de la política decide el {_pct(llm_intent_policy['coverage'])} y acierta el "
-        f"{_pct(llm_intent_policy['accuracy'])} de lo que decide.",
-        "3. **Recomendación:** usar `DECISIONS=llm` (con el baseline como respaldo si el LLM falla) en el "
-        "despliegue. La latencia se suma a cada turno: las decisiones corren antes de que el modelo "
-        "converse, porque la política enruta el turno con ellas.",
+        f"1. **Baseline:** acierta la intención el {_pct(kw0['accuracy'])} {_ci(kw0['accuracy_ci'])}; con el "
+        f"umbral de la política decide el {_pct(kw0['policy']['coverage'])} de los mensajes y en el resto pide "
+        f"aclaración. Entre idiomas: {_language_gap(kw0['by_language'])}.",
+        f"2. **LLM:** {_pct(llm_acc)} de exactitud en promedio {_ci(llm0['accuracy_ci'])}, a "
+        f"US${cost:.3f} por 1.000 mensajes y ~{p50:.1f} s de latencia (p50); con el umbral de la política "
+        f"decide el {_pct(llm0['policy']['coverage'])} y acierta el {_pct(llm0['policy']['accuracy'])}. "
+        f"Entre idiomas: {_language_gap(llm0['by_language'])}.",
+        (
+            "3. **Recomendación:** usar `DECISIONS=llm` (con el baseline como respaldo si el LLM falla): "
+            "su exactitud supera a la del baseline con intervalos que no se solapan. La latencia se suma a "
+            "cada turno, porque la política enruta el turno con estas decisiones antes de que el modelo converse."
+            if llm_better
+            else "3. **Recomendación:** los intervalos del LLM y del baseline se solapan: con estos datos no "
+            "hay base para cambiar el modelo de decisiones por defecto."
+        ),
         "4. **Umbrales de la política:** "
-        + "; ".join(
-            f"{name} {POLICY[key]:.2f} {'dentro' if llm[0][key]['policy_in_range'] else 'FUERA'} del rango válido"
-            for key, name in (("human", "pide persona"), ("theft", "robo"))
-        )
-        + f"; intención {POLICY['intent']:.2f} decide el {_pct(llm_intent_policy['coverage'])} con "
-        f"{_pct(llm_intent_policy['accuracy'])} de exactitud. Se mantienen, ahora respaldados por esta evaluación.",
+        + "; ".join(f"{name} {t:.2f} {'dentro' if ok else 'FUERA'} del rango válido" for name, t, ok in thresholds_ok)
+        + f"; intención {POLICY['intent']:.2f} acierta el {_pct(llm0['policy']['accuracy'])} de lo que decide. "
+        + (
+            "Con el LLM, los umbrales actuales quedan respaldados por esta evaluación."
+            if intent_ok and all(ok for _, _, ok in thresholds_ok)
+            else "Hay umbrales a revisar: los marcados FUERA, o la intención bajo el "
+            f"{_pct(TARGET_INTENT_ACCURACY)} de exactitud."
+        ),
         "",
     ]
     return lines
+
+
+def _language_gap(by_language: dict) -> str:
+    """Whether any two languages differ significantly (their intervals do not overlap)."""
+    names = {"es": "español", "pt": "portugués", "mixed": "portuñol"}
+    measured = [(lang, v["ci"]) for lang, v in by_language.items() if v["n"]]
+    gaps = [
+        f"{names[a]} vs {names[b]}"
+        for i, (a, ca) in enumerate(measured)
+        for b, cb in measured[i + 1:]
+        if ca[1] < cb[0] or cb[1] < ca[0]
+    ]
+    return ("diferencia significativa en " + ", ".join(gaps)) if gaps else "sin diferencia significativa"
 
 
 def main() -> None:
@@ -379,11 +461,7 @@ def main() -> None:
     results = {kind: [evaluate_run(items, r) for r in _runs(kind)] for kind in ("keywords", "llm")}
     labeling = _second_labeling(items)
     REPORT_MD.write_text(render(items, results, labeling), encoding="utf-8")
-    REPORT_JSON.write_text(
-        json.dumps({"labeling": labeling, "results": results}, ensure_ascii=False, indent=1, default=list),
-        encoding="utf-8",
-    )
-    print(f"wrote {REPORT_MD.relative_to(REPO)} and {REPORT_JSON.relative_to(REPO)}")
+    print(f"wrote {REPORT_MD.relative_to(REPO)}")
 
 
 if __name__ == "__main__":
