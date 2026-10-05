@@ -1,5 +1,6 @@
 # C1 - Charges the customer asks about that have no merchant, or a merchant they never paid.
-# CLI-EVAL-AR1 has a supermarket purchase, a transfer and an adjustment: no cinema charge.
+# CLI-EVAL-AR1 has a supermarket purchase, a transfer, an adjustment and an online electronics
+# purchase in an unresolvable country (TXN-A1-UNK, failures.yaml): no cinema charge.
 - description: c1-merchant-not-found-es
   metadata: {jtbd: [C1, B1], kind: regression}
   vars:

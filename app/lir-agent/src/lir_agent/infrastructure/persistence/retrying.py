@@ -1,8 +1,11 @@
 """Bounded retries in front of the bank's records (Bases §6: "bounded retries, safe fallback").
 
-A read that keeps failing becomes `DataUnavailableError` after `attempts` tries: the tools
-turn it into "the records are unavailable" and the agent hands the case to a person instead
-of guessing. Reads only; nothing here writes.
+Only transient errors are retried (the store unreachable, a timeout): a read that keeps
+failing that way becomes `DataUnavailableError` after `attempts` tries, the tools turn it into
+"the records are unavailable" and the agent hands the case to a person instead of guessing.
+Any other error is a bug (a wrong column, a schema change): it propagates at once, so it is
+seen and fixed instead of quietly turning every conversation into a handoff.
+Reads only; nothing here writes.
 """
 
 import logging
@@ -16,6 +19,21 @@ from lir_agent.domain.models import Customer, Transaction
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")
+
+
+def _transient_errors() -> tuple[type[BaseException], ...]:
+    """Errors worth retrying: I/O, network and timeouts, DuckDB's included when installed."""
+    errors: list[type[BaseException]] = [OSError, TimeoutError]  # ConnectionError is an OSError
+    try:
+        import duckdb
+
+        errors += [duckdb.IOException, duckdb.ConnectionException]
+    except ImportError:  # pragma: no cover - duckdb is a runtime dependency
+        pass
+    return tuple(errors)
+
+
+TRANSIENT_ERRORS = _transient_errors()
 
 
 class RetryingTransactionRepository:
@@ -47,9 +65,13 @@ class RetryingTransactionRepository:
         for attempt in range(1, self._attempts + 1):
             try:
                 return read()
-            except Exception as error:  # the store's own errors vary (DuckDB, network, files)
+            except TRANSIENT_ERRORS as error:
                 logger.warning(
-                    "%s failed (attempt %d/%d): %s", what, attempt, self._attempts, type(error).__name__
+                    "%s failed (attempt %d/%d)",
+                    what,
+                    attempt,
+                    self._attempts,
+                    exc_info=error,
                 )
                 if attempt == self._attempts:
                     raise DataUnavailableError(what) from error

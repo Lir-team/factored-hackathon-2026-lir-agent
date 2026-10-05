@@ -415,7 +415,7 @@
    "transaction_date": "2026-06-15T13:20:00",
    "product_id": "PRD-A1-TD",
    "transaction_type": "Purchase",
-   "transaction_category": "Food",
+   "transaction_category": "Electronics",
    "amount": 480000.0,
    "currency": "ARS",
    "amount_usd": 520.0,

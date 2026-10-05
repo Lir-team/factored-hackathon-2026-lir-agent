@@ -1,6 +1,6 @@
 # Evaluación de las decisiones tipadas (EVAL-01)
 
-> Generado por `uv run python -m decision_eval.report` (app/evals) — 2026-10-04T23:24:33+00:00. No editar a mano.
+> Generado por `uv run python -m decision_eval.report` (app/evals) — 2026-10-05T03:01:38+00:00. No editar a mano.
 > Bases §4: *"Evaluate at least one learned component against an appropriate baseline. Use valid labels or relevance judgments, prevent leakage, and justify representations, metrics, thresholds, and evaluation splits."*
 
 ## Qué se evalúa
@@ -26,10 +26,10 @@ Las decisiones que el agente toma en cada turno, antes de conversar: **D1** inte
 
 | Candidato | Corridas | Exactitud [IC 95%] | Macro-F1 | ECE | Umbral elegido en validación | Cobertura / exactitud en test con ese umbral |
 |---|---|---|---|---|---|---|
-| keywords | 1 | 0.444 [37-52] | 0.410 | 0.034 | 0.25 | 31.2% / 94.0% |
-| llm | 3 | 0.975 ± 0.006 [93-99] | 0.973 ± 0.006 | 0.047 ± 0.010 | 0.00 | 100.0% / 96.9% |
+| keywords | 1 | 0.444 [30-60] | 0.410 | 0.034 | 0.25 | 31.2% / 94.0% |
+| llm | 3 | 0.975 ± 0.006 [86-99] | 0.973 ± 0.006 | 0.047 ± 0.010 | 0.00 | 100.0% / 96.9% |
 
-*Umbral elegido:* el más bajo con el que, en validación, lo decidido automáticamente acierta al menos el 95.0%; por debajo, el agente pide aclaración (regla T4). Exactitud e IC de la primera corrida; ± es la desviación entre corridas.
+*Umbral elegido:* el más bajo con el que, en validación, lo decidido automáticamente acierta al menos el 95.0%; por debajo, el agente pide aclaración (regla T4). Exactitud de la primera corrida; ± es la desviación entre corridas. Los IC 95% son de Wilson con **una observación por semilla**, no por mensaje: las 4 paráfrasis de una semilla no son independientes, así que el intervalo es conservador.
 
 **keywords: F1 por clase (corrida 1)**
 
@@ -81,19 +81,19 @@ En validación se buscan los umbrales que detectan al menos el 95% de los casos 
 
 | Decisión | Candidato | Umbrales válidos en validación | Política | ¿Dentro? | Recall en test [IC 95%] | Precisión en test | ECE |
 |---|---|---|---|---|---|---|---|
-| D2 pide persona | keywords | ninguno | 0.50 | no | 67.9% [49-82] | 90.5% | 0.069 |
-| D2 pide persona | llm | 0.05-0.95 | 0.50 | sí | 100.0% [88-100] | 100.0% | 0.009 ± 0.001 |
-| D3 robo | keywords | ninguno | 0.30 | no | 68.8% [44-86] | 100.0% | 0.031 |
-| D3 robo | llm | 0.05-0.80 | 0.30 | sí | 100.0% [81-100] | 69.6% | 0.027 ± 0.007 |
+| D2 pide persona | keywords | ninguno | 0.50 | no | 67.9% [33-90] | 90.5% | 0.069 |
+| D2 pide persona | llm | 0.05-0.95 | 0.50 | sí | 100.0% [65-100] | 100.0% | 0.009 ± 0.001 |
+| D3 robo | keywords | ninguno | 0.30 | no | 68.8% [26-93] | 100.0% | 0.031 |
+| D3 robo | llm | 0.05-0.80 | 0.30 | sí | 100.0% [51-100] | 69.6% | 0.027 ± 0.007 |
 
 ### Equidad por idioma (D1, test)
 
 | Candidato | Español | Portugués | Portuñol |
 |---|---|---|---|
-| keywords | 41.7% [33-51] (n=108) | 45.5% [32-60] (n=44) | 75.0% [41-93] (n=8) |
-| llm | 96.3% [91-99] (n=108) | 97.7% [88-100] (n=44) | 100.0% [68-100] (n=8) |
+| keywords | 41.7% [25-60] (n=108) | 45.5% [21-72] (n=44) | 75.0% [20-97] (n=8) |
+| llm | 96.3% [82-99] (n=108) | 97.7% [71-100] (n=44) | 100.0% [34-100] (n=8) |
 
-Con n chicos, una diferencia solo cuenta si los intervalos no se solapan (`data/AGENTS.md` regla 10).
+Una diferencia solo cuenta si los intervalos (por semilla) no se solapan (`data/AGENTS.md` regla 10).
 
 ### Latencia y costo
 
@@ -130,14 +130,14 @@ Errores de **robo** con el umbral actual:
 
 ## Qué dicen los resultados
 
-1. **El baseline no alcanza para decidir:** acierta la intención el 44.4% de las veces. Con el umbral de la política decide solo el 31.2% de los mensajes y en el resto pide aclaración (no rompe nada, pero alarga la conversación).
-2. **El LLM sí:** 97.5% de exactitud en promedio, sin brecha significativa entre español, portugués y portuñol, a US$0.122 por 1.000 mensajes y ~2.1 s de latencia (p50). Con el umbral actual de la política decide el 100.0% y acierta el 96.9% de lo que decide.
-3. **Recomendación:** usar `DECISIONS=llm` (con el baseline como respaldo si el LLM falla) en el despliegue. La latencia se suma a cada turno: las decisiones corren antes de que el modelo converse, porque la política enruta el turno con ellas.
-4. **Umbrales de la política:** pide persona 0.50 dentro del rango válido; robo 0.30 dentro del rango válido; intención 0.50 decide el 100.0% con 96.9% de exactitud. Se mantienen, ahora respaldados por esta evaluación.
+1. **Baseline:** acierta la intención el 44.4% [30-60]; con el umbral de la política decide el 31.2% de los mensajes y en el resto pide aclaración. Entre idiomas: sin diferencia significativa.
+2. **LLM:** 97.5% de exactitud en promedio [86-99], a US$0.122 por 1.000 mensajes y ~2.1 s de latencia (p50); con el umbral de la política decide el 100.0% y acierta el 96.9%. Entre idiomas: sin diferencia significativa.
+3. **Recomendación:** usar `DECISIONS=llm` (con el baseline como respaldo si el LLM falla): su exactitud supera a la del baseline con intervalos que no se solapan. La latencia se suma a cada turno, porque la política enruta el turno con estas decisiones antes de que el modelo converse.
+4. **Umbrales de la política:** pide persona 0.50 dentro del rango válido; robo 0.30 dentro del rango válido; intención 0.50 acierta el 96.9% de lo que decide. Con el LLM, los umbrales actuales quedan respaldados por esta evaluación.
 
 ## Limitaciones
 
-- **D3 tiene una guía de anotación ambigua:** la definición incluye "uso por terceros", y una frase como "una compra que yo no hice" puede leerse así. Los falsos positivos de robo del LLM son casi todos de ese tipo; la segunda anotación dirá si es error del modelo o de la etiqueta.
+- **La guía de D3 admite dos lecturas:** incluye "uso por terceros", y una frase como "una compra que yo no hice" puede leerse así. Al revisar los errores de robo listados arriba, la segunda anotación (columna `theft`) dirá si son errores del modelo o de la etiqueta.
 - Un solo anotador hasta completar la segunda anotación; las etiquetas pueden tener sesgo del autor.
 - Texto sintético: no reemplaza mensajes reales de clientes; el portuñol y la jerga son una aproximación.
 - n pequeño en D3 (robo) y en portuñol: los intervalos son anchos.
