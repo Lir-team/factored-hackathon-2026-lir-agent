@@ -1,12 +1,12 @@
-"""Ingesta incremental S3 -> raw/.
+"""Incremental ingest S3 -> raw/.
 
-Copia los archivos tal cual (misma estructura de particiones). Solo descarga lo
-que falta o cambió (por ETag), así que re-ejecutar es barato y captura late
-arrivals. Cada ejecución deja un manifiesto en manifests/ingest/.
+Copies files as they are (same partition layout). Only downloads what is
+missing or changed (by ETag), so rerunning is cheap and picks up late
+arrivals. Each run leaves a manifest in manifests/ingest/.
 
-Uso:
-    python -m pipelines.ingest                      # tablas por defecto
-    python -m pipelines.ingest complaints customers # tablas específicas
+Usage:
+    python -m pipelines.ingest                      # default tables
+    python -m pipelines.ingest complaints customers # specific tables
 """
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ from dotenv import load_dotenv
 
 from .paths import DATA_DIR, MANIFESTS, RAW, S3_BUCKET, S3_PREFIX
 
-# digital_events (3.7 GB) y campaign_sends quedan fuera por defecto: no son
-# centrales para atención al cliente. Pedirlas explícitamente si se necesitan.
+# digital_events (3.7 GB) and campaign_sends are excluded by default: they are not
+# central to customer service. Request them explicitly if needed.
 DEFAULT_TABLES = [
     "customers", "products", "branches", "service_agents", "marketing_campaigns",
     "daily_exchange_rates", "call_center_interactions", "call_transcripts",

@@ -1,0 +1,728 @@
+{
+  "run_at": "2026-10-05T21:47:33+00:00",
+  "summary": {
+    "uniqueness": {
+      "passed": 2,
+      "total": 3
+    },
+    "completeness": {
+      "passed": 3,
+      "total": 6
+    },
+    "validity": {
+      "passed": 7,
+      "total": 8
+    },
+    "consistency": {
+      "passed": 11,
+      "total": 16
+    },
+    "integrity": {
+      "passed": 4,
+      "total": 4
+    },
+    "accuracy": {
+      "passed": 0,
+      "total": 7
+    },
+    "timeliness": {
+      "passed": 4,
+      "total": 4
+    }
+  },
+  "data_products": {
+    "customers": {
+      "owner": "Core Banking (business)",
+      "steward": "Lir data team",
+      "consumers": [
+        "agent",
+        "analytics"
+      ],
+      "freshness_slo": "monthly snapshot"
+    },
+    "products": {
+      "owner": "Core Banking (business)",
+      "steward": "Lir data team",
+      "consumers": [
+        "agent",
+        "analytics"
+      ],
+      "freshness_slo": "monthly snapshot"
+    },
+    "transactions": {
+      "owner": "Core Banking (business)",
+      "steward": "Lir data team",
+      "consumers": [
+        "agent",
+        "analytics"
+      ],
+      "freshness_slo": "D+1"
+    },
+    "call_center_interactions": {
+      "owner": "Contact Center Ops",
+      "steward": "Lir data team",
+      "consumers": [
+        "analytics",
+        "ml"
+      ],
+      "freshness_slo": "D+1"
+    },
+    "call_transcripts": {
+      "owner": "Contact Center Ops",
+      "steward": "Lir data team",
+      "consumers": [
+        "analytics",
+        "ml"
+      ],
+      "freshness_slo": "D+1"
+    },
+    "satisfaction_surveys": {
+      "owner": "Contact Center Ops",
+      "steward": "Lir data team",
+      "consumers": [
+        "analytics"
+      ],
+      "freshness_slo": "D+1"
+    },
+    "complaints": {
+      "owner": "PQR / Service",
+      "steward": "Lir data team",
+      "consumers": [
+        "agent",
+        "analytics"
+      ],
+      "freshness_slo": "D+1"
+    }
+  },
+  "results": [
+    {
+      "id": "cus_pk_unique",
+      "table": "customers",
+      "dimension": "uniqueness",
+      "use": "agent",
+      "why": null,
+      "value": 0.0,
+      "threshold": {
+        "min": null,
+        "max": 0
+      },
+      "passed": true,
+      "seconds": 0.03
+    },
+    {
+      "id": "cus_document_unique",
+      "table": "customers",
+      "dimension": "uniqueness",
+      "use": "agent",
+      "why": null,
+      "value": 0.0,
+      "threshold": {
+        "min": null,
+        "max": 0
+      },
+      "passed": true,
+      "seconds": 0.02
+    },
+    {
+      "id": "cus_contactable",
+      "table": "customers",
+      "dimension": "completeness",
+      "use": "agent",
+      "why": "The handoff/callback needs at least one contact channel.",
+      "rows": 150000,
+      "failing": 105,
+      "fail_rate": 0.0007,
+      "threshold": 0.05,
+      "passed": true,
+      "seconds": 0.02
+    },
+    {
+      "id": "cus_credit_score_range",
+      "table": "customers",
+      "dimension": "validity",
+      "use": "analytics",
+      "why": null,
+      "rows": 150000,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "cus_adult_at_registration",
+      "table": "customers",
+      "dimension": "validity",
+      "use": "agent",
+      "why": null,
+      "rows": 150000,
+      "failing": 3106,
+      "fail_rate": 0.020707,
+      "threshold": 0,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "cus_country_domain",
+      "table": "customers",
+      "dimension": "validity",
+      "use": "agent",
+      "why": null,
+      "rows": 150000,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "cus_document_type_matches_country",
+      "table": "customers",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": "DNI is Argentine, CC/CE Colombian, CURP Mexican. An inconsistent document invalidates identity verification.",
+      "rows": 150000,
+      "failing": 74907,
+      "fail_rate": 0.49938,
+      "threshold": 0.01,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "cus_country_matches_branch",
+      "table": "customers",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 150000,
+      "failing": 4,
+      "fail_rate": 2.7e-05,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.02
+    },
+    {
+      "id": "cus_accent_matches_country",
+      "table": "customers",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 150000,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.05,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "prd_number_unique",
+      "table": "products",
+      "dimension": "uniqueness",
+      "use": "agent",
+      "why": null,
+      "value": 6.0,
+      "threshold": {
+        "min": null,
+        "max": 0
+      },
+      "passed": false,
+      "seconds": 0.03
+    },
+    {
+      "id": "prd_customer_fk",
+      "table": "products",
+      "dimension": "integrity",
+      "use": "agent",
+      "why": null,
+      "rows": 400000,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.05
+    },
+    {
+      "id": "prd_local_currency_mx",
+      "table": "products",
+      "dimension": "accuracy",
+      "use": "agent",
+      "why": "No product of a Mexican customer is in MXN. Balances in an implausible currency = wrong answer to the customer.",
+      "rows": 400000,
+      "failing": 200398,
+      "fail_rate": 0.500995,
+      "threshold": 0.5,
+      "passed": false,
+      "seconds": 0.06
+    },
+    {
+      "id": "prd_credit_limit_only_credit",
+      "table": "products",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": null,
+      "rows": 400000,
+      "failing": 6655,
+      "fail_rate": 0.016637,
+      "threshold": 0.01,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "prd_dpd_only_credit",
+      "table": "products",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": null,
+      "rows": 400000,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "trx_fk_product",
+      "table": "transactions",
+      "dimension": "integrity",
+      "use": "agent",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.31
+    },
+    {
+      "id": "trx_owner_matches_product",
+      "table": "transactions",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": "If the transaction points to another customer's product, the agent could reveal someone else's data.",
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.49
+    },
+    {
+      "id": "trx_currency_matches_product",
+      "table": "transactions",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.37
+    },
+    {
+      "id": "trx_amount_positive",
+      "table": "transactions",
+      "dimension": "validity",
+      "use": "agent",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.03
+    },
+    {
+      "id": "trx_amount_usd_complete",
+      "table": "transactions",
+      "dimension": "completeness",
+      "use": "analytics",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.03
+    },
+    {
+      "id": "trx_country_domain",
+      "table": "transactions",
+      "dimension": "validity",
+      "use": "analytics",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.05
+    },
+    {
+      "id": "trx_late_arrival",
+      "table": "transactions",
+      "dimension": "timeliness",
+      "use": "agent",
+      "why": "D+1 freshness: a transaction that arrives later is not visible to the agent the next day.",
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.02
+    },
+    {
+      "id": "trx_fraud_score_range",
+      "table": "transactions",
+      "dimension": "validity",
+      "use": "analytics",
+      "why": null,
+      "rows": 4425008,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.03
+    },
+    {
+      "id": "int_customer_fk",
+      "table": "call_center_interactions",
+      "dimension": "integrity",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.06
+    },
+    {
+      "id": "int_contact_reason_granular",
+      "table": "call_center_interactions",
+      "dimension": "accuracy",
+      "use": "analytics",
+      "why": "contact_reason should detail the reason, but it is a copy of reason_category: there are only 6 reasons.",
+      "rows": 686296,
+      "failing": 686296,
+      "fail_rate": 1.0,
+      "threshold": 0.5,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "int_sentiment_label_matches_score",
+      "table": "call_center_interactions",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.05,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "int_duration_complete",
+      "table": "call_center_interactions",
+      "dimension": "completeness",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 96234,
+      "fail_rate": 0.140222,
+      "threshold": 0.05,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "int_wait_complete",
+      "table": "call_center_interactions",
+      "dimension": "completeness",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.05,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "int_transcript_flag_consistent",
+      "table": "call_center_interactions",
+      "dimension": "consistency",
+      "use": "ml",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.05
+    },
+    {
+      "id": "int_accent_matches_customer",
+      "table": "call_center_interactions",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.05,
+      "passed": true,
+      "seconds": 0.07
+    },
+    {
+      "id": "int_late_arrival",
+      "table": "call_center_interactions",
+      "dimension": "timeliness",
+      "use": "analytics",
+      "why": null,
+      "rows": 686296,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "trn_interaction_fk",
+      "table": "call_transcripts",
+      "dimension": "integrity",
+      "use": "ml",
+      "why": null,
+      "rows": 171321,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.09
+    },
+    {
+      "id": "trn_customer_matches_interaction",
+      "table": "call_transcripts",
+      "dimension": "consistency",
+      "use": "ml",
+      "why": null,
+      "rows": 171321,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.12
+    },
+    {
+      "id": "trn_no_placeholders",
+      "table": "call_transcripts",
+      "dimension": "accuracy",
+      "use": "ml",
+      "why": "Text with unfilled {monto} {moneda} is not real speech.",
+      "rows": 171321,
+      "failing": 171321,
+      "fail_rate": 1.0,
+      "threshold": 0.01,
+      "passed": false,
+      "seconds": 0.0
+    },
+    {
+      "id": "trn_text_diversity",
+      "table": "call_transcripts",
+      "dimension": "accuracy",
+      "use": "ml",
+      "why": "Representativeness for AI: if a few unique phrases repeat thousands of times, the text does not represent real demand.",
+      "value": 0.000245,
+      "threshold": {
+        "min": 0.1,
+        "max": null
+      },
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "trn_intent_label_informative",
+      "table": "call_transcripts",
+      "dimension": "accuracy",
+      "use": "ml",
+      "why": "Candidate label for the intent classifier. If it is constant, it cannot be used as a label.",
+      "rows": 171321,
+      "failing": 171321,
+      "fail_rate": 1.0,
+      "threshold": 0.5,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "trn_topic_not_copied",
+      "table": "call_transcripts",
+      "dimension": "accuracy",
+      "use": "ml",
+      "why": "If main_topics is a copy of the interaction's category, it was not extracted from the text.",
+      "rows": 171321,
+      "failing": 171321,
+      "fail_rate": 1.0,
+      "threshold": 0.5,
+      "passed": false,
+      "seconds": 0.1
+    },
+    {
+      "id": "srv_score_range",
+      "table": "satisfaction_surveys",
+      "dimension": "validity",
+      "use": "analytics",
+      "why": null,
+      "rows": 212759,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.02
+    },
+    {
+      "id": "srv_nps_category_derivable",
+      "table": "satisfaction_surveys",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 212759,
+      "failing": 3274,
+      "fail_rate": 0.015388,
+      "threshold": 0,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "srv_after_interaction",
+      "table": "satisfaction_surveys",
+      "dimension": "timeliness",
+      "use": "analytics",
+      "why": null,
+      "rows": 212759,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.1
+    },
+    {
+      "id": "srv_customer_matches_interaction",
+      "table": "satisfaction_surveys",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 212759,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.13
+    },
+    {
+      "id": "cmp_origin_interaction_linked",
+      "table": "complaints",
+      "dimension": "completeness",
+      "use": "analytics",
+      "why": "Without this link, call -> complaint cannot be traced (case lineage).",
+      "rows": 67095,
+      "failing": 33761,
+      "fail_rate": 0.503182,
+      "threshold": 0.5,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "cmp_product_belongs_to_customer",
+      "table": "complaints",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": null,
+      "rows": 67095,
+      "failing": 44570,
+      "fail_rate": 0.664282,
+      "threshold": 0,
+      "passed": false,
+      "seconds": 0.08
+    },
+    {
+      "id": "cmp_amount_currency_pair",
+      "table": "complaints",
+      "dimension": "consistency",
+      "use": "agent",
+      "why": null,
+      "rows": 67095,
+      "failing": 2105,
+      "fail_rate": 0.031373,
+      "threshold": 0,
+      "passed": false,
+      "seconds": 0.0
+    },
+    {
+      "id": "cmp_resolution_after_creation",
+      "table": "complaints",
+      "dimension": "validity",
+      "use": "analytics",
+      "why": null,
+      "rows": 67095,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "cmp_resolved_has_date",
+      "table": "complaints",
+      "dimension": "completeness",
+      "use": "analytics",
+      "why": null,
+      "rows": 67095,
+      "failing": 772,
+      "fail_rate": 0.011506,
+      "threshold": 0.01,
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "cmp_resolution_days_consistent",
+      "table": "complaints",
+      "dimension": "consistency",
+      "use": "analytics",
+      "why": null,
+      "rows": 67095,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.01
+    },
+    {
+      "id": "cmp_description_informative",
+      "table": "complaints",
+      "dimension": "accuracy",
+      "use": "ml",
+      "why": "Free-text description as a source of intent/NLP.",
+      "value": 7.5e-05,
+      "threshold": {
+        "min": 0.1,
+        "max": null
+      },
+      "passed": false,
+      "seconds": 0.01
+    },
+    {
+      "id": "cmp_late_arrival",
+      "table": "complaints",
+      "dimension": "timeliness",
+      "use": "agent",
+      "why": null,
+      "rows": 67095,
+      "failing": 0,
+      "fail_rate": 0.0,
+      "threshold": 0.01,
+      "passed": true,
+      "seconds": 0.0
+    }
+  ]
+}

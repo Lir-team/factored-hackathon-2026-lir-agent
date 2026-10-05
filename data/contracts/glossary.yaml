@@ -1,12 +1,12 @@
-# Semántica compartida (principio 10) — fuente única de verdad para:
-#   1) mapeos de valores crudos -> códigos canónicos (los usa pipelines/staging.py)
-#   2) definiciones de negocio de métricas (las usan análisis, eval y el agente)
+# Shared semantics (principle 10): single source of truth for:
+#   1) mappings from raw values -> canonical codes (used by pipelines/staging.py)
+#   2) business definitions of metrics (used by analysis, eval and the agent)
 #
-# Por qué existe: el diccionario v1.0.0 documenta valores en inglés, pero los
-# datos llegan en español y con variantes ("México" vs "Mexico"). Muchos
-# problemas de "calidad" son en realidad problemas de definición.
-# Códigos canónicos: snake_case en inglés, independientes del idioma del cliente
-# (el agente atiende en ES y PT).
+# Why it exists: the v1.0.0 dictionary documents values in English, but the
+# data arrives in Spanish and with variants ("México" vs "Mexico"). Many
+# "quality" problems are really definition problems.
+# Canonical codes: English snake_case, independent of the customer's language
+# (the agent serves customers in ES and PT).
 
 value_maps:
   country:
@@ -26,12 +26,12 @@ value_maps:
       "Seguro": insurance
 
   reason_category:
-    # "Retención" no está en el diccionario: valor no documentado (schema drift semántico).
+    # "Retención" is not in the dictionary: undocumented value (semantic schema drift).
     applies_to: [call_center_interactions.reason_category, call_center_interactions.contact_reason, call_transcripts.main_topics]
     values: {"Transaccional": transactional, "Producto": product, "Queja": complaint, "Técnico": technical, "Comercial": commercial, "Retención": retention}
 
   sentiment:
-    # "Muy Positivo" no está documentado.
+    # "Muy Positivo" is not documented.
     applies_to: [call_center_interactions.detected_sentiment]
     values: {"Muy Positivo": very_positive, "Positivo": positive, "Neutral": neutral, "Negativo": negative, "Muy Negativo": very_negative}
 
@@ -40,7 +40,7 @@ value_maps:
     values: {"Positive": positive, "Neutral": neutral, "Negative": negative}
 
   document_type:
-    # El diccionario lista CURP; no aparece ninguno. "Pasaporte" viene en español.
+    # The dictionary lists CURP; none appear. "Pasaporte" comes in Spanish.
     applies_to: [customers.document_type]
     values: {"DNI": dni, "CC": cc, "CE": ce, "Pasaporte": passport, "Passport": passport, "CURP": curp}
 
@@ -71,20 +71,20 @@ value_maps:
 
 business_terms:
   contact:
-    definition: "Una fila de call_center_interactions (llamada, chat, email o video) de un cliente."
+    definition: "One row of call_center_interactions (call, chat, email or video) from a customer."
   fcr:
-    definition: "First Contact Resolution. Proporción de contactos con was_resolved = true."
-    caveat: "Es auto-reportado por el sistema origen. Se contrasta con repeat_contact_7d, que es observable."
+    definition: "First Contact Resolution. Share of contacts with was_resolved = true."
+    caveat: "It is self-reported by the source system. It is checked against repeat_contact_7d, which is observable."
   repeat_contact_7d:
-    definition: "Un contacto es 'repetido' si el mismo customer_id vuelve a contactar dentro de 7 días con la misma reason_category."
-    rationale: "Proxy observable de no-resolución, independiente de la etiqueta was_resolved."
+    definition: "A contact is 'repeated' if the same customer_id contacts again within 7 days with the same reason_category."
+    rationale: "Observable proxy for non-resolution, independent of the was_resolved label."
   escalation:
-    definition: "was_escalated = true: el contacto se derivó a supervisor."
+    definition: "was_escalated = true: the contact was escalated to a supervisor."
   complaint_sla_breach:
-    definition: "sla_breached = true en complaints."
+    definition: "sla_breached = true in complaints."
   active_customer:
     definition: "customers.customer_status = 'Active'."
   amount_usd:
-    definition: "Monto en USD. Si la moneda es USD, es el monto. Si falta, se imputa con daily_exchange_rates del día de transaction_date (flag amount_usd_imputed)."
+    definition: "Amount in USD. If the currency is USD, it is the amount. If missing, it is imputed with daily_exchange_rates for the transaction_date day (flag amount_usd_imputed)."
   process_lag_days:
-    definition: "fecha(evento) - process_date. Mide oportunidad (timeliness) de la carga."
+    definition: "date(event) - process_date. Measures the timeliness of the load."

@@ -1,10 +1,10 @@
-"""staging/ -> curated/ : tablas analíticas para priorizar el flujo.
+"""staging/ -> curated/ : analytical tables for prioritizing the flow.
 
-- contacts_enriched: una fila por contacto + segmento/país del cliente, CSAT del
-  contacto y repeat_contact_7d (definición en contracts/glossary.yaml).
-- complaints_enriched: quejas + segmento/país + flag de disputa de cargo.
+- contacts_enriched: one row per contact + customer segment/country, contact
+  CSAT and repeat_contact_7d (defined in contracts/glossary.yaml).
+- complaints_enriched: complaints + segment/country + charge dispute flag.
 
-Uso:
+Usage:
     python -m pipelines.curated
 """
 from __future__ import annotations

@@ -1,6 +1,6 @@
-# Relaciones FK según el diccionario de datos v1.0.0.
-# El dataset contiene un % pequeño de huérfanos a propósito: las validaciones
-# deben medir y reportar la tasa de huérfanos, no fallar ante el primero.
+# FK relationships according to data dictionary v1.0.0.
+# The dataset contains a small % of orphans on purpose: validations
+# must measure and report the orphan rate, not fail on the first one.
 relationships:
   - {from: products.customer_id,                         to: customers.customer_id}
   - {from: transactions.customer_id,                     to: customers.customer_id}

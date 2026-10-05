@@ -36,28 +36,43 @@ outcome email is sent only when SMTP is configured. Telegram voice notes are tra
 Speech-to-Text only when `SPEECH_TO_TEXT=google` (off by default; `lir-infra` must enable
 `speech.googleapis.com` and grant `roles/speech.client` first).
 
+## Results at a glance
+
+Every number below is produced by code in this repository; each row links to its report.
+
+| Area | Result | Source |
+|---|---|---|
+| **Data** | 6.1M rows in 10 tables over 3 years: 4.4M transactions, 686k contact-center interactions, 67k formal claims, 150k customers | [`manifests/staging/`](data/manifests/staging/) |
+| **Why this workflow** | Complaints are **41.2%** of unresolved contacts (17.1% of volume); charge disputes are **40.6%** of formal claims, and 74.9% of them are still open | [`insights.md`](data/reports/insights.md) |
+| **Data quality** | 31 of 48 rules pass. Integrity and timeliness: 100%. Free-text fields fail accuracy (they are templates), so they are never used for training | [`data_quality.md`](data/reports/data_quality.md) |
+| **Decision models** | Jev **97.1%** and LLM **97.5%** intent accuracy vs **44.4%** for the keyword baseline, with no significant gap between Spanish, Portuguese and portuñol | [`decision_eval.md`](data/reports/decision_eval.md) |
+| **Agent quality** | 479 automated tests; 35 scenario tasks graded on outcome, safety, grounding and language | [`app/evals/`](app/evals/README.md) |
+| **Human in the loop** | Every dispute needs the customer and a specialist; every escalated case is accepted or rejected by a specialist; the customer hears every outcome | [`how-it-works.md`](docs/agent/how-it-works.md) |
+| **Infrastructure** | 125 Terraform-managed resources: 3 Cloud Run services, a Cloud Run job, API Gateway, Pub/Sub with dead-letter, Firestore, BigQuery; keyless CI | [`lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) |
+| **Live pilot** (team testing since 2026-10-04) | 13 cases, 16 conversations, 12 escalations, 3 claims resolved by a specialist; US$0.022 of LLM cost per conversation; 1.8 s median per turn | [`looker-studio.md`](docs/analytics/looker-studio.md) |
+
+![Unresolved contacts by contact reason](data/reports/figures/01_unresolved_by_reason.png)
+
+**Decision models, measured against labels** on 320 messages (Spanish, Portuguese, portuñol)
+split by seed so no paraphrase leaks into the test set:
+
+| Candidate | Intent accuracy [95% CI] | Decides alone / right when it does | p50 latency |
+|---|---|---|---|
+| Keyword baseline | 44.4% [30-60] | 31.2% / 94.0% | <1 ms |
+| LLM | 97.5% [86-99] | 100% / 96.9% | 2.1 s |
+| Jev | 97.1% [88-100] | 100% / 98.1% | 3.1 s |
+
 ## How it works and why
 
 The full explanation, with every number linked to the report that produced it, is in
-[`docs/how-it-works.md`](docs/how-it-works.md). In short:
+[`docs/agent/how-it-works.md`](docs/agent/how-it-works.md). In short:
 
-- **Why disputes:** complaints are 41.2% of unresolved contacts and charge disputes are 40.6% of
-  formal claims, measured separately ([`insights.md`](data/reports/insights.md)).
 - **Three roles kept apart:** the LLM (`gpt-4o`) converses, a typed decision layer classifies
   with probabilities, and a versioned policy decides what the agent may do. No model moves money.
-- **Decision models, measured against labels** on 320 ES/PT/portuñol messages split by seed
-  ([`decision_eval.md`](data/reports/decision_eval.md)):
-
-  | Candidate | Intent accuracy [95% CI] | Decides / right at the policy threshold |
-  |---|---|---|
-  | Keyword baseline | 44.4% [30-60] | 31.2% / 94.0% |
-  | LLM | 97.5% [86-99] | 100% / 96.9% |
-  | Jev | 97.1% [88-100] | 100% / 98.1% |
-
-- **People approve everything that matters:** disputes need the customer and a specialist;
-  escalated cases are accepted or rejected by a specialist; the customer hears every outcome.
-- **Tested at every level:** 479 tests, 35 scenario tasks graded on outcome and safety, 48 data
-  quality rules, and an audit trail in BigQuery and Looker Studio.
+- **The decision layer is separate** so every decision has a probability, a threshold in the
+  policy, a measured accuracy and an audit trail; the keyword baseline stays as the fallback.
+- **People approve everything that matters,** and a deterministic output guard blocks replies
+  that promise or claim a refund, say a card was frozen, or ask for a credential.
 
 ## Architecture
 
@@ -115,7 +130,7 @@ before any model reads them.
 │   ├── decision-layer/  # Typed decisions with probabilities (keyword baseline, Jev, fallback chain)
 │   └── evals/           # Scenario evals from the jobs to be done (promptfoo runner, code graders)
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
-├── docs/         # Product proposal and architecture diagram (docs/architecture/)
+├── docs/         # How it works (agent/), proposal and backlog (product/), privacy (security/), architecture, analytics
 ├── .github/      # deploy-agent.yml: build and roll out the agent image (see Deploy)
 ├── scripts/      # check.sh: does everything still work?
 └── .githooks/    # Git hooks: secret scan on commit, no direct push to main
@@ -300,19 +315,19 @@ git config core.hooksPath .githooks
 
 ## Documentation
 
-- [`data/README.md`](data/README.md): data layers, provenance, declared vs observed quality, leakage rules (Spanish)
-- [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/` (Spanish)
-- [`app/evals/AGENTS.md`](app/evals/AGENTS.md): how to run the evals, full or scoped, and rules for changing scenarios (Spanish)
+- [`data/README.md`](data/README.md): data layers, provenance, declared vs observed quality, leakage rules
+- [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/`
+- [`app/evals/AGENTS.md`](app/evals/AGENTS.md): how to run the evals, full or scoped, and rules for changing scenarios
 - [`app/lir-agent/README.md`](app/lir-agent/README.md): agent flow, tools, layout, commands, limitations
 - [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (baseline, Jev, fallback chain)
 - [`docs/architecture/case-flow.md`](docs/architecture/case-flow.md): case flow wiring (web form, Pub/Sub, agent, Telegram), routes and local run
 - [`docs/analytics/looker-studio.md`](docs/analytics/looker-studio.md): audit trail and evaluation runs in BigQuery, Looker Studio dashboards
-- [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
-- [`docs/how-it-works.md`](docs/how-it-works.md): how the agent decides, why each model, and how it is measured
-- [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
-- [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
-- [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow (Spanish)
-- [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard (Spanish)
+- [`docs/product/proposal.md`](docs/product/proposal.md): product proposal
+- [`docs/agent/how-it-works.md`](docs/agent/how-it-works.md): how the agent decides, why each model, and how it is measured
+- [`docs/security/privacy.md`](docs/security/privacy.md): what leaves the perimeter, to whom, and the residual risk
+- [`docs/product/evaluation-backlog.md`](docs/product/evaluation-backlog.md): tickets from the critical review against the Bases
+- [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow
+- [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard
 
 ## License
 

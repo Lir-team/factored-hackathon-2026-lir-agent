@@ -1,7 +1,7 @@
 # evals/
 
 Scenario evals for the Lir agent (`app/lir-agent/`). Each **task** is a customer scenario
-derived from the jobs to be done in [`docs/propuesta-opcion-1-disputas.md`](../../docs/propuesta-opcion-1-disputas.md)
+derived from the jobs to be done in [`docs/product/proposal.md`](../../docs/product/proposal.md)
 §3, with the outcome the synthetic policy (`resources/policy.yaml`) requires. The harness runs
 the real agent (ADK + LiteLLM + decision layer + policy + tools) on a team-generated world and
 grades **what the agent achieved**, not the exact path it took.

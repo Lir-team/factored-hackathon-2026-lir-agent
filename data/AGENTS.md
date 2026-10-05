@@ -1,12 +1,12 @@
-# Reglas para agentes (Claude Code, Codex, etc.) dentro de data/
+# Rules for agents (Claude Code, Codex, etc.) inside data/
 
-1. **`raw/` es de solo lectura.** Nunca modificar, renombrar ni borrar archivos ahí.
-2. **Desarrollar sobre `samples/`**, no sobre las tablas completas (transactions: 5M filas, digital_events: 10M). Usar las tablas completas solo en pipelines explícitos.
-3. **No enviar filas crudas a APIs de modelos externos.** Aunque el dataset es sintético, se trata como datos de clientes: agregar, anonimizar o usar muestras mínimas.
-4. **No imprimir ni escribir credenciales** (AWS keys, `.env`). No leer el PDF del diccionario para sacar credenciales.
-5. **No tocar `eval/`** para ajustar prompts o modelos: es el conjunto held-out. Agregar casos solo cuando se pida y registrarlos en `eval/README.md`.
-6. **Validar contra `contracts/`** antes de escribir en `staging/` o `curated/`. Si el esquema no coincide, reportarlo; no "arreglar" el contrato en silencio.
-7. **Todo derivado se regenera con código.** No editar a mano archivos de `staging/`, `curated/` ni `samples/`.
-8. Cada nuevo dataset derivado registra su linaje en `manifests/`.
-9. **`reports/` se genera con código** (`python -m pipelines`). No editar los .md a mano: cambiar el generador.
-10. Antes de afirmar una diferencia entre grupos, reportar n y significancia (ver `_spread` en `pipelines/insights.py`).
+1. **`raw/` is read-only.** Never modify, rename or delete files there.
+2. **Develop on `samples/`**, not on the full tables (transactions: 5M rows, digital_events: 10M). Use the full tables only in explicit pipelines.
+3. **Do not send raw rows to external model APIs.** Even though the dataset is synthetic, treat it as customer data: aggregate, anonymize or use minimal samples.
+4. **Do not print or write credentials** (AWS keys, `.env`). Do not read the dictionary PDF to extract credentials.
+5. **Do not touch `eval/`** to tune prompts or models: it is the held-out set. Add cases only when asked and record them in `eval/README.md`.
+6. **Validate against `contracts/`** before writing to `staging/` or `curated/`. If the schema does not match, report it; do not silently "fix" the contract.
+7. **Everything derived is regenerated with code.** Do not hand-edit files in `staging/`, `curated/` or `samples/`.
+8. Each new derived dataset records its lineage in `manifests/`.
+9. **`reports/` is generated with code** (`python -m pipelines`). Do not edit the .md files by hand: change the generator.
+10. Before claiming a difference between groups, report n and significance (see `_spread` in `pipelines/insights.py`).

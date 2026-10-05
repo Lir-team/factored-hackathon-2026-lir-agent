@@ -1,12 +1,12 @@
-# Contrato generado desde LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
-# Editar a mano solo para agregar reglas; los cambios de esquema se registran en contracts/CHANGELOG.md
+# Contract generated from LATAM_Bank_Complete_Data_Dictionary.pdf (v1.0.0)
+# Edit by hand only to add rules; schema changes are recorded in contracts/CHANGELOG.md
 table: products
 kind: dimension
 description: "Active financial products of customers"
 source_system: "Core Banking"
 partitioning: monthly_snapshot
 expected_rows: 400000
-data_origin: synthetic  # provisto por organizadores
+data_origin: synthetic  # provided by the organizers
 contract_version: 1.0.0
 columns:
   - name: product_id

@@ -1,27 +1,27 @@
-# Reglas de calidad sobre staging/, organizadas por dimensión (DAMA-DMBOK / ISO 8000).
+# Quality rules over staging/, organized by dimension (DAMA-DMBOK / ISO 8000).
 #
-# Adecuación al propósito: cada regla declara para qué uso importa (`use`) y un
-# umbral de negocio (`max_fail_rate`). El mismo problema puede ser tolerable para
-# análisis de tendencias y bloqueante para lo que el agente dice a un cliente.
-#   use: agent       -> datos que el agente usa para responder o actuar (estricto)
-#        analytics   -> análisis de demanda / priorización (tolerante)
-#        ml          -> etiquetas o features para el componente aprendido
+# Fitness for use: each rule declares which use it matters for (`use`) and a
+# business threshold (`max_fail_rate`). The same problem can be tolerable for
+# trend analysis and blocking for what the agent tells a customer.
+#   use: agent       -> data the agent uses to answer or act (strict)
+#        analytics   -> demand analysis / prioritization (tolerant)
+#        ml          -> labels or features for the learned component
 #
-# Tipos de regla:
-#   fail_when: expresión SQL por fila sobre `t` (la tabla). Se mide la tasa de filas que fallan.
-#   metric:    SQL escalar; falla si queda fuera de [min, max].
-# Las subconsultas pueden referenciar otras tablas de staging por su nombre.
+# Rule types:
+#   fail_when: per-row SQL expression over `t` (the table). The rate of failing rows is measured.
+#   metric:    scalar SQL; fails if it falls outside [min, max].
+# Subqueries can reference other staging tables by name.
 #
-# Ownership (principio 3): roles, no personas. Se asignan nombres al conformar el equipo.
+# Ownership (principle 3): roles, not people. Names are assigned once the team is formed.
 
 data_products:
-  customers:                {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
-  products:                 {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
-  transactions:             {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "D+1"}
-  call_center_interactions: {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics, ml],   freshness_slo: "D+1"}
-  call_transcripts:         {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics, ml],   freshness_slo: "D+1"}
-  satisfaction_surveys:     {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics],       freshness_slo: "D+1"}
-  complaints:               {owner: "PQR / Servicio",         steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "D+1"}
+  customers:                {owner: "Core Banking (business)", steward: "Lir data team", consumers: [agent, analytics], freshness_slo: "monthly snapshot"}
+  products:                 {owner: "Core Banking (business)", steward: "Lir data team", consumers: [agent, analytics], freshness_slo: "monthly snapshot"}
+  transactions:             {owner: "Core Banking (business)", steward: "Lir data team", consumers: [agent, analytics], freshness_slo: "D+1"}
+  call_center_interactions: {owner: "Contact Center Ops",     steward: "Lir data team", consumers: [analytics, ml],   freshness_slo: "D+1"}
+  call_transcripts:         {owner: "Contact Center Ops",     steward: "Lir data team", consumers: [analytics, ml],   freshness_slo: "D+1"}
+  satisfaction_surveys:     {owner: "Contact Center Ops",     steward: "Lir data team", consumers: [analytics],       freshness_slo: "D+1"}
+  complaints:               {owner: "PQR / Service",         steward: "Lir data team", consumers: [agent, analytics], freshness_slo: "D+1"}
 
 rules:
   # ---------------- customers ----------------
@@ -31,7 +31,7 @@ rules:
      metric: "select count(*) - count(distinct document_number) from customers", max: 0}
   - {id: cus_contactable, table: customers, dimension: completeness, use: agent, max_fail_rate: 0.05,
      fail_when: "mobile_phone is null and email is null",
-     why: "El handoff/callback necesita al menos un canal de contacto."}
+     why: "The handoff/callback needs at least one contact channel."}
   - {id: cus_credit_score_range, table: customers, dimension: validity, use: analytics, max_fail_rate: 0,
      fail_when: "credit_score is not null and credit_score not between 300 and 850"}
   - {id: cus_adult_at_registration, table: customers, dimension: validity, use: agent, max_fail_rate: 0,
@@ -40,7 +40,7 @@ rules:
      fail_when: "country not in ('MX','CO','AR')"}
   - {id: cus_document_type_matches_country, table: customers, dimension: consistency, use: agent, max_fail_rate: 0.01,
      fail_when: "(document_type = 'dni' and country <> 'AR') or (document_type in ('cc','ce') and country <> 'CO') or (document_type = 'curp' and country <> 'MX')",
-     why: "DNI es argentino, CC/CE colombianos, CURP mexicano. Un documento incoherente invalida la verificación de identidad."}
+     why: "DNI is Argentine, CC/CE Colombian, CURP Mexican. An inconsistent document invalidates identity verification."}
   - {id: cus_country_matches_branch, table: customers, dimension: consistency, use: analytics, max_fail_rate: 0.01,
      fail_when: "country <> (select b.country from branches b where b.branch_id = t.registration_branch_id)"}
   - {id: cus_accent_matches_country, table: customers, dimension: consistency, use: analytics, max_fail_rate: 0.05,
@@ -53,7 +53,7 @@ rules:
      fail_when: "customer_id not in (select customer_id from customers)"}
   - {id: prd_local_currency_mx, table: products, dimension: accuracy, use: agent, max_fail_rate: 0.5,
      fail_when: "currency <> 'MXN' and (select c.country from customers c where c.customer_id = t.customer_id) = 'MX'",
-     why: "Ningún producto de un cliente mexicano está en MXN. Saldos en moneda inverosímil = respuesta incorrecta al cliente."}
+     why: "No product of a Mexican customer is in MXN. Balances in an implausible currency = wrong answer to the customer."}
   - {id: prd_credit_limit_only_credit, table: products, dimension: consistency, use: agent, max_fail_rate: 0.01,
      fail_when: "(credit_limit is not null) <> (product_type in ('credit_card','personal_loan','mortgage'))"}
   - {id: prd_dpd_only_credit, table: products, dimension: consistency, use: agent, max_fail_rate: 0.01,
@@ -64,7 +64,7 @@ rules:
      fail_when: "product_id not in (select product_id from products)"}
   - {id: trx_owner_matches_product, table: transactions, dimension: consistency, use: agent, max_fail_rate: 0,
      fail_when: "customer_id <> (select p.customer_id from products p where p.product_id = t.product_id)",
-     why: "Si la transacción apunta a un producto de otro cliente, el agente podría revelar datos ajenos."}
+     why: "If the transaction points to another customer's product, the agent could reveal someone else's data."}
   - {id: trx_currency_matches_product, table: transactions, dimension: consistency, use: agent, max_fail_rate: 0.01,
      fail_when: "currency <> (select p.currency from products p where p.product_id = t.product_id)"}
   - {id: trx_amount_positive, table: transactions, dimension: validity, use: agent, max_fail_rate: 0,
@@ -75,7 +75,7 @@ rules:
      fail_when: "transaction_country not in ('MX','CO','AR','BR','ES','US')"}
   - {id: trx_late_arrival, table: transactions, dimension: timeliness, use: agent, max_fail_rate: 0.01,
      fail_when: "process_lag_days < -1 or process_lag_days > 1",
-     why: "Frescura D+1: una transacción que llega más tarde no es visible para el agente al día siguiente."}
+     why: "D+1 freshness: a transaction that arrives later is not visible to the agent the next day."}
   - {id: trx_fraud_score_range, table: transactions, dimension: validity, use: analytics, max_fail_rate: 0,
      fail_when: "fraud_score is not null and fraud_score not between 0 and 100"}
 
@@ -84,7 +84,7 @@ rules:
      fail_when: "customer_id not in (select customer_id from customers)"}
   - {id: int_contact_reason_granular, table: call_center_interactions, dimension: accuracy, use: analytics, max_fail_rate: 0.5,
      fail_when: "contact_reason = reason_category",
-     why: "contact_reason debería detallar el motivo, pero es una copia de reason_category: solo hay 6 motivos."}
+     why: "contact_reason should detail the reason, but it is a copy of reason_category: there are only 6 reasons."}
   - {id: int_sentiment_label_matches_score, table: call_center_interactions, dimension: consistency, use: analytics, max_fail_rate: 0.05,
      fail_when: "(detected_sentiment in ('positive','very_positive') and sentiment_score < 0) or (detected_sentiment in ('negative','very_negative') and sentiment_score > 0)"}
   - {id: int_duration_complete, table: call_center_interactions, dimension: completeness, use: analytics, max_fail_rate: 0.05,
@@ -105,16 +105,16 @@ rules:
      fail_when: "customer_id <> (select i.customer_id from call_center_interactions i where i.interaction_id = t.interaction_id)"}
   - {id: trn_no_placeholders, table: call_transcripts, dimension: accuracy, use: ml, max_fail_rate: 0.01,
      fail_when: "has_unfilled_placeholder",
-     why: "Texto con {monto} {moneda} sin rellenar no es habla real."}
+     why: "Text with unfilled {monto} {moneda} is not real speech."}
   - {id: trn_text_diversity, table: call_transcripts, dimension: accuracy, use: ml,
      metric: "select count(distinct customer_text)::double / count(*) from call_transcripts", min: 0.1,
-     why: "Representatividad para IA: si pocas frases únicas se repiten miles de veces, el texto no representa la demanda real."}
+     why: "Representativeness for AI: if a few unique phrases repeat thousands of times, the text does not represent real demand."}
   - {id: trn_intent_label_informative, table: call_transcripts, dimension: accuracy, use: ml, max_fail_rate: 0.5,
      fail_when: "detected_intents is null or detected_intents = 'consulta_general'",
-     why: "Etiqueta candidata para el clasificador de intención. Si es constante, no sirve como label."}
+     why: "Candidate label for the intent classifier. If it is constant, it cannot be used as a label."}
   - {id: trn_topic_not_copied, table: call_transcripts, dimension: accuracy, use: ml, max_fail_rate: 0.5,
      fail_when: "main_topics = (select i.reason_category from call_center_interactions i where i.interaction_id = t.interaction_id)",
-     why: "Si main_topics es una copia de la categoría de la interacción, no fue extraído del texto."}
+     why: "If main_topics is a copy of the interaction's category, it was not extracted from the text."}
 
   # ---------------- satisfaction_surveys ----------------
   - {id: srv_score_range, table: satisfaction_surveys, dimension: validity, use: analytics, max_fail_rate: 0,
@@ -129,7 +129,7 @@ rules:
   # ---------------- complaints ----------------
   - {id: cmp_origin_interaction_linked, table: complaints, dimension: completeness, use: analytics, max_fail_rate: 0.5,
      fail_when: "origin_interaction_id is null and reception_channel = 'Call Center'",
-     why: "Sin este vínculo no se puede trazar llamada -> queja (linaje del caso)."}
+     why: "Without this link, call -> complaint cannot be traced (case lineage)."}
   - {id: cmp_product_belongs_to_customer, table: complaints, dimension: consistency, use: agent, max_fail_rate: 0,
      fail_when: "affected_product_id is not null and customer_id <> (select p.customer_id from products p where p.product_id = t.affected_product_id)"}
   - {id: cmp_amount_currency_pair, table: complaints, dimension: consistency, use: agent, max_fail_rate: 0,
@@ -142,6 +142,6 @@ rules:
      fail_when: "resolution_days is not null and resolution_date is not null and abs(resolution_days - date_diff('day', creation_date, resolution_date)) > 1"}
   - {id: cmp_description_informative, table: complaints, dimension: accuracy, use: ml,
      metric: "select count(distinct description)::double / count(*) from complaints", min: 0.1,
-     why: "Descripción libre como fuente de intención/NLP."}
+     why: "Free-text description as a source of intent/NLP."}
   - {id: cmp_late_arrival, table: complaints, dimension: timeliness, use: agent, max_fail_rate: 0.01,
      fail_when: "process_lag_days < -1 or process_lag_days > 1"}

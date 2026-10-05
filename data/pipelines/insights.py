@@ -1,9 +1,9 @@
-"""Evidencia para elegir el flujo -> reports/insights.md + reports/figures/*.png
+"""Evidence for choosing the workflow -> reports/insights.md + reports/figures/*.png
 
-Todos los números se calculan aquí desde curated/ y staging/. El texto
-interpretativo cita esos números; si los datos cambian, re-ejecutar.
+Every number is computed here from curated/ and staging/. The interpretive text
+quotes those numbers; if the data changes, run it again.
 
-Uso:
+Usage:
     python -m pipelines.insights
 """
 from __future__ import annotations
@@ -37,11 +37,11 @@ def _md(df: pd.DataFrame) -> str:
 
 
 def _spread(con, dim: str) -> str:
-    """Brecha máx. de FCR entre valores de `dim` dentro de un mismo motivo, con su z.
+    """Largest FCR gap between values of `dim` within one contact reason, with its z.
 
-    Con muchas comparaciones (motivos × pares), una brecha grande en una celda chica
-    es esperable por azar: se reporta z = brecha / error estándar y solo se marca
-    como disparidad si z > 3.
+    With many comparisons (reasons x pairs), a large gap in a small cell is expected
+    by chance: the report gives z = gap / standard error and only flags a disparity
+    when z > 3.
     """
     df = con.execute(f"""select reason_category, {dim} v, count(*) n, avg(was_resolved::int) p
                          from contacts_enriched group by all""").df()
@@ -53,9 +53,9 @@ def _spread(con, dim: str) -> str:
         if worst is None or z > worst[0]:
             worst = (z, reason, hi, lo)
     z, reason, hi, lo = worst
-    verdict = "**disparidad significativa**" if z > 3 else "dentro del ruido muestral"
+    verdict = "**significant disparity**" if z > 3 else "within sampling noise"
     return (f"{100 * (hi.p - lo.p):.1f} pp ({reason}: {hi.v} n={int(hi.n):,} vs {lo.v} n={int(lo.n):,}; "
-            f"z={z:.1f}) — {verdict}")
+            f"z={z:.1f}), {verdict}")
 
 
 def run() -> dict:
@@ -63,28 +63,28 @@ def run() -> dict:
     q = lambda s: con.execute(s).df()
 
     demand = q("""
-        select reason_category as motivo,
-               count(*) as contactos,
-               round(100 * count(*) / sum(count(*)) over (), 1) as pct_contactos,
-               round(100 * sum(duration_seconds) / sum(sum(duration_seconds)) over (), 1) as pct_tiempo_atencion,
-               round(median(duration_seconds)) as aht_mediana_s,
+        select reason_category as reason,
+               count(*) as contacts,
+               round(100 * count(*) / sum(count(*)) over (), 1) as pct_contacts,
+               round(100 * sum(duration_seconds) / sum(sum(duration_seconds)) over (), 1) as pct_handling_time,
+               round(median(duration_seconds)) as median_aht_s,
                round(100 * avg(was_resolved::int), 1) as fcr_pct,
-               round(count(*) * (1 - avg(was_resolved::int))) as contactos_no_resueltos,
-               round(100 * avg(requires_followup::int), 1) as seguimiento_pct,
-               round(avg(csat), 2) as csat_1a5,
-               round(avg(sentiment_score), 3) as sentimiento
-        from contacts_enriched group by 1 order by contactos desc""")
-    demand["pct_no_resueltos"] = (100 * demand.contactos_no_resueltos / demand.contactos_no_resueltos.sum()).round(1)
-    demand["contactos_no_resueltos"] = demand.contactos_no_resueltos.astype(int)
+               round(count(*) * (1 - avg(was_resolved::int))) as unresolved_contacts,
+               round(100 * avg(requires_followup::int), 1) as followup_pct,
+               round(avg(csat), 2) as csat_1to5,
+               round(avg(sentiment_score), 3) as sentiment
+        from contacts_enriched group by 1 order by contacts desc""")
+    demand["pct_unresolved"] = (100 * demand.unresolved_contacts / demand.unresolved_contacts.sum()).round(1)
+    demand["unresolved_contacts"] = demand.unresolved_contacts.astype(int)
 
     cmp = q("""
-        select coalesce(subcategory, '(sin subcategoría)') as subcategoria, count(*) as quejas,
+        select coalesce(subcategory, '(no subcategory)') as subcategory, count(*) as complaints,
                round(100 * count(*) / sum(count(*)) over (), 1) as pct,
-               round(100 * avg(is_open::int), 1) as abiertas_pct,
-               round(100 * avg(sla_breached::int), 1) as sla_incumplido_pct,
-               median(resolution_days) as dias_resolucion_mediana,
-               round(100 * avg((claimed_amount is not null)::int), 1) as con_monto_pct
-        from complaints_enriched group by 1 order by quejas desc""")
+               round(100 * avg(is_open::int), 1) as open_pct,
+               round(100 * avg(sla_breached::int), 1) as sla_breached_pct,
+               median(resolution_days) as median_resolution_days,
+               round(100 * avg((claimed_amount is not null)::int), 1) as with_amount_pct
+        from complaints_enriched group by 1 order by complaints desc""")
     disputes = q("""select count(*) n, round(100 * avg(is_charge_dispute::int), 1) pct,
                            round(100 * avg(is_open::int) filter (where is_charge_dispute), 1) open_pct
                     from complaints_enriched""").iloc[0]
@@ -103,8 +103,8 @@ def run() -> dict:
                         avg((select count(*) from complaints k where k.customer_id = c.customer_id)) cpc
                  from customers c left join f using (customer_id) group by 1""")
     fraud = dict(zip(fraud.has_fraud, fraud.cpc.round(3)))
-    # Vínculo llamada -> queja sin origin_interaction_id: ¿hay una llamada del mismo
-    # cliente el día previo a la queja más seguido que en una ventana placebo 180 días antes?
+    # Call -> complaint link without origin_interaction_id: does the same customer call
+    # the day before the complaint more often than in a placebo window 180 days earlier?
     link = q("""select
         round(100 * avg((exists(select 1 from call_center_interactions i where i.customer_id = k.customer_id
               and i.interaction_date between k.creation_date - interval 1 day and k.creation_date))::int), 2) observed,
@@ -129,125 +129,125 @@ def run() -> dict:
         "quality": figures.quality(qall, figs_dir) if qall else None,
     }
 
-    c = demand.set_index("motivo")
+    c = demand.set_index("reason")
     cu = lambda r, k: c.loc[r, k]
-    per_year = lambda r: int(cu(r, "contactos") / years)
+    per_year = lambda r: int(cu(r, "contacts") / years)
     run_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    tools_fit = "Sí" if fit(["trx_owner_matches_product", "trx_currency_matches_product", "trx_amount_positive",
-                             "trx_amount_usd_complete", "prd_customer_fk"]) else "No"
+    tools_fit = "Yes" if fit(["trx_owner_matches_product", "trx_currency_matches_product", "trx_amount_positive",
+                              "trx_amount_usd_complete", "prd_customer_fk"]) else "No"
 
-    md = f"""# Evidencia para elegir el flujo del agente
+    md = f"""# Evidence for choosing the agent's workflow
 
-> **Documento para decidir en equipo. No contiene una decisión.**
-> Generado por `python -m pipelines.insights` — {run_at}. Fuente: `curated/` y `staging/`
-> (dataset sintético LATAM Bank v1.0.0, {years:.1f} años de contactos).
-> Todas las cifras son **mediciones offline sobre datos sintéticos**. Lo marcado como
-> *inferido* o *proyección* no es un dato medido.
+> **A document for the team to decide with. It contains no decision.**
+> Generated by `python -m pipelines.insights` on {run_at}. Source: `curated/` and `staging/`
+> (synthetic LATAM Bank dataset v1.0.0, {years:.1f} years of contacts).
+> Every figure is an **offline measurement on synthetic data**. Anything marked
+> *inferred* or *projection* is not a measured fact.
 
-## Resumen (solo hechos medidos)
+## Summary (measured facts only)
 
-1. **Quejas** es el motivo con más contactos no resueltos: {cu('complaint','pct_no_resueltos')}% del total no resuelto, con {cu('complaint','pct_contactos')}% del volumen (FCR {cu('complaint','fcr_pct')}%).
-2. **Transaccional** es el mayor volumen ({cu('transactional','pct_contactos')}%), con FCR {cu('transactional','fcr_pct')}%.
-3. En los reclamos formales (PQR), las **disputas de cargos** son el {disputes.pct}% ({disputes.open_pct}% siguen abiertas).
-4. **Las llamadas y los reclamos PQR no se pueden vincular**: coincidencia {link.observed}% vs {link.placebo}% en la ventana placebo. No sabemos qué subcategoría tienen las llamadas de queja.
-5. Las transcripciones y descripciones son **plantillas**: `detected_intents` es constante. Las etiquetas de texto del dataset no sirven para entrenar.
-6. No hay diferencias significativas por país, segmento, canal ni mes. La señal está **solo en el motivo de contacto**.
+1. **Complaints** is the contact reason with the most unresolved contacts: {cu('complaint','pct_unresolved')}% of all unresolved contacts, with {cu('complaint','pct_contacts')}% of the volume (FCR {cu('complaint','fcr_pct')}%).
+2. **Transactional** is the largest volume ({cu('transactional','pct_contacts')}%), with FCR {cu('transactional','fcr_pct')}%.
+3. Among formal claims (PQR), **charge disputes** are {disputes.pct}% ({disputes.open_pct}% are still open).
+4. **Calls and PQR claims cannot be linked**: {link.observed}% match vs {link.placebo}% in the placebo window. We do not know which subcategory complaint calls have.
+5. Transcripts and descriptions are **templates**: `detected_intents` is constant. The dataset's text labels cannot be used for training.
+6. There are no significant differences by country, segment, channel or month. The signal is **only in the contact reason**.
 
 ---
 
-## 1. Demanda y dolor por motivo de contacto
+## 1. Demand and pain by contact reason
 
-![Contactos no resueltos por motivo]({fig['unresolved']})
+![Unresolved contacts by reason]({fig['unresolved']})
 
-![Perfil por motivo]({fig['profile']})
+![Profile by reason]({fig['profile']})
 
 {_md(demand)}
 
-- Métrica de dolor: `contactos × (1 − FCR)` = demanda no resuelta. Es simple, auditable y no depende de supuestos de costo.
-- `was_resolved` es auto-reportado. Como control, el recontacto a 7 días **no** es mayor en los casos "no resueltos" ({rep.get(False)}% vs {rep.get(True)}% en resueltos), así que la exactitud de esta etiqueta es dudosa (sección 5).
+- Pain metric: `contacts × (1 − FCR)` = unresolved demand. It is simple, auditable and does not depend on cost assumptions.
+- `was_resolved` is self-reported. As a check, 7-day repeat contact is **not** higher for "unresolved" cases ({rep.get(False)}% vs {rep.get(True)}% for resolved ones), so the accuracy of this label is doubtful (section 5).
 
-## 2. Estabilidad y equidad del baseline humano
+## 2. Stability and fairness of the human baseline
 
-![FCR mensual por motivo]({fig['monthly']})
+![Monthly FCR by reason]({fig['monthly']})
 
-| Chequeo | Resultado | Lectura |
+| Check | Result | Reading |
 |---|---|---|
-| Brecha de FCR entre países (peor brecha dentro de un motivo) | {spreads['country']} | Baseline de equidad por país |
-| Brecha de FCR entre segmentos | {spreads['segment']} | Baseline de equidad por segmento |
-| Brecha de FCR entre canales | {spreads['channel']} | No hay un "canal ganador" |
-| Variación mensual del volumen (coef. de variación) | {cv_month} | Demanda plana: no hace falta forecasting |
-| Quejas por cliente, con vs sin fraude | {fraud.get(True)} vs {fraud.get(False)} | Fraude y quejas son independientes |
-| Agentes que hablan portugués | {int(pt.pt)} de {int(pt.n)} ({100*pt.pt/pt.n:.1f}%) | Capacidad limitada para derivar a humano en PT |
+| FCR gap between countries (worst gap within one reason) | {spreads['country']} | Fairness baseline by country |
+| FCR gap between segments | {spreads['segment']} | Fairness baseline by segment |
+| FCR gap between channels | {spreads['channel']} | There is no "winning channel" |
+| Monthly volume variation (coefficient of variation) | {cv_month} | Flat demand: no forecasting needed |
+| Complaints per customer, with vs without fraud | {fraud.get(True)} vs {fraud.get(False)} | Fraud and complaints are independent |
+| Agents who speak Portuguese | {int(pt.pt)} of {int(pt.n)} ({100*pt.pt/pt.n:.1f}%) | Limited capacity to hand off to a person in PT |
 
-## 3. Reclamos formales (tabla PQR)
+## 3. Formal claims (PQR table)
 
-![PQR por subcategoría]({fig['pqr']})
+![PQR by subcategory]({fig['pqr']})
 
 {_md(cmp)}
 
-- La tabla PQR **no diferencia por subcategoría**: SLA, tiempos y backlog son casi idénticos. Sirve para dimensionar, no para priorizar entre subcategorías.
+- The PQR table **does not differ by subcategory**: SLA, times and backlog are almost identical. It is useful for sizing, not for prioritizing between subcategories.
 
-## 4. ¿Podemos saber qué hay dentro de las llamadas de "Queja"?
+## 4. Can we know what is inside "Complaint" calls?
 
-![Vínculo llamada-reclamo]({fig['link']})
+![Call-claim link]({fig['link']})
 
-**No con estos datos.** Se probaron todas las vías:
+**Not with this data.** Every route was tried:
 
-| Vía de vínculo | Resultado |
+| Link route | Result |
 |---|---|
-| `complaints.origin_interaction_id` | 100% vacío (también en `data_backup_20260831/`) |
-| `contact_reason` de la llamada | Es una copia de `reason_category` (6 valores, sin detalle) |
-| Llamada del mismo cliente antes del reclamo | 1 día: {link.observed}% vs placebo {link.placebo}%. Aun a 7 días, menos del 3% de los reclamos tiene una llamada previa: no alcanza para vincular |
-| Texto de la transcripción | Plantilla sin relación con la categoría |
-| `mentioned_products` de la llamada | 99% IDs inexistentes; ninguno del cliente |
-| `complaints.affected_product_id` | Nunca pertenece al cliente que reclama |
+| `complaints.origin_interaction_id` | 100% empty (also in `data_backup_20260831/`) |
+| The call's `contact_reason` | A copy of `reason_category` (6 values, no detail) |
+| A call from the same customer before the claim | 1 day: {link.observed}% vs placebo {link.placebo}%. Even at 7 days, fewer than 3% of claims have a prior call: not enough to link them |
+| Transcript text | A template unrelated to the category |
+| The call's `mentioned_products` | 99% non-existent IDs; none belong to the customer |
+| `complaints.affected_product_id` | Never belongs to the customer who files the claim |
 
-**Consecuencia:** afirmar que "X% de las llamadas de queja son disputas" sería una **inferencia**. Los hechos 1 y 3 del resumen son mediciones independientes que no deben multiplicarse entre sí.
+**Consequence:** saying "X% of complaint calls are disputes" would be an **inference**. Facts 1 and 3 of the summary are independent measurements and must not be multiplied together.
 
-## 5. Calidad de datos y aptitud para cada uso
+## 5. Data quality and fitness for each use
 
-![Calidad por dimensión]({fig['quality']})
+![Quality by dimension]({fig['quality']})
 
-Detalle de las 48 reglas: [`data_quality.md`](data_quality.md).
+Detail of the 48 rules: [`data_quality.md`](data_quality.md).
 
-| Uso | Tablas | ¿Apto? | Evidencia |
+| Use | Tables | Fit? | Evidence |
 |---|---|---|---|
-| Herramientas del agente: movimientos y productos | transactions, products, customers | {tools_fit}, con salvedades | Integridad y consistencia dueño↔producto y moneda↔producto al 100%. Salvedad: clientes MX sin productos en MXN y con DNI |
-| Priorizar por motivo de contacto | call_center_interactions | Sí | Señal fuerte y estable por motivo |
-| Etiquetas de intención desde transcripciones | call_transcripts | **No** | `detected_intents` constante; plantillas con `{{monto}}` sin rellenar; `main_topics` es copia de la categoría |
-| Texto de reclamos para NLP | complaints.description | **No** | {n_desc} textos distintos en {int(disputes.n):,} reclamos |
-| Vincular reclamo ↔ contacto ↔ producto | complaints | **No** | Ver sección 4 |
-| Resolución (`was_resolved`) como etiqueta de éxito | call_center_interactions | Dudoso | No predice recontacto |
+| Agent tools: transactions and products | transactions, products, customers | {tools_fit}, with caveats | Integrity and owner↔product and currency↔product consistency at 100%. Caveat: MX customers without MXN products and with a DNI |
+| Prioritize by contact reason | call_center_interactions | Yes | Strong, stable signal by reason |
+| Intent labels from transcripts | call_transcripts | **No** | `detected_intents` is constant; templates with unfilled `{{monto}}`; `main_topics` is a copy of the category |
+| Claim text for NLP | complaints.description | **No** | {n_desc} distinct texts in {int(disputes.n):,} claims |
+| Link claim ↔ contact ↔ product | complaints | **No** | See section 4 |
+| Resolution (`was_resolved`) as a success label | call_center_interactions | Doubtful | It does not predict repeat contact |
 
-## 6. Opciones para decidir
+## 6. Options to decide
 
-Cada opción separa lo que está **medido** de lo que sería **inferido**. Todas requieren un set etiquetado por el equipo (ES + PT) para el componente aprendido, porque el dataset no tiene etiquetas de texto útiles.
+Each option separates what is **measured** from what would be **inferred**. All of them need a set labeled by the team (ES + PT) for the learned component, because the dataset has no useful text labels.
 
-| | A. Disputas de cargos | B. Intake y triage de quejas | C. Consultas transaccionales | D. Soporte técnico |
+| | A. Charge disputes | B. Complaint intake and triage | C. Transaction inquiries | D. Technical support |
 |---|---|---|---|---|
-| **Qué hace el agente** | Verifica un cargo, lo explica o abre una disputa | Atiende cualquier queja, la clasifica, automatiza las disputas verificables y deriva el resto con resumen | Saldo, movimientos, estado de pagos | Problemas de app o acceso |
-| **Justificación medida** | PQR: {disputes.pct}% son disputas | Llamadas: quejas = {cu('complaint','pct_no_resueltos')}% de lo no resuelto | {cu('transactional','pct_contactos')}% del volumen | {cu('technical','pct_no_resueltos')}% de lo no resuelto (FCR {cu('technical','fcr_pct')}%) |
-| **Depende de algo inferido** | Sí: que las llamadas de queja sean disputas | No | No | No |
-| **Datos para las herramientas** | transactions/products: aptos | Igual que A, más registro de caso | transactions/products: aptos | `digital_events` (3,7 GB) **aún no analizado** |
-| **Casos normal / ambiguo / humano** | Natural | Natural, con más derivaciones | Normal fácil; pocos casos de humano | Por evaluar |
-| **Riesgo principal** | Justificación débil ante el jurado | Alcance más amplio | Poco "problema": ya resuelve {cu('transactional','fcr_pct')}% | Sin datos analizados todavía |
-| **Contactos/año del motivo** | — | ~{per_year('complaint'):,} | ~{per_year('transactional'):,} | ~{per_year('technical'):,} |
+| **What the agent does** | Checks a charge, explains it or opens a dispute | Takes any complaint, classifies it, automates the verifiable disputes and hands off the rest with a summary | Balance, transactions, payment status | App or access problems |
+| **Measured justification** | PQR: {disputes.pct}% are disputes | Calls: complaints = {cu('complaint','pct_unresolved')}% of the unresolved | {cu('transactional','pct_contacts')}% of the volume | {cu('technical','pct_unresolved')}% of the unresolved (FCR {cu('technical','fcr_pct')}%) |
+| **Depends on something inferred** | Yes: that complaint calls are disputes | No | No | No |
+| **Data for the tools** | transactions/products: fit | Same as A, plus a case record | transactions/products: fit | `digital_events` (3.7 GB) **not analyzed yet** |
+| **Normal / ambiguous / human cases** | Natural | Natural, with more handoffs | Easy normal case; few human cases | To be evaluated |
+| **Main risk** | Weak justification before the jury | Wider scope | Little "problem": it already resolves {cu('transactional','fcr_pct')}% | No data analyzed yet |
+| **Contacts/year for the reason** | — | ~{per_year('complaint'):,} | ~{per_year('transactional'):,} | ~{per_year('technical'):,} |
 
-Proyección (no medida, solo para dimensionar): cada punto de FCR ganado en Queja equivale a ~{int(per_year('complaint') / 100):,} contactos/año menos sin resolver.
+Projection (not measured, only for sizing): each FCR point gained on Complaints is ~{int(per_year('complaint') / 100):,} fewer unresolved contacts per year.
 
-## 7. Preguntas abiertas para el equipo
+## 7. Open questions for the team
 
-1. ¿Priorizamos **calidad** (el motivo más no resuelto: Queja) o **volumen/costo** (Transaccional)?
-2. ¿Aceptamos que la justificación de A dependa de una inferencia, o preferimos B, que solo usa hechos medidos?
-3. ¿Analizamos `digital_events` antes de decidir, para evaluar bien D?
-4. ¿Preguntamos a los organizadores si `origin_interaction_id` vacío es intencional o hay una versión corregida?
-5. ¿Cómo generamos el set etiquetado ES + PT (tamaño, quién etiqueta, cómo evitamos fuga entre paráfrasis)?
+1. Do we prioritize **quality** (the most unresolved reason: Complaints) or **volume/cost** (Transactional)?
+2. Do we accept that A's justification depends on an inference, or do we prefer B, which only uses measured facts?
+3. Do we analyze `digital_events` before deciding, to evaluate D properly?
+4. Do we ask the organizers whether the empty `origin_interaction_id` is intentional or there is a corrected version?
+5. How do we build the ES + PT labeled set (size, who labels, how we avoid leakage between paraphrases)?
 
-## 8. Limitaciones
+## 8. Limitations
 
-- Datos sintéticos: las distribuciones son uniformes salvo por el motivo de contacto. Las conclusiones valen para este dataset, no para un banco real.
-- No hay texto en portugués en el dataset. Todo lo PT será generado por el equipo y se documentará así.
-- No analizados aún: `digital_events`, `campaign_sends`, `marketing_campaigns`.
+- Synthetic data: distributions are uniform except for the contact reason. The conclusions hold for this dataset, not for a real bank.
+- The dataset has no Portuguese text. Everything in PT will be written by the team and documented as such.
+- Not analyzed yet: `digital_events`, `campaign_sends`, `marketing_campaigns`.
 """
     REPORTS.mkdir(exist_ok=True)
     (REPORTS / "insights.md").write_text(md, encoding="utf-8")
