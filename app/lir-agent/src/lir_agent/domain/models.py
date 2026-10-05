@@ -122,6 +122,8 @@ class HandoffResolution(_Frozen):
     resolved_by: str = Field(description="The specialist's verified identity (IAP).")
     resolved_at: datetime
     note: str | None = Field(default=None, description="The specialist's note; internal.")
+    # False until the customer's chat received the outcome (it may link after the decision).
+    customer_notified: bool = False
 
 
 class HandoffPacket(_Frozen):

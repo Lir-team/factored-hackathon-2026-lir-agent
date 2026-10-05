@@ -18,6 +18,7 @@ from lir_agent.application.ports import (
 )
 from lir_agent.application.use_cases.approvals import PresentApprovals
 from lir_agent.application.use_cases.process_case import deliver_replies
+from lir_agent.application.use_cases.resolve_handoff import ResolveHandoff
 from lir_agent.domain.language import DEFAULT_LANGUAGE, Language
 from lir_agent.domain.telegram import (
     ChatLink,
@@ -51,6 +52,7 @@ class AnswerTelegramMessage:
         max_message_chars: int,
         now: Callable[[], datetime] | None = None,
         present_approvals: PresentApprovals | None = None,
+        resolutions: ResolveHandoff | None = None,
         files: ChatFiles | None = None,
         speech: SpeechToText | None = None,
         max_voice_seconds: int = 60,
@@ -66,6 +68,7 @@ class AnswerTelegramMessage:
         self._max_chars = max_message_chars
         self._now = now or (lambda: datetime.now(UTC))
         self._present_approvals = present_approvals
+        self._resolutions = resolutions
         self._files = files
         self._speech = speech
         self._max_voice_seconds = max_voice_seconds
@@ -139,6 +142,9 @@ class AnswerTelegramMessage:
         # Requests created before the chat was linked could not be shown until now.
         if self._present_approvals:
             await self._present_approvals.execute_for_case(start.case_id)
+        # A specialist may have resolved the case before the customer opened the chat.
+        if self._resolutions:
+            await self._resolutions.deliver_pending(start.case_id)
 
     async def _ask(self, chat_id: int, link: ChatLink, text: str) -> None:
         conversation = self._store.get_conversation(link.case_id)
