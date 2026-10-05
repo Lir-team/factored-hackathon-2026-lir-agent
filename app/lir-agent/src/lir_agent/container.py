@@ -139,6 +139,21 @@ def build_case_publisher(settings: Settings) -> CasePublisher:
     return InMemoryCasePublisher()
 
 
+def build_case_repository(settings: Settings) -> CaseRepository:
+    """The dispute and handoff store chosen by `CASE_REPOSITORY`."""
+    if settings.case_repository == "firestore":
+        if not settings.google_cloud_project:
+            raise ValueError("CASE_REPOSITORY=firestore needs GOOGLE_CLOUD_PROJECT")
+        from lir_agent.infrastructure.cases import FirestoreCaseRepository
+
+        client = firestore.Client(
+            project=settings.google_cloud_project,
+            database=settings.firestore_database,
+        )
+        return FirestoreCaseRepository(client, settings.firestore_collection_prefix)
+    return InMemoryCaseRepository()
+
+
 def build_case_store(settings: Settings) -> CaseStore:
     """The case store chosen by `CASE_STORE`."""
     if settings.case_store == "firestore":
@@ -267,7 +282,7 @@ def build_container(
     policy = resources.load_policy(settings.policy_path)
     # Bounded retries, then "records unavailable": the agent hands off instead of guessing.
     repository = RetryingTransactionRepository(repository or build_repository(settings))
-    cases = cases or InMemoryCaseRepository()
+    cases = cases or build_case_repository(settings)
     audit = audit or build_audit(settings)
     decisions = decisions or build_decisions(settings)
     presenter = LlmPresenter(policy.config.llm_exposure)

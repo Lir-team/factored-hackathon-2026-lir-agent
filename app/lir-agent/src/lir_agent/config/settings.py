@@ -198,6 +198,9 @@ class Settings(BaseSettings):
     # local runs); "firestore" keeps it in Firestore (the emulator when
     # FIRESTORE_EMULATOR_HOST is set) in project GOOGLE_CLOUD_PROJECT.
     case_store: Literal["memory", "firestore"] = "memory"
+    # Disputes and handoffs: "memory" lives per instance; "firestore" is shared by the
+    # operator and case flow services, so case files open from either.
+    case_repository: Literal["memory", "firestore"] = "memory"
     firestore_database: str = "(default)"
     # Start of every collection name, to keep environments apart in one database.
     firestore_collection_prefix: str = "lir_"
