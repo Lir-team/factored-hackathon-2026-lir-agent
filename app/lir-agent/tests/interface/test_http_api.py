@@ -301,6 +301,32 @@ def test_a_changed_card_cannot_be_approved(settings, conversations):
     assert (response.status_code, response.json()["detail"]) == (409, "content_changed")
 
 
+def test_the_back_office_lists_open_cases_and_resolves_them_once(settings, conversations):
+    from lir_agent.container import build_container
+    from tests.application.test_handoff_report import packet
+
+    container = build_container(settings)
+    container.cases.submit_handoff(packet())
+    client = TestClient(create_app(settings, conversations=conversations, container=container))
+
+    assert client.get("/v1/handoffs").status_code == 401
+    [case] = client.get("/v1/handoffs", headers=IAP_HEADER).json()
+    assert (case["handoff_id"], case["resolution"]) == ("HND-ABC", None)
+
+    resolution = "/v1/handoffs/HND-ABC/resolution"
+    body = {"decision": "accept", "note": "confirmado"}
+    assert client.post(resolution, json=body).status_code == 401
+    resolved = client.post(resolution, json=body, headers=IAP_HEADER).json()
+    assert resolved["resolution"]["accepted"] is True
+    assert resolved["resolution"]["resolved_by"] == "tester@example.com"
+
+    assert client.post(resolution, json=body, headers=IAP_HEADER).status_code == 409
+    assert client.get("/v1/handoffs", headers=IAP_HEADER).json() == []
+    assert len(client.get("/v1/handoffs?status=all", headers=IAP_HEADER).json()) == 1
+    missing = client.post("/v1/handoffs/HND-NOPE/resolution", json=body, headers=IAP_HEADER)
+    assert missing.status_code == 404
+
+
 def test_the_back_office_page_is_served_only_when_enabled(settings, conversations):
     assert TestClient(create_app(settings, conversations=conversations)).get(
         "/backoffice", headers=IAP_HEADER

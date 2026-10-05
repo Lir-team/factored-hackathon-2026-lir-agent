@@ -35,6 +35,13 @@ class FakeCollection:
         return FakeDocument(self.docs, key)
 
 
+def _stream(collection):
+    return [FakeSnapshot(data) for data in collection.docs.values()]
+
+
+FakeCollection.stream = _stream  # type: ignore[attr-defined]
+
+
 class FakeClient:
     def __init__(self):
         self.collections = {}
@@ -56,6 +63,14 @@ def test_another_instance_sees_the_same_handoff():
     client = FakeClient()
     FirestoreCaseRepository(client).submit_handoff(packet())  # type: ignore[arg-type]
     assert FirestoreCaseRepository(client).get_handoff("HND-ABC") is not None  # type: ignore[arg-type]
+
+
+def test_handoffs_are_listed_newest_first():
+    repository = FirestoreCaseRepository(FakeClient())  # type: ignore[arg-type]
+    older = packet(handoff_id="HND-OLD", created_at=packet().created_at.replace(hour=1))
+    repository.submit_handoff(older)
+    repository.submit_handoff(packet())
+    assert [p.handoff_id for p in repository.list_handoffs()] == ["HND-ABC", "HND-OLD"]
 
 
 def test_disputes_round_trip_and_unknown_ids_are_none():

@@ -53,3 +53,8 @@ class FirestoreCaseRepository:
         """Return a stored handoff packet, or None."""
         snapshot = self._handoffs.document(handoff_id).get()
         return HandoffPacket.model_validate(snapshot.to_dict()) if snapshot.exists else None
+
+    def list_handoffs(self) -> list[HandoffPacket]:
+        """Every stored handoff packet, newest first (sorted here: no index needed)."""
+        packets = [HandoffPacket.model_validate(s.to_dict()) for s in self._handoffs.stream()]
+        return sorted(packets, key=lambda p: p.created_at, reverse=True)

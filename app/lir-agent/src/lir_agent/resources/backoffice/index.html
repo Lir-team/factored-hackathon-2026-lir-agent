@@ -41,20 +41,33 @@
     .message { margin-top: 8px; font-size: 13px; }
     .error { background: var(--warn-bg); padding: 8px 12px; border-radius: 6px; }
     .empty { text-align: center; color: var(--muted); padding: 32px 0; }
+    .group { margin-bottom: 32px; }
+    .group-title { margin: 0 0 4px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted); }
+    .card a { color: var(--accent); }
   </style>
 </head>
 <body>
   <header>
-    <h1>Lir · Specialist reviews</h1>
+    <h1>Lir · Specialist back office</h1>
     <button class="refresh" id="refresh" type="button">Refresh</button>
   </header>
   <main>
-    <p class="status" id="status">Loading…</p>
-    <div id="list"></div>
+    <section class="group" aria-labelledby="approvals-title">
+      <h2 class="group-title" id="approvals-title">Dispute approvals</h2>
+      <p class="status" id="status">Loading…</p>
+      <div id="list"></div>
+    </section>
+    <section class="group" aria-labelledby="cases-title">
+      <h2 class="group-title" id="cases-title">Escalated cases</h2>
+      <p class="status" id="cases-status">Loading…</p>
+      <div id="cases"></div>
+    </section>
   </main>
   <script>
     "use strict";
     const API = "/v1/approvals";
+    const CASES_API = "/v1/handoffs";
     const REFRESH_MS = 15000;
     const ERRORS = {
       401: "Your session has no verified identity. Reload the page to sign in again.",
@@ -64,8 +77,15 @@
       410: "This request expired. The customer must ask again.",
       503: "The action could not be verified. Try again in a moment.",
     };
+    const CASE_ERRORS = {
+      401: ERRORS[401],
+      404: "This case no longer exists.",
+      409: "Someone already resolved this case. Refresh the list.",
+    };
     const list = document.getElementById("list");
     const statusLine = document.getElementById("status");
+    const cases = document.getElementById("cases");
+    const casesStatus = document.getElementById("cases-status");
     const busy = new Set();
 
     function el(tag, props = {}, children = []) {
@@ -132,10 +152,79 @@
       ]);
     }
 
+    function caseCard(item) {
+      const note = el("textarea", { placeholder: "Internal note (optional)", maxLength: 500 });
+      const message = el("div", { className: "message" });
+      const accept = el("button", { className: "approve", type: "button", textContent: "Accept claim" });
+      const reject = el("button", { className: "reject", type: "button", textContent: "Reject claim" });
+      const report = el("a", {
+        href: `${CASES_API}/${encodeURIComponent(item.handoff_id)}/report.md`,
+        target: "_blank",
+        rel: "noopener",
+        textContent: "Open the case file",
+      });
+      const resolve = async (decision) => {
+        accept.disabled = reject.disabled = true;
+        busy.add(item.handoff_id);
+        message.textContent = "Saving…";
+        message.className = "message";
+        try {
+          const response = await fetch(`${CASES_API}/${encodeURIComponent(item.handoff_id)}/resolution`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ decision, note: note.value.trim() || null }),
+          });
+          if (!response.ok) throw Object.assign(new Error(), { status: response.status });
+          message.textContent = decision === "accept"
+            ? "Claim accepted. The customer was notified."
+            : "Claim rejected. The customer was notified.";
+          setTimeout(() => load(), 2500);
+        } catch (error) {
+          message.textContent = CASE_ERRORS[error.status] || "The decision was not saved. Try again.";
+          message.className = "message error";
+          accept.disabled = reject.disabled = false;
+        } finally {
+          busy.delete(item.handoff_id);
+        }
+      };
+      accept.addEventListener("click", () => resolve("accept"));
+      reject.addEventListener("click", () => resolve("reject"));
+      const details = el("dl", {}, [
+        el("dt", { textContent: "Rule" }),
+        el("dd", { textContent: item.rule_id || "—" }),
+        el("dt", { textContent: "Customer said" }),
+        el("dd", { textContent: item.customer_request || "—" }),
+      ]);
+      return el("article", { className: "card" }, [
+        el("h2", { textContent: item.reason || "Escalated case" }),
+        el("p", { className: "meta", textContent: `${item.handoff_id} · opened ${when(item.created_at)}` }),
+        details,
+        el("p", {}, [report]),
+        note,
+        el("div", { className: "actions" }, [accept, reject]),
+        message,
+      ]);
+    }
+
+    async function loadCases() {
+      try {
+        const response = await fetch(CASES_API, { headers: { Accept: "application/json" } });
+        if (!response.ok) throw Object.assign(new Error(), { status: response.status });
+        const open = await response.json();
+        cases.replaceChildren(...(open.length
+          ? open.map(caseCard)
+          : [el("p", { className: "empty", textContent: "No escalated cases waiting." })]));
+        casesStatus.textContent = `${open.length} open · updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        casesStatus.textContent = CASE_ERRORS[error.status] || "Could not load the cases. Reload the page.";
+      }
+    }
+
     async function load(auto = false) {
-      const drafting = [...list.querySelectorAll("textarea")]
+      const drafting = [...document.querySelectorAll("textarea")]
         .some((note) => note.value || note === document.activeElement);
       if (busy.size || (auto && drafting)) return;
+      loadCases();
       try {
         const response = await fetch(API, { headers: { Accept: "application/json" } });
         if (!response.ok) throw Object.assign(new Error(), { status: response.status });

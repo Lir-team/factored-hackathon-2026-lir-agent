@@ -51,3 +51,9 @@ class InMemoryCaseRepository:
     def get_handoff(self, handoff_id: str) -> HandoffPacket | None:
         """Return a stored handoff packet, or None."""
         return self._handoffs.get(handoff_id)
+
+    def list_handoffs(self) -> list[HandoffPacket]:
+        """Every stored handoff packet, newest first."""
+        with self._lock:
+            packets = list(self._handoffs.values())
+        return sorted(packets, key=lambda p: p.created_at, reverse=True)

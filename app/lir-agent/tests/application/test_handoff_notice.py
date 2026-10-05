@@ -15,6 +15,9 @@ class RecordingNotifier:
             raise RuntimeError("slack down")
         self.packets.append(packet)
 
+    def notify_resolution(self, packet):
+        self.notify(packet)
+
 
 def handoff(settings, notifier):
     policy = ResourceLoader().load_policy(settings.policy_path).config

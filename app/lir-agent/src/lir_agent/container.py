@@ -45,6 +45,7 @@ from lir_agent.application.use_cases import (
     RequestActionApproval,
     RequestApproval,
     RequestHandoff,
+    ResolveHandoff,
     RouteTurn,
     SubmitCase,
     VerifyApprovalLink,
@@ -112,6 +113,7 @@ class Container:
     submit_case: SubmitCase
     # The demo bank sign-in (None unless its customer and issuer are configured).
     demo_sign_in: IssueDemoSession | None
+    resolve_handoff: ResolveHandoff
 
 
 def build_repository(settings: Settings) -> TransactionRepository:
@@ -353,7 +355,8 @@ def build_container(
         ),
     )
     dispute_guard = DisputeGuard()
-    request_handoff = RequestHandoff(cases, policy.config, build_notifier(settings))
+    notifier = build_notifier(settings)
+    request_handoff = RequestHandoff(cases, policy.config, notifier)
     case_store = case_store or build_case_store(settings)
     approvals = approvals or build_approval_repository(settings)
     approval_labels = resources.load_labels(settings.approval_labels_path)
@@ -438,4 +441,7 @@ def build_container(
             start_token_ttl=timedelta(minutes=settings.start_token_ttl_minutes),
         ),
         demo_sign_in=build_demo_sign_in(settings, audit, demo_signer),
+        resolve_handoff=ResolveHandoff(
+            cases, case_store, audit, approval_labels, messenger, notifier
+        ),
     )

@@ -115,6 +115,15 @@ class DisputeCase(_Frozen):
     created_at: datetime
 
 
+class HandoffResolution(_Frozen):
+    """A specialist's decision on a handed-off case: the customer's claim accepted or not."""
+
+    accepted: bool
+    resolved_by: str = Field(description="The specialist's verified identity (IAP).")
+    resolved_at: datetime
+    note: str | None = Field(default=None, description="The specialist's note; internal.")
+
+
 class HandoffPacket(_Frozen):
     """What a human reviewer receives when a case is handed off.
 
@@ -137,4 +146,7 @@ class HandoffPacket(_Frozen):
     )
     case_report: CaseReport | None = Field(
         default=None, description="What the customer reported in the web form."
+    )
+    resolution: HandoffResolution | None = Field(
+        default=None, description="Set once a specialist resolves the case."
     )
