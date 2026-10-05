@@ -25,7 +25,8 @@ The solution spans three repositories:
 | [`factored-hackathon-2026-lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) | Terraform for the Google Cloud project |
 
 **What runs today.** Decisions: the keyword baseline unless `DECISIONS=llm`;
-Jev is integrated but off (no AI Gateway balance), and its probabilities are not measured.
+Jev is measured through OpenRouter (`openrouter/typesafe/jev-router`): 97.1% intent accuracy on
+the held-out set, equivalent to the LLM (97.5%) and far above the keyword baseline (44.4%).
 The decision layer is evaluated against labels in
 [`data/reports/decision_eval.md`](data/reports/decision_eval.md). Identity: the bank's sign-in
 is mocked by a demo identity provider (a service account signs the customer's JWT); API
