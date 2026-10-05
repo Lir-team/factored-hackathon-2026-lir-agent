@@ -62,6 +62,14 @@ approvals:
    reject buttons, so whoever holds the Telegram account cannot approve. The audit records how
    the identity was proven (`proof`: `link`, `link+sign_in`, `linked_chat`, `iap`).
 
+Two notice surfaces report requests when configured. Slack (`SLACK_WEBHOOK_URL`) posts the
+reviews waiting for a specialist and how each request was decided. Email sends the outcome to
+the customer over SMTP with STARTTLS (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_APP_PASSWORD`, e.g. Gmail with an app password); it is on only when `SMTP_USER`,
+`SMTP_APP_PASSWORD` and `CUSTOMER_EMAIL_OVERRIDE` are all set. The dataset has no real customer
+addresses, so every outcome goes to `CUSTOMER_EMAIL_OVERRIDE`. A failed email is logged and
+never undoes the decision.
+
 Conversations opened from a case (Telegram) expire after `CASE_SESSION_IDLE_MINUTES` (30) of
 inactivity, never later than `CASE_SESSION_MAX_MINUTES` (24 h) after the case: then the
 customer files a new case, signing in again.
@@ -94,13 +102,18 @@ infrastructure implements the application ports.
 src/lir_agent/
 ├── domain/            # policy engine, evidence, session state, dispute guard, models
 ├── application/       # ports, presenter (data minimization), one use case per action
-├── infrastructure/    # DuckDB and fixture repositories, audit sinks, mock cases, resources
+├── infrastructure/    # DuckDB and fixture repositories, audit sinks, case and approval stores
+│                      # (memory, Firestore), Pub/Sub, Telegram, Slack, email, speech, LLM decisions
 ├── interface/adk/     # toolkit (tools as methods), callbacks, guidance, agent factory
+├── interface/http/    # FastAPI app: sessions, approvals, cases, Pub/Sub push, Telegram webhook
 ├── config/settings.py # typed settings
 ├── container.py       # composition root
 ├── chat.py            # terminal chat
 ├── main.py            # prints the resolved configuration
-└── resources/         # policy.yaml, reference.yaml, prompts/, fixtures/demo.json
+├── server.py          # HTTP API entry point (`lir-agent-api`, uvicorn)
+└── resources/         # policy.yaml, reference.yaml, approvals.yaml (approval labels),
+                       # prompts/, fixtures/demo.json, backoffice/ (back office page),
+                       # schemas/ (case schema), reports/ (handoff report, Slack notice)
 apps/lir/agent.py      # ADK entry point for `adk web` / `adk run`
 ```
 
@@ -147,11 +160,13 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 |---|---|---|---|
 | `GET` | `/health` | - | `{"status": "ok"}` |
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
-| `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}}` (`trace` only with `EXPOSE_TRACE=true`) |
+| `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}, "approvals": [...]}` (`trace` only with `EXPOSE_TRACE=true`; `approvals` lists requests waiting for the customer's approval) |
+| `GET` | `/v1/me/transactions?limit=20` | - | The signed-in customer's latest transactions, newest first (`limit` up to `TRANSACTIONS_MAX_LIMIT`). The customer comes from the API Gateway JWT claims, never a local fallback: `401` without them, `404` if the customer is not in the data |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
 | `GET` | `/v1/approvals/{approval_id}` | header `X-Approval-Token` | The approval card behind a customer's single-use link (web surface). The token travels in a header so no proxy logs it; failed attempts are audited (`approval_link_refused`) |
 | `POST` | `/v1/approvals/{approval_id}/decision` | `{"decision": "approve" \| "reject", "token": "...", "content_hash": "..."}` | The customer decides from the web card. `404` wrong or spent link, `409` already decided or content changed, `410` expired |
 | `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required) |
+| `GET` | `/backoffice` | - | The specialist back office page: pending reviews, approved or rejected in place. Only with `BACKOFFICE_ENABLED=true`; needs the caller identity like `/v1/sessions` |
 | `POST` | `/v1/approvals/{approval_id}/review` | `{"decision": ..., "content_hash": ..., "note": ...}` | A specialist decides a request that waits for one (IAP identity required, never a local fallback) |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
 | `POST` | `/channels/telegram` | a Telegram update, header `X-Telegram-Bot-Api-Secret-Token` | `200` (`401` wrong secret, `404` channel not configured) |
@@ -220,8 +235,8 @@ With `CASES_PUBLISHER=pubsub`, `POST /v1/cases` publishes each accepted case to 
 (`lir-cases`) in `GOOGLE_CLOUD_PROJECT`: the payload JSON unchanged as data, the case
 attributes as message attributes, the customer id as ordering key. A push subscription
 delivers it to `POST /pubsub/push`, which starts the case's conversation (owner
-`case:<case_id>`, auth method `case_intake`, valid for `CASE_SESSION_TTL_MINUTES`, 7 days by
-default) and runs the agent's first turn from the case description and reported charges.
+`case:<case_id>`, auth method `case_intake`, expiring after `CASE_SESSION_IDLE_MINUTES` (30)
+of inactivity and never later than `CASE_SESSION_MAX_MINUTES` (24 h)) and runs the agent's first turn from the case description and reported charges.
 The reply goes to the linked Telegram chat, or waits until `/start` links one. Pub/Sub
 delivers at least once: a case already worked only sends its replies still waiting.
 Messages that are not a valid case are acknowledged and audited as `case_rejected`; agent
@@ -308,8 +323,11 @@ for demos and operators; it is never sent to customer channels.
 GCP with Workload Identity Federation (no keys), builds the image with Cloud Build
 (`cloudbuild.yaml`, tagged with the commit SHA) and rolls it out to both Cloud Run
 services: `lir-agent` (operator API, behind IAP) and `lir-agent-cases` (case flow).
-It only changes the image: Terraform in `lir-infra` owns every other setting (env vars,
-secrets, IAM, scaling) and ignores the image, so a deploy never needs `terraform apply`.
+It only changes the image: each service keeps the env vars, secrets and scaling it was
+created with, so a deploy never needs `terraform apply`. Terraform in `lir-infra` owns
+everything around the services (accounts, secrets, IAM, buckets, Pub/Sub, gateway) and
+exports the env maps they are created with; the order of first-time setup and every
+deploy-time and runtime variable are in the root README, "Deploy".
 
 Set these GitHub repository variables (*Settings > Secrets and variables > Actions >
 Variables*); the values come from `terraform output` in `lir-infra`:
@@ -346,11 +364,11 @@ Commit `uv.lock`: it makes installs reproducible across machines and CI.
 
 ## Known limitations
 
-- Disputes, handoffs and approval requests are in-memory mocks with documented contracts; no
-  money moves.
-- Approval surfaces: Telegram buttons (`TelegramApprovalSurface`, webhook `callback_query`) and
-  the web link (`lir-web` card) ship; exposing the customer routes on API Gateway is follow-up
-  work. Telegram only opens `https` links from a button: with a local `http` link template the
+- Disputes, handoffs and approval requests are mocks of the bank's case service with documented
+  contracts: in memory by default, in Firestore when deployed (`CASE_REPOSITORY=firestore`,
+  `APPROVAL_REPOSITORY=firestore`). No money ever moves.
+- Approval surfaces: Telegram buttons (`TelegramApprovalSurface`, webhook `callback_query`), the
+  web link (`lir-web` card) and the specialist back office ship. Telegram only opens `https` links from a button: with a local `http` link template the
   "view on the web" button is left out.
 - ADK sessions are in memory: on Cloud Run this means one instance (`max-instances=1`) so a
   session's messages reach the instance that holds it, and a restart ends open

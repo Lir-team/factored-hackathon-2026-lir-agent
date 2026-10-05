@@ -15,13 +15,13 @@
 # Ownership (principio 3): roles, no personas. Se asignan nombres al conformar el equipo.
 
 data_products:
-  customers:                {owner: "Core Banking (negocio)", steward: "Equipo datos Clir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
-  products:                 {owner: "Core Banking (negocio)", steward: "Equipo datos Clir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
-  transactions:             {owner: "Core Banking (negocio)", steward: "Equipo datos Clir", consumers: [agent, analytics], freshness_slo: "D+1"}
-  call_center_interactions: {owner: "Contact Center Ops",     steward: "Equipo datos Clir", consumers: [analytics, ml],   freshness_slo: "D+1"}
-  call_transcripts:         {owner: "Contact Center Ops",     steward: "Equipo datos Clir", consumers: [analytics, ml],   freshness_slo: "D+1"}
-  satisfaction_surveys:     {owner: "Contact Center Ops",     steward: "Equipo datos Clir", consumers: [analytics],       freshness_slo: "D+1"}
-  complaints:               {owner: "PQR / Servicio",         steward: "Equipo datos Clir", consumers: [agent, analytics], freshness_slo: "D+1"}
+  customers:                {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
+  products:                 {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "snapshot mensual"}
+  transactions:             {owner: "Core Banking (negocio)", steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "D+1"}
+  call_center_interactions: {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics, ml],   freshness_slo: "D+1"}
+  call_transcripts:         {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics, ml],   freshness_slo: "D+1"}
+  satisfaction_surveys:     {owner: "Contact Center Ops",     steward: "Equipo datos Lir", consumers: [analytics],       freshness_slo: "D+1"}
+  complaints:               {owner: "PQR / Servicio",         steward: "Equipo datos Lir", consumers: [agent, analytics], freshness_slo: "D+1"}
 
 rules:
   # ---------------- customers ----------------

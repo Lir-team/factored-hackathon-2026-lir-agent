@@ -1,7 +1,8 @@
 # Lir agent HTTP API for Cloud Run.
 #
-# Build from app/ so the decision-layer path dependency is in the context:
-#   docker build -f lir-agent/Dockerfile -t lir-agent app/
+# The build context is app/, so the decision-layer path dependency is in it. From the
+# repository root:
+#   docker build -f app/lir-agent/Dockerfile -t lir-agent app/
 
 ARG PYTHON_VERSION=3.13
 ARG UV_VERSION=0.12
