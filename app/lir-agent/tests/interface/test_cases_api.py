@@ -426,3 +426,31 @@ def test_cors_is_off_by_default(settings) -> None:
     response = Intake(settings).client.options("/v1/cases", headers=PREFLIGHT)
 
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_my_transactions_come_from_the_signed_in_customer(settings):
+    from fastapi.testclient import TestClient
+
+    from lir_agent.interface.http import create_app
+
+    client = TestClient(create_app(settings, conversations=NoConversations()))
+    signed_in = {"X-Apigateway-Api-Userinfo": userinfo({"sub": "CLI-DEMO-001"})}
+    body = client.get("/v1/me/transactions?limit=3", headers=signed_in).json()
+    assert body["customer_id"] == "CLI-DEMO-001"
+    assert 0 < len(body["transactions"]) <= 3
+    assert {"transaction_id", "occurred_at", "merchant", "amount"} <= set(body["transactions"][0])
+    assert "fraud_score" not in body["transactions"][0]
+
+
+def test_my_transactions_need_the_bank_sign_in(settings):
+    from fastapi.testclient import TestClient
+
+    from lir_agent.interface.http import create_app
+
+    local = settings.model_copy(update={"require_identity": False})
+    client = TestClient(create_app(local, conversations=NoConversations()))
+    assert client.get("/v1/me/transactions").status_code == 401
+    unknown = {"X-Apigateway-Api-Userinfo": userinfo({"sub": "CLI-NOPE"})}
+    assert client.get("/v1/me/transactions", headers=unknown).status_code == 404
+    signed_in = {"X-Apigateway-Api-Userinfo": userinfo({"sub": "CLI-DEMO-001"})}
+    assert client.get("/v1/me/transactions?limit=0", headers=signed_in).status_code == 422

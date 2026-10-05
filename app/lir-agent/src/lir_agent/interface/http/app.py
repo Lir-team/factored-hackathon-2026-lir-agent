@@ -15,7 +15,7 @@ import re
 from datetime import timedelta
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -68,6 +68,28 @@ class StartSessionResponse(BaseModel):
 
     session_id: str
     expires_at: str
+
+
+class TransactionView(BaseModel):
+    """One transaction of the signed-in customer, as the bank's web page shows it."""
+
+    transaction_id: str
+    occurred_at: str
+    merchant: str | None
+    amount: float | None
+    currency: str | None
+    country: str | None
+    channel: str | None
+    status: str | None
+
+
+class MyTransactionsResponse(BaseModel):
+    """The signed-in customer and their latest transactions, newest first."""
+
+    customer_id: str
+    first_name: str | None
+    country: str | None
+    transactions: list[TransactionView]
 
 
 class TraceView(BaseModel):
@@ -324,6 +346,46 @@ def create_app(
             if (request := deps.approvals.get(approval_id)) is not None
         ]
         return MessageResponse(reply=turn.reply, trace=trace, approvals=approvals)
+
+    @app.get(
+        "/v1/me/transactions",
+        responses={
+            401: {"description": "No verified customer identity (the bank sign-in JWT)"},
+            404: {"description": "The signed-in customer is not in the data"},
+        },
+    )
+    async def list_my_transactions(
+        request: Request,
+        limit: Annotated[int, Query(ge=1, le=settings.transactions_max_limit)] = 20,
+    ) -> MyTransactionsResponse:
+        """The signed-in customer's latest transactions; the customer comes from the JWT."""
+        customer_id = customer(request)
+        if customer_id is None:
+            # Never a local fallback: without the bank's sign-in there is no statement.
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing customer identity")
+        profile = await run_in_threadpool(deps.repository.get_customer, customer_id)
+        if profile is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Customer not found")
+        rows = await run_in_threadpool(deps.repository.list_transactions, customer_id)
+        deps.audit.record("transactions_viewed", None, lines=min(len(rows), limit))
+        return MyTransactionsResponse(
+            customer_id=profile.customer_id,
+            first_name=profile.first_name,
+            country=profile.country,
+            transactions=[
+                TransactionView(
+                    transaction_id=t.transaction_id,
+                    occurred_at=t.transaction_date.isoformat(),
+                    merchant=t.merchant_name,
+                    amount=t.amount,
+                    currency=t.currency,
+                    country=t.transaction_country,
+                    channel=t.channel,
+                    status=t.transaction_status,
+                )
+                for t in rows[:limit]
+            ],
+        )
 
     @app.get(
         "/v1/handoffs/{handoff_id}/report.md",

@@ -138,6 +138,8 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_app_password: SecretStr | None = None
     customer_email_override: str | None = None
+    # Upper bound of ?limit= on GET /v1/me/transactions.
+    transactions_max_limit: int = Field(default=50, gt=0, le=500)
     # Accepted customer ids (checked before a session is created).
     customer_id_pattern: str = r"^[A-Z0-9-]{1,64}$"
     # Shown in the API docs and in validation errors: what a customer id looks like, and one
