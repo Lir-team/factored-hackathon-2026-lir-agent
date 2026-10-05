@@ -176,6 +176,36 @@ def test_output_guard_lets_the_truth_about_a_freeze_through(policy, reply):
     assert not policy.config.output_guard.violations(reply)
 
 
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Listo, se generó la devolución de tu dinero.",
+        "Ya se ha procesado el reembolso del cargo.",
+        "Tu devolución fue aprobada y verás el dinero en 3 días.",
+        "El reembolso está en proceso.",
+        "Te devolvimos los 245.50 MXN.",
+        "Hemos reembolsado el cargo duplicado.",
+        "O estorno foi processado.",
+        "Já foi gerado o estorno do valor.",
+    ],
+)
+def test_output_guard_blocks_a_refund_nobody_made(policy, reply):
+    assert policy.config.output_guard.violations(reply)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "No se generó ninguna devolución: un especialista revisará tu caso.",
+        "Todavía no se ha procesado ningún reembolso.",
+        "Un especialista decidirá si corresponde una devolución.",
+        "Ainda não foi gerado nenhum estorno.",
+    ],
+)
+def test_output_guard_lets_the_truth_about_a_refund_through(policy, reply):
+    assert not policy.config.output_guard.violations(reply)
+
+
 def test_a_rejected_explanation_goes_to_human_review(policy):
     facts = policy.turn_facts(serialized({**IN_SCOPE, "rechaza_explicacion": (True, 0.9)}))
     outcome = policy.route_turn(facts)
