@@ -1,6 +1,6 @@
 # Telegram voice notes
 
-Branch: `feat/telegram-voice-notes` · Status: in progress · Delivery: single-pr (forecast ~350 authored lines)
+Branch: `feat/telegram-voice-notes` · Status: done (merged in PR #60, `d37b447`) · Delivery: single-pr (forecast ~350 authored lines)
 
 ## Objective
 

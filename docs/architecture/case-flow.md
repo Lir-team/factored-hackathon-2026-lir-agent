@@ -1,8 +1,8 @@
 # How a case flows: web form → Pub/Sub → agent → Telegram
 
-A customer reports a problem in the `lir-web` form. `lir-agent` accepts the case,
-publishes it to Pub/Sub, works it as soon as Pub/Sub pushes it back, and talks to the
-customer on Telegram once they tap the Start link. This page shows how those pieces are
+A customer reports a problem in the `lir-web` form. The case flow service on Cloud Run,
+`lir-agent-cases`, accepts the case, publishes it to Pub/Sub, works it as soon as Pub/Sub
+pushes it back, and talks to the customer on Telegram once they tap the Start link. This page shows how those pieces are
 wired, what each route trusts, and how to run the whole loop on a laptop.
 
 ## The flow in one picture
@@ -11,7 +11,7 @@ wired, what each route trusts, and how to run the whole loop on a laptop.
 lir-web (browser)                         Telegram
    │ POST /v1/cases (JWT)                     ▲  │ webhook: /start <token>, messages
    ▼                                          │  ▼
-API Gateway ── verified claims ──► lir-agent (Cloud Run) ◄── /channels/telegram
+API Gateway ── verified claims ──► lir-agent-cases (Cloud Run) ◄── /channels/telegram
                                     │   ▲          │
               archive case ◄────────┤   │ push     │ sendMessage
           (Cloud Storage inbox)     │   │ (OIDC)   ▼
@@ -23,7 +23,7 @@ API Gateway ── verified claims ──► lir-agent (Cloud Run) ◄── /ch
 
 1. **Submit.** The form posts the case to `POST /v1/cases` through API Gateway, which
    verifies the customer JWT and forwards its claims.
-2. **Accept.** `lir-agent` validates the case, archives it in the cases inbox, publishes
+2. **Accept.** `lir-agent-cases` validates the case, archives it in the cases inbox, publishes
    it to `lir-cases`, stores a single-use start token, and answers `202` with
    `telegram_start_url = https://t.me/<bot>?start=<token>`.
 3. **Work.** Pub/Sub pushes the case to `/pubsub/push`. The agent starts a conversation
@@ -43,7 +43,7 @@ only becomes known when the customer presses Start.
 | `POST /v1/cases` | the browser, via API Gateway | `X-Apigateway-Api-Userinfo` (gateway-verified JWT claims) | validate, check ownership, archive, publish, issue the start link |
 | `POST /pubsub/push` | Pub/Sub push subscription | OIDC bearer token for `PUBSUB_PUSH_AUDIENCE` | process each case once, run the first turn, queue or send the reply |
 | `POST /channels/telegram` | Telegram, via API Gateway | `X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET` | link the chat on `/start`, relay messages to the agent |
-| `/v1/sessions*` | bank operators behind IAP | IAP identity header | the operator chat (unchanged) |
+| `/v1/sessions*` | bank operators, on the operator service `lir-agent` behind IAP | IAP identity header | the operator chat |
 
 Routes that are not configured are not registered: no audience means no `/pubsub/push`,
 no bot token or webhook secret means no `/channels/telegram`.
@@ -94,6 +94,7 @@ Every variable is documented in `app/lir-agent/.env.example`. The ones this flow
    cd app/lir-agent
    CASES_PUBLISHER=pubsub PUBSUB_EMULATOR_HOST=localhost:8085 GOOGLE_CLOUD_PROJECT=lir-local \
    PUBSUB_VERIFY_TOKEN=false CASE_STORE=firestore FIRESTORE_EMULATOR_HOST=localhost:8086 \
+   REQUIRE_IDENTITY=false CORS_ORIGINS=http://localhost:<web port> \
    uv run lir-agent-api
    ```
 
@@ -118,4 +119,5 @@ arrives in the chat.
   before the chat's next answer. A reply popped by an instance that dies before sending it
   is still lost, and a reply split in parts may repeat the parts already sent.
 - ADK sessions live in memory, so a restart ends ongoing conversations.
-- Pub/Sub dead-lettering and the Slack hand-off are not wired yet.
+- A case Pub/Sub could not deliver after 5 attempts goes to the dead-letter topic
+  `lir-cases-dead-letter` (`lir-infra`), kept for a week for inspection; nothing replays it.

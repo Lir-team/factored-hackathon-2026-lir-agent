@@ -1,10 +1,10 @@
 # decision-layer
 
-Proof of concept for the customer-service agent: a **typed decision layer**. The agent asks
-closed questions about the customer's message (intent, wants a human, theft suspected, which
-merchant) and gets back answers with a **probability**, so every routing decision has an explicit
-threshold, a measurable accuracy and a trace. Everything for this PoC lives in this directory;
-see the repository root README for the shared conventions.
+The **typed decision layer** of the customer-service agent, installed in `app/lir-agent` as a
+path dependency. The agent asks closed questions about the customer's message (intent, wants a
+human, theft suspected, which merchant) and gets back answers with a **probability**, so every
+routing decision has an explicit threshold, a measurable accuracy and a trace. See the
+repository root README for the shared conventions.
 
 ## Purpose and context
 
@@ -15,7 +15,9 @@ It targets the "unrecognized charge → explain, dispute or hand off" workflow. 
 the customer, this layer decides, and deterministic code authorizes. It provides:
 
 - A `DecisionModel` contract (`Noul` yes/no and `Choice` questions → `Answer` with probability),
-  so Jev, Laya, an LLM or keyword rules are interchangeable without touching the agent.
+  so Jev, Laya, an LLM or keyword rules are interchangeable without touching the agent. The LLM
+  implementation lives in the agent (`app/lir-agent/src/lir_agent/infrastructure/decisions/llm.py`),
+  not in this package.
 - Decisions D1–D4 (`questions.py`): intent, wants a human, theft suspected, which merchant.
 - A **Jev** client ([TypeSafe AI](https://developers.cloudflare.com/ai/models/typesafe/jev/)
   through Cloudflare Workers AI) with bounded retries on 429/5xx. 402 (billing) and 401/403
@@ -99,8 +101,6 @@ See [`.env.example`](.env.example).
 
 ## Next steps
 
-- Case event log (append-only): `decision`, `tool_called`, `policy_evaluated` and `handed_off`
-  events, for the audit trail and the metrics.
 - Jev and Laya against the labelled ES/PT set. The baseline and the LLM are already compared
   there (`data/reports/decision_eval.md`): macro-F1, calibration (ECE), coverage/accuracy
   curve, thresholds chosen on validation, p50/p95 latency and cost.

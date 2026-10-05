@@ -36,11 +36,11 @@ everything outside is an external system or provider.
 
 | Zone | Services | Role |
 |---|---|---|
-| Security edge | API Gateway (identity provider mocked with a service account) | Validates the customer's JWT when `customer_sign_in` is on, API key on the form, verifies channel webhook signatures |
-| Ingestion | Pub/Sub (`lir-cases`), dead-letter topic, Cloud Storage (`cases-inbox`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
-| Agent runtime | Cloud Run `lir-agent` (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) | One service with three routes: `/v1/cases`, `/pubsub/push`, `/channels` |
-| Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-curated`), Firestore | Curated parquet read by the tools; cases and handoffs written and read back |
-| Audit, observability & analytics | BigQuery (`lir_audit`), Looker Studio, Cloud Logging, Trace, Monitoring | Audit receipt for every step, dashboards and alerts |
+| Security edge | API Gateway (identity provider mocked with a service account) | Validates the customer's JWT when `customer_sign_in` is on and the API key on the form; forwards the Telegram webhook, whose secret the agent checks |
+| Ingestion | Pub/Sub (`lir-cases`), dead-letter topic (`lir-cases-dead-letter`), Cloud Storage (`<project>-cases`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
+| Agent runtime | One image (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) on two Cloud Run services: `lir-agent` and `lir-agent-cases` | `lir-agent`, behind IAP: operator API (`/v1/sessions`, `/v1/handoffs`), specialist reviews (`GET /v1/approvals`, `/v1/approvals/{id}/review`) and `/backoffice`. `lir-agent-cases`, behind API Gateway and Pub/Sub: `/v1/cases`, `/v1/me/transactions`, the customer's approval card (`/v1/approvals/{id}`, `/decision`), `/pubsub/push`, `/channels/telegram` |
+| Data | Data pipeline (Cloud Run job), Cloud Storage (`<project>-data`, mounted at `/mnt/data`), Firestore | Staged Parquet read by the tools; case state, disputes, handoffs and approval requests written and read back |
+| Audit, observability & analytics | BigQuery (`lir_analytics`), Looker Studio, Cloud Logging, Trace, Monitoring | Audit receipt for every step, dashboards and alerts |
 | Platform security & delivery | Secret Manager, Cloud IAM, Cloud Build, Artifact Registry, billing budgets | Keys, least-privilege service accounts, build and deploy, spend alerts |
 
 How a case flows:
@@ -48,7 +48,7 @@ How a case flows:
 1. The bank's chatbot verifies the customer (biometric KYC, mocked) and calls
    `POST /v1/cases` through API Gateway (with the customer's JWT once `customer_sign_in`
    is on).
-2. `lir-agent` archives the case, publishes it to Pub/Sub and returns `202`
+2. `lir-agent-cases` archives the case, publishes it to Pub/Sub and returns `202`
    with a Telegram Start link; Pub/Sub pushes the case back to the agent.
    The wiring, routes and local run are in
    [docs/architecture/case-flow.md](docs/architecture/case-flow.md).
@@ -58,7 +58,7 @@ How a case flows:
    `decision_eval.md`), and a versioned policy in code assigns the lane: explain the
    charge, put a dispute to the customer's approval (the agent never opens one; the
    customer approves it with buttons or the web card), propose, or escalate. Never a refund.
-4. Proposals and escalations reach a bank officer in Slack with the case file.
+4. Proposals and escalations reach a bank officer in Slack with a link to the case file.
    Every step is written to the audit log in BigQuery.
 
 The LLM (OpenAI through LiteLLM, swappable by configuration) only receives
@@ -74,10 +74,11 @@ before any model reads them.
 .
 ├── app/
 │   ├── lir-agent/       # Python agent (Google ADK + LiteLLM), managed with uv
-│   ├── decision-layer/  # Typed decisions with probabilities (keyword baseline, Jev, LLM, fallback)
+│   ├── decision-layer/  # Typed decisions with probabilities (keyword baseline, Jev, fallback chain)
 │   └── evals/           # Scenario evals from the jobs to be done (promptfoo runner, code graders)
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
 ├── docs/         # Product proposal and architecture diagram (docs/architecture/)
+├── .github/      # deploy-agent.yml: build and roll out the agent image (see Deploy)
 ├── scripts/      # check.sh: does everything still work?
 └── .githooks/    # Git hooks: secret scan on commit, no direct push to main
 ```
@@ -124,8 +125,9 @@ python -m pipelines               # skips the download (~1.5 min)
 - **Stack:** Python >= 3.13, [uv](https://docs.astral.sh/uv/), Google ADK, LiteLLM,
   DuckDB, pydantic-settings. Dev tools: pytest, pytest-cov, pyright, ruff.
 - **Architecture:** hexagonal layers (`domain`, `application`, `infrastructure`,
-  `interface/adk`) wired in `container.py`. Typed decisions come from
-  `app/decision-layer/` (the ES/PT keyword baseline by default; the LLM or Jev by configuration).
+  `interface/adk`, `interface/http`) wired in `container.py`. Typed decisions come from
+  `app/decision-layer/` (the ES/PT keyword baseline by default, Jev by configuration) or, with
+  `DECISIONS=llm`, from the agent's own LLM adapter (`infrastructure/decisions/llm.py`).
 - **Flow:** find the charge, gather verifiable evidence, and follow the lane chosen by a
   versioned synthetic policy (`resources/policy.yaml`): explain, put a dispute to the customer's approval
   after an explicit confirmation, propose, or hand off to a human with a case file.
@@ -156,7 +158,7 @@ layout, configuration and limitations.
 ## Does everything still work?
 
 ```bash
-scripts/check.sh          # tests, lint and types of every app; no network, no cost (~20 s)
+scripts/check.sh          # tests and lint of every app, types of lir-agent; no network, no cost (~20 s)
 scripts/check.sh --live   # plus the regression evals against the real model, 3 trials each
 ```
 
@@ -165,6 +167,85 @@ when any regression scenario fails the code graders in any of its trials. See
 [`app/evals/README.md`](app/evals/README.md) for the scenarios, graders and report, and
 [`app/evals/AGENTS.md`](app/evals/AGENTS.md) for full and scoped runs (one scenario, a group,
 only what failed last time).
+
+## Deploy
+
+One container image (`app/lir-agent/Dockerfile`) runs as two Cloud Run services in the
+`lir-agent` GCP project (`us-east1`):
+
+- `lir-agent`: operator API and specialist back office, behind IAP.
+- `lir-agent-cases`: the case flow (`/v1/cases`, `/pubsub/push`, `/channels/telegram`),
+  reached only through API Gateway and Pub/Sub.
+
+Everything around the services (accounts, secrets, buckets, Firestore, Pub/Sub, API
+Gateway, IAM, the CI identity) is Terraform in the
+[`lir-infra`](https://github.com/Lir-team/lir-infra) repository. Order:
+
+1. **Infrastructure, first apply** in `lir-infra` (`agent_service_deployed = false`,
+   `cases_service_url = ""`), then add the secret values with
+   `gcloud secrets versions add`. A revision that mounts an empty secret fails to start.
+2. **Create the services** once, with the settings listed in `lir-infra`'s README,
+   "Service settings the workflow must carry": service account, env vars, secrets,
+   IAP/audience, the data bucket volume at `/mnt/data`, scaling and probe. The env maps
+   come from `terraform output -json agent_env cases_env agent_secret_env cases_secret_env`.
+3. **Infrastructure, second apply** with `agent_service_deployed = true` and
+   `cases_service_url` set: IAP users, `run.invoker`, API Gateway, Pub/Sub push.
+4. **Every later release** is automatic: a push to `main` that touches `app/lir-agent/` or
+   `app/decision-layer/` runs `.github/workflows/deploy-agent.yml`, which builds the
+   image with Cloud Build and rolls out the new image only. The services keep their env
+   vars and secrets, so a release needs no `terraform apply`.
+
+### Deploy-time variables (GitHub)
+
+Repository variables (*Settings > Secrets and variables > Actions > Variables*), read by
+the workflow; values from `terraform output` in `lir-infra`. No keys: the workflow signs
+in with Workload Identity Federation.
+
+| Variable | Value |
+|---|---|
+| `GCP_PROJECT_ID` | GCP project id |
+| `GCP_REGION` | Region of Cloud Run and Artifact Registry |
+| `WIF_PROVIDER` | Output `wif_provider` |
+| `DEPLOY_SA` | Output `deploy_service_account` (`lir-deploy@...`) |
+| `AR_REPO` | Artifact Registry repository (`lir`) |
+| `BUILD_SA` | Output `build_service_account` (`lir-build@...`) |
+| `BUILD_BUCKET` | Output `build_source_bucket` |
+| `DEPLOY_CASES_SERVICE` | `true` once `lir-agent-cases` exists; `false` skips its rollout |
+
+### Runtime variables (Cloud Run)
+
+Set on the services at creation (step 2). The image already sets `ENVIRONMENT=production`,
+`DATA_DIR=/mnt/data` and `AUDIT_SINK=stdout`; every variable is described in
+[`app/lir-agent/.env.example`](app/lir-agent/.env.example).
+
+| Variable | Service | Value |
+|---|---|---|
+| `LLM_MODEL`, `LLM_API_BASE` | both | LiteLLM model (e.g. `openai/gpt-4o`); `LLM_API_BASE` empty for a hosted provider |
+| `STORE`, `DECISIONS`, `JEV_ENABLED` | both | Data source and decision model (`lir-infra` variables) |
+| `GOOGLE_CLOUD_PROJECT` | both | Project id |
+| `CASE_STORE`, `CASE_REPOSITORY`, `APPROVAL_REPOSITORY` | both | `firestore`, shared by both services |
+| `FIRESTORE_DATABASE`, `FIRESTORE_COLLECTION_PREFIX` | both | `(default)`, `lir_` |
+| `BACKOFFICE_ENABLED` | both | `true` on `lir-agent`, `false` on `lir-agent-cases` |
+| `CASES_INBOX`, `CASES_BUCKET` | cases | `gcs`, `<project>-cases` |
+| `CASES_PUBLISHER`, `CASES_TOPIC` | cases | `pubsub`, `lir-cases` |
+| `PUBSUB_PUSH_AUDIENCE`, `PUBSUB_PUSH_SERVICE_ACCOUNT` | cases | `lir-agent-cases-pubsub-push`, the `lir-pubsub-push` account |
+| `REQUIRE_IDENTITY`, `APPROVAL_REQUIRES_SIGN_IN` | cases | `true` only with `customer_sign_in` in `lir-infra` |
+| `CORS_ORIGINS` | cases | Origins of lir-web |
+| `TELEGRAM_BOT_USERNAME` | cases | Bot username, without `@`; empty means no start link |
+| `SPEECH_TO_TEXT` | cases | Optional: `google` transcribes voice notes |
+| `APPROVAL_LINK_TEMPLATE` | cases | Optional: https link to the approval card in lir-web |
+| `REFERENCE_DATE`, `EXPOSE_TRACE`, `PUBLIC_BASE_URL`, `SLACK_ASSIGNEES` | optional | See `.env.example` |
+| `SMTP_USER`, `SMTP_APP_PASSWORD`, `CUSTOMER_EMAIL_OVERRIDE` | optional | Approval-outcome email; `lir-infra` sets none of them, so it is off when deployed |
+
+Secrets, mounted from Secret Manager (`NAME=<secret id>:latest`):
+
+| Variable | Secret id | Needed when |
+|---|---|---|
+| `LLM_API_KEY`, `OPENAI_API_KEY` | `openai-api-key` | Always |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | `telegram-bot-token`, `telegram-webhook-secret` | Telegram is on; without them `/channels/telegram` is off |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | `cloudflare-account-id`, `cloudflare-api-token` | Jev is on |
+| `OPENROUTER_API_KEY` | `openrouter-api-key` | The decision model is on OpenRouter |
+| `SLACK_WEBHOOK_URL` | `slack-webhook-url` | Slack notifications are on |
 
 ## Git hooks
 
@@ -183,12 +264,14 @@ git config core.hooksPath .githooks
 ## Documentation
 
 - [`data/README.md`](data/README.md): data layers, provenance, declared vs observed quality, leakage rules (Spanish)
-- [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/`
+- [`data/AGENTS.md`](data/AGENTS.md): rules for agents working in `data/` (Spanish)
 - [`app/evals/AGENTS.md`](app/evals/AGENTS.md): how to run the evals, full or scoped, and rules for changing scenarios (Spanish)
 - [`app/lir-agent/README.md`](app/lir-agent/README.md): agent flow, tools, layout, commands, limitations
-- [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (baseline, Jev, LLM, fallback)
+- [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (baseline, Jev, fallback chain)
+- [`docs/architecture/case-flow.md`](docs/architecture/case-flow.md): case flow wiring (web form, Pub/Sub, agent, Telegram), routes and local run
+- [`docs/analytics/looker-studio.md`](docs/analytics/looker-studio.md): audit trail and evaluation runs in BigQuery, Looker Studio dashboards
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
 - [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
 - [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
-- [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow
-- [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard
+- [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow (Spanish)
+- [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard (Spanish)

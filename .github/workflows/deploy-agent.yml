@@ -1,8 +1,9 @@
 # Builds the agent image with Cloud Build and rolls it out to both Cloud Run services.
 #
-# Terraform (lir-infra) owns the services' configuration and ignores their image, so this
-# workflow only changes the image. Repository variables come from `terraform output` in
-# lir-infra; see app/lir-agent/README.md, "Deploy".
+# Since 2026-10-04 the Cloud Run services are outside Terraform: they are created once by hand
+# with the settings in lir-infra's README, and Terraform (lir-infra) only exports their env maps.
+# This workflow only rolls out the new image; each service keeps its env vars and secrets.
+# Repository variables come from `terraform output` in lir-infra; see the root README, "Deploy".
 name: Deploy agent
 
 on:
@@ -54,8 +55,8 @@ jobs:
             --region "${{ vars.GCP_REGION }}" \
             --image "${IMAGE}"
 
-      # The case flow service exists only once lir-infra has applied it; until then the
-      # repository variable DEPLOY_CASES_SERVICE stays "false" and this step is skipped.
+      # The case flow service must be created by hand first (see the root README, "Deploy");
+      # until then the repository variable DEPLOY_CASES_SERVICE stays "false" and this step is skipped.
       - name: Deploy the cases service
         if: vars.DEPLOY_CASES_SERVICE == 'true'
         run: |
