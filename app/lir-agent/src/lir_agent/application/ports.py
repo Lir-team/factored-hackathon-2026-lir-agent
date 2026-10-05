@@ -440,3 +440,19 @@ class SpeechToText(Protocol):
             TranscriptionError: If the service failed.
         """
         ...
+
+
+class SigningError(Exception):
+    """A token could not be signed (the signing service failed or refused)."""
+
+
+class JwtSigner(Protocol):
+    """Signs JWT claims as the bank's identity provider (mocked for the demo)."""
+
+    def sign(self, claims: Mapping[str, Any]) -> str:
+        """The signed token.
+
+        Raises:
+            SigningError: If the signing service failed.
+        """
+        ...

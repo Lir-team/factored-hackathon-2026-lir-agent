@@ -9,6 +9,7 @@ from lir_agent.application.use_cases.approvals import (
     RequestApproval,
     VerifyApprovalLink,
 )
+from lir_agent.application.use_cases.demo_sign_in import DemoSession, IssueDemoSession
 from lir_agent.application.use_cases.dispute_approval import OpenDisputeAction
 from lir_agent.application.use_cases.find_candidates import (
     FindCandidateTransactions,
@@ -25,9 +26,11 @@ __all__ = [
     "AnswerApprovalButton",
     "AnswerTelegramMessage",
     "DecideApproval",
+    "DemoSession",
     "FindCandidateTransactions",
     "GatherTransactionEvidence",
     "GetCustomerProfile",
+    "IssueDemoSession",
     "OpenDisputeAction",
     "PresentApprovals",
     "ProcessCase",
