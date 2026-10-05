@@ -196,6 +196,11 @@ class Settings(BaseSettings):
     # never past the ceiling. Then the customer files a new case, signing in to the bank again.
     case_session_idle_minutes: int = Field(default=30, gt=0)
     case_session_max_minutes: int = Field(default=1440, gt=0)
+    # Voice notes: "google" transcribes them with Cloud Speech-to-Text (Application Default
+    # Credentials; the API enabled and `roles/speech.client` granted); "off" asks for text.
+    speech_to_text: Literal["off", "google"] = "off"
+    # Longer voice notes are refused before download (synchronous recognition stops at 60).
+    voice_max_seconds: int = Field(default=60, gt=0, le=60)
 
     # ---- Case store (receipts, start tokens, chat links, conversations, replies) ---------
     # "memory" is lost on restart and not shared between instances (tests, single-instance

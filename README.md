@@ -22,7 +22,9 @@ The decision layer is evaluated against labels in
 [`data/reports/decision_eval.md`](data/reports/decision_eval.md). Identity: the bank's sign-in
 is mocked; API Gateway validates the customer's JWT only when `customer_sign_in` is on in
 `lir-infra` (off by default, so the demo trusts the form's `customer_id`). WhatsApp is mocked;
-Telegram is the working channel.
+Telegram is the working channel. Telegram voice notes are transcribed with Cloud
+Speech-to-Text only when `SPEECH_TO_TEXT=google` (off by default; `lir-infra` must enable
+`speech.googleapis.com` and grant `roles/speech.client` first).
 
 ## Architecture
 

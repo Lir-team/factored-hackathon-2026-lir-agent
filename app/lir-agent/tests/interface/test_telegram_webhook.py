@@ -6,9 +6,14 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from lir_agent.application.ports import MessageNotSentError
+from lir_agent.application.ports import (
+    FileNotDownloadedError,
+    MessageNotSentError,
+    TranscriptionError,
+)
 from lir_agent.container import build_container
 from lir_agent.domain.case_intake import CaseStart
+from lir_agent.domain.language import Language
 from lir_agent.infrastructure.audit import InMemoryAuditSink
 from lir_agent.infrastructure.case_store import InMemoryCaseStore
 from lir_agent.interface.http import create_app
@@ -61,6 +66,34 @@ class RecordingMessenger:
         self.answers.append((callback_id, text, alert))
 
 
+class FakeChatFiles:
+    """Voice notes Telegram holds, by file id; records every download."""
+
+    def __init__(self) -> None:
+        self.files: dict[str, bytes] = {}
+        self.downloads: list[str] = []
+
+    async def download_file(self, file_id: str) -> bytes:
+        self.downloads.append(file_id)
+        if file_id not in self.files:
+            raise FileNotDownloadedError("status 400")
+        return self.files[file_id]
+
+
+class FakeSpeechToText:
+    """Transcripts by audio; unknown audio raises as a speech service failure would."""
+
+    def __init__(self) -> None:
+        self.transcripts: dict[bytes, str] = {}
+        self.calls: list[tuple[bytes, Language]] = []
+
+    async def transcribe(self, audio: bytes, language: Language) -> str:
+        self.calls.append((audio, language))
+        if audio not in self.transcripts:
+            raise TranscriptionError("ServiceUnavailable")
+        return self.transcripts[audio]
+
+
 def fake_verifier(token: str) -> dict:
     """Stands in for Google's OIDC check: only GOOD_TOKEN is valid, issued to PUSHER."""
     if token != GOOD_TOKEN:
@@ -80,17 +113,21 @@ def envelope(payload: object, message_id: str = "m-1") -> dict:
 class Bot:
     """The app with the Telegram channel and the Pub/Sub push on, recording what the bot says."""
 
-    def __init__(self, settings) -> None:
+    def __init__(self, settings, speech: bool = True) -> None:
         self.store = InMemoryCaseStore()
         self.audit = InMemoryAuditSink()
         self.messenger = RecordingMessenger()
         self.conversations = FakeConversations()
+        self.files = FakeChatFiles()
+        self.speech = FakeSpeechToText()
         self.container = container = build_container(
             settings,
             audit=self.audit,
             case_inbox=RecordingInbox(),
             case_store=self.store,
             messenger=self.messenger,
+            chat_files=self.files,
+            speech_to_text=self.speech if speech else None,
         )
         self.client = TestClient(
             create_app(
@@ -115,6 +152,20 @@ class Bot:
         if text is not None:
             message["text"] = text
         body = {"update_id": self._next_update, "message": message}
+        self._next_update += 1
+        return self.post(body)
+
+    def voice(self, file_id: str = "voice-1", duration: int = 5):
+        """A voice note, as Telegram sends it (OGG/Opus, `duration` in seconds)."""
+        voice = {"file_id": file_id, "file_unique_id": "u1", "duration": duration}
+        body = {
+            "update_id": self._next_update,
+            "message": {
+                "message_id": 1,
+                "chat": {"id": CHAT, "type": "private"},
+                "voice": voice,
+            },
+        }
         self._next_update += 1
         return self.post(body)
 
@@ -422,3 +473,115 @@ def test_a_case_filed_on_the_web_is_answered_on_telegram(settings):
     confirmation, first_turn = bot.texts()
     assert FOLIO in confirmation
     assert first_turn.startswith(f"echo: {case()['description']}")
+
+
+# ---- voice notes ---------------------------------------------------------------------------
+def linked(bot: Bot, language: str = "es") -> Bot:
+    """`bot` with the case worked and the chat linked, nothing sent yet."""
+    bot.push()
+    bot.say(f"/start {bot.issue(language=language)}")
+    bot.messenger.sent.clear()
+    return bot
+
+
+def test_a_voice_note_is_answered_as_the_text_it_says(bot):
+    linked(bot)
+    session_id = next(iter(bot.conversations.sessions))
+    bot.files.files["voice-1"] = b"ogg-1"
+    bot.speech.transcripts[b"ogg-1"] = " Sí, fue ayer "
+
+    response = bot.voice("voice-1")
+
+    assert response.status_code == 200
+    assert bot.speech.calls == [(b"ogg-1", "es")]
+    assert bot.conversations.messages[-1] == (OWNER, session_id, "Sí, fue ayer")
+    assert bot.messenger.sent == [(CHAT, "echo: Sí, fue ayer")]
+
+
+def test_a_voice_note_is_transcribed_in_the_case_language(bot):
+    linked(bot, language="pt")
+    bot.files.files["voice-1"] = b"ogg-1"
+    bot.speech.transcripts[b"ogg-1"] = "Sim"
+
+    bot.voice("voice-1")
+
+    assert bot.speech.calls == [(b"ogg-1", "pt")]
+
+
+def test_a_spoken_start_command_is_not_a_link(bot):
+    linked(bot)
+    bot.files.files["voice-1"] = b"ogg-1"
+    bot.speech.transcripts[b"ogg-1"] = "/start tok-2"
+
+    bot.voice("voice-1")
+
+    assert bot.conversations.messages[-1][2] == "/start tok-2"
+
+
+def test_voice_notes_are_declined_politely_when_speech_is_off(settings):
+    bot = linked(Bot(telegram_on(settings), speech=False))
+
+    assert bot.voice().status_code == 200
+
+    [reply] = bot.texts()
+    assert "texto" in reply
+    assert bot.files.downloads == []
+
+
+def test_a_too_long_voice_note_is_refused_before_download(bot):
+    linked(bot)
+
+    bot.voice(duration=61)
+
+    [reply] = bot.texts()
+    assert "60" in reply
+    assert bot.files.downloads == []
+
+
+@pytest.mark.parametrize(
+    "transcript", [None, "", "   "], ids=["service-failed", "empty", "blank"]
+)
+def test_a_voice_note_not_understood_is_answered_and_acknowledged(bot, transcript):
+    linked(bot)
+    bot.files.files["voice-1"] = b"ogg-1"
+    if transcript is not None:
+        bot.speech.transcripts[b"ogg-1"] = transcript
+    sent = len(bot.conversations.messages)
+
+    response = bot.voice("voice-1")
+
+    assert response.status_code == 200
+    [reply] = bot.texts()
+    assert "entender" in reply
+    assert len(bot.conversations.messages) == sent
+
+
+def test_a_voice_note_that_cannot_be_downloaded_is_answered(bot):
+    linked(bot)
+
+    assert bot.voice("missing").status_code == 200
+
+    [reply] = bot.texts()
+    assert "entender" in reply
+    assert bot.speech.calls == []
+
+
+def test_a_too_long_transcript_is_refused_politely(settings):
+    bot = linked(Bot(telegram_on(settings, max_message_chars=10)))
+    bot.files.files["voice-1"] = b"ogg-1"
+    bot.speech.transcripts[b"ogg-1"] = "x" * 11
+    sent = len(bot.conversations.messages)
+
+    bot.voice("voice-1")
+
+    [reply] = bot.texts()
+    assert "10" in reply
+    assert len(bot.conversations.messages) == sent
+
+
+def test_a_voice_note_from_an_unlinked_chat_is_asked_to_use_the_form_link(bot):
+    bot.voice()
+
+    [reply] = bot.texts()
+    assert "enlace" in reply
+    assert bot.files.downloads == []

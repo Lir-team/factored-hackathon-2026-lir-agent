@@ -21,6 +21,7 @@ from lir_agent.domain.case_intake import (
     CaseReport,
     CaseStart,
 )
+from lir_agent.domain.language import Language
 from lir_agent.domain.models import Customer, DisputeCase, HandoffPacket, Transaction
 from lir_agent.domain.session import SessionState
 from lir_agent.domain.telegram import ChatLink, InlineButton
@@ -406,3 +407,36 @@ class ChatButtons(Protocol):
 
 class ChatChannel(Messenger, ChatButtons, Protocol):
     """A customer chat channel: plain messages and messages with buttons."""
+
+
+# ---- voice notes ------------------------------------------------------------------------
+class FileNotDownloadedError(Exception):
+    """A file sent to the chat could not be fetched from the channel."""
+
+
+class ChatFiles(Protocol):
+    """Files customers send to the chat (Telegram voice notes today)."""
+
+    async def download_file(self, file_id: str) -> bytes:
+        """The file's bytes.
+
+        Raises:
+            FileNotDownloadedError: If the channel did not hand it over.
+        """
+        ...
+
+
+class TranscriptionError(Exception):
+    """Speech could not be turned into text (the service failed or refused the audio)."""
+
+
+class SpeechToText(Protocol):
+    """Transcribes a short voice note (Telegram OGG/Opus) in the customer's language."""
+
+    async def transcribe(self, audio: bytes, language: Language) -> str:
+        """The transcript, `""` when no speech was recognized.
+
+        Raises:
+            TranscriptionError: If the service failed.
+        """
+        ...
