@@ -10,19 +10,24 @@ unresolved contacts, and that charge disputes are the largest block of formal
 claims (PQR). The product proposal ("No reconozco este cargo") has the agent
 handle that flow for a signed-in bank customer, in Spanish and Portuguese. It
 finds the charge, explains it with verifiable evidence, puts a dispute to the
-customer's approval only when it is eligible, or hands off to a human. The LLM
-converses, a typed decision layer classifies (the ES/PT keyword baseline by default; the
-LLM or Jev by configuration), and deterministic code authorizes. The agent app
-(`app/lir-agent/`) implements this flow end to end on the demo fixture or the staged data;
-the cloud services in the architecture below are the deployment target.
+customer's and a specialist's approval only when it is eligible, or hands off to a human.
+The LLM converses, a typed decision layer classifies (the ES/PT keyword baseline by default;
+the LLM or Jev by configuration), and deterministic code authorizes. The agent app
+(`app/lir-agent/`) implements this flow end to end and runs on Google Cloud over the
+organizers' data (infrastructure as code in [`Lir-team/lir-infra`](https://github.com/Lir-team/lir-infra)).
 
-**What runs today and what is target.** Decisions: the keyword baseline unless `DECISIONS=llm`;
+**Live demo:** [lir-web](https://lir-web-244524731492.us-east1.run.app), the bank page where a
+signed-in customer sees their statement and reports a charge. The operator API and the
+specialist back office are behind IAP (team accounts only).
+
+**What runs today.** Decisions: the keyword baseline unless `DECISIONS=llm`;
 Jev is integrated but off (no AI Gateway balance), and its probabilities are not measured.
 The decision layer is evaluated against labels in
 [`data/reports/decision_eval.md`](data/reports/decision_eval.md). Identity: the bank's sign-in
-is mocked; API Gateway validates the customer's JWT only when `customer_sign_in` is on in
-`lir-infra` (off by default, so the demo trusts the form's `customer_id`). WhatsApp is mocked;
-Telegram is the working channel. Telegram voice notes are transcribed with Cloud
+is mocked by a demo identity provider (a service account signs the customer's JWT); API
+Gateway validates that JWT (`customer_sign_in`, on by default in `lir-infra`) and the service
+takes the customer from it, never from the form. Telegram is the conversation channel; the
+outcome email is sent only when SMTP is configured. Telegram voice notes are transcribed with Cloud
 Speech-to-Text only when `SPEECH_TO_TEXT=google` (off by default; `lir-infra` must enable
 `speech.googleapis.com` and grant `roles/speech.client` first).
 
@@ -30,36 +35,41 @@ Speech-to-Text only when `SPEECH_TO_TEXT=google` (off by default; `lir-infra` mu
 
 ![Lir serverless architecture on Google Cloud](docs/architecture/architecture-lir-agent.gif)
 
-Target architecture: a serverless agent on Google Cloud, triggered by events
-rather than a chat front end. Services inside the blue box run on Google Cloud;
-everything outside is an external system or provider.
+Deployed architecture: a serverless agent on Google Cloud, triggered by events (the case
+form, Pub/Sub, the Telegram webhook). Services inside the grey box run on Google Cloud;
+everything outside is an external system or provider. The diagram source is
+[`docs/architecture/architecture-lir-agent.drawio`](docs/architecture/architecture-lir-agent.drawio).
 
 | Zone | Services | Role |
 |---|---|---|
-| Security edge | API Gateway (identity provider mocked with a service account) | Validates the customer's JWT when `customer_sign_in` is on, API key on the form, verifies channel webhook signatures |
+| Customer channels | `lir-web` (Cloud Run), Telegram, Gmail (SMTP) | Statement and case form; the conversation; the outcome email |
+| Security edge | API Gateway (identity provider mocked with a service account), IAP | Customer JWT and API key on the customer routes, Telegram webhook secret; IAP in front of the operator service |
 | Ingestion | Pub/Sub (`lir-cases`), dead-letter topic, Cloud Storage (`cases-inbox`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
-| Agent runtime | Cloud Run `lir-agent` (Google ADK, LiteLLM, ADK callbacks, policy, DuckDB) | One service with three routes: `/v1/cases`, `/pubsub/push`, `/channels` |
-| Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-curated`), Firestore | Curated parquet read by the tools; cases and handoffs written and read back |
-| Audit, observability & analytics | BigQuery (`lir_audit`), Looker Studio, Cloud Logging, Trace, Monitoring | Audit receipt for every step, dashboards and alerts |
-| Platform security & delivery | Secret Manager, Cloud IAM, Cloud Build, Artifact Registry, billing budgets | Keys, least-privilege service accounts, build and deploy, spend alerts |
+| Agent runtime | Cloud Run, one image and two services: `lir-agent-cases` (case flow) and `lir-agent` (operator API, case files, back office) | Google ADK, LiteLLM with pseudonymized data, ADK callbacks, versioned policy, DuckDB |
+| Data | Data pipeline (Cloud Run job), Cloud Storage (`lir-agent-data`, mounted with GCS FUSE), Firestore | Parquet read by the tools; cases, case files and approval requests shared by both services |
+| Bank operations | Slack, back office (IAP) | Ticket with the reason and a rotating assignee; the specialist approves or rejects disputes |
+| Audit, observability & analytics | Cloud Logging, BigQuery (`lir_analytics` views), Looker Studio | Audit receipt for every step, KPIs per day, session and turn ([setup](docs/analytics/looker-studio.md)) |
+| Platform security & delivery | Secret Manager, Cloud IAM, Cloud Build, Artifact Registry, Workload Identity Federation | Keys, least-privilege service accounts, keyless GitHub deploys of the agent and lir-web |
 
 How a case flows:
 
-1. The bank's chatbot verifies the customer (biometric KYC, mocked) and calls
-   `POST /v1/cases` through API Gateway (with the customer's JWT once `customer_sign_in`
-   is on).
-2. `lir-agent` archives the case, publishes it to Pub/Sub and returns `202`
+1. The signed-in customer opens `lir-web`, which reads their statement
+   (`GET /v1/me/transactions`) and sends the case form (`POST /v1/cases`) through
+   API Gateway with the customer's JWT.
+2. `lir-agent-cases` archives the case, publishes it to Pub/Sub and returns `202`
    with a Telegram Start link; Pub/Sub pushes the case back to the agent.
    The wiring, routes and local run are in
    [docs/architecture/case-flow.md](docs/architecture/case-flow.md).
-3. The agent talks to the customer over WhatsApp (mocked) or Telegram in
-   Spanish or Portuguese. The decision layer returns typed decisions with
-   probabilities (their accuracy and calibration are measured in
-   `decision_eval.md`), and a versioned policy in code assigns the lane: explain the
-   charge, put a dispute to the customer's approval (the agent never opens one; the
-   customer approves it with buttons or the web card), propose, or escalate. Never a refund.
-4. Proposals and escalations reach a bank officer in Slack with the case file.
-   Every step is written to the audit log in BigQuery.
+3. The agent talks to the customer over Telegram in Spanish or Portuguese. The decision
+   layer returns typed decisions with probabilities (their accuracy and calibration are
+   measured in `decision_eval.md`), and a versioned policy in code assigns the lane:
+   explain the charge, propose a dispute, or escalate. Never a refund.
+4. A dispute needs two approvals: the customer approves it in Telegram, then a specialist
+   approves or rejects it in the back office. Only then is it opened, and the customer is
+   told the outcome in Telegram (and by email when SMTP is configured).
+5. Escalations reach the team's Slack channel with the reason, a rotating assignee and a
+   link to the case file. Every step is written to the audit log, exported to BigQuery
+   and charted in Looker Studio.
 
 The LLM (OpenAI through LiteLLM, swappable by configuration) only receives
 minimized data: opaque transaction references and an allowlist of fields. Bank records
@@ -127,8 +137,8 @@ python -m pipelines               # skips the download (~1.5 min)
   `interface/adk`) wired in `container.py`. Typed decisions come from
   `app/decision-layer/` (the ES/PT keyword baseline by default; the LLM or Jev by configuration).
 - **Flow:** find the charge, gather verifiable evidence, and follow the lane chosen by a
-  versioned synthetic policy (`resources/policy.yaml`): explain, put a dispute to the customer's approval
-  after an explicit confirmation, propose, or hand off to a human with a case file.
+  versioned synthetic policy (`resources/policy.yaml`): explain, put a dispute to the customer's
+  and then a specialist's approval, or hand off to a human with a case file.
 - **Hardening:** the session guard refuses sessions without a valid signed-in customer
   (missing or expired) before the model runs; the customer ID lives in session state;
   tools take no customer ID; tools are allowed per turn lane; the model only sees
@@ -149,8 +159,7 @@ uv run adk web apps                      # browser dev UI (set DEV_CUSTOMER_ID i
 uv run pytest && uv run ruff check . && uv run pyright
 ```
 
-`--customer-id` and `DEV_CUSTOMER_ID` stand in for the bank's identity check (biometric
-KYC, mocked). See [`app/lir-agent/README.md`](app/lir-agent/README.md) for the tools,
+`--customer-id` and `DEV_CUSTOMER_ID` stand in for the bank's sign-in on local runs. See [`app/lir-agent/README.md`](app/lir-agent/README.md) for the tools,
 layout, configuration and limitations.
 
 ## Does everything still work?
@@ -189,6 +198,8 @@ git config core.hooksPath .githooks
 - [`app/decision-layer/README.md`](app/decision-layer/README.md): typed decision layer (baseline, Jev, LLM, fallback)
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
 - [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
+- [`docs/architecture/case-flow.md`](docs/architecture/case-flow.md): case flow wiring, routes and local run
+- [`docs/analytics/looker-studio.md`](docs/analytics/looker-studio.md): BigQuery views and the Looker Studio report
 - [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
 - [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow
 - [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard
