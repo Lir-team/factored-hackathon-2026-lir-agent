@@ -8,7 +8,13 @@ import httpx
 import pytest
 
 from lir_agent.application.use_cases import RequestApproval
-from lir_agent.domain.approvals import ApprovalDetail, ApprovalDraft, Approver
+from lir_agent.domain.approvals import (
+    Actor,
+    ApprovalDetail,
+    ApprovalDraft,
+    ApprovalStatus,
+    Approver,
+)
 from lir_agent.domain.case_intake import CaseReport
 from lir_agent.domain.models import Lane, Outcome
 from lir_agent.domain.session import SessionState
@@ -25,7 +31,9 @@ def bot(settings) -> Bot:
     return Bot(telegram_on(settings))
 
 
-def request_for(bot: Bot, case_id: str = CASE_ID):
+def request_for(
+    bot: Bot, case_id: str = CASE_ID, approvers: tuple[Approver, ...] = (Approver.CUSTOMER,)
+):
     """A pending dispute for the case's customer, as the agent's tool guard creates it."""
     state: dict = {}
     session = SessionState(state)
@@ -48,7 +56,7 @@ def request_for(bot: Bot, case_id: str = CASE_ID):
             ],
             outcome=Outcome(lane=Lane.DISPUTE, rule_id="C7", reason="r", policy_version="v"),
         ),
-        approvers=[Approver.CUSTOMER],
+        approvers=list(approvers),
         language="es",
     )
 
@@ -94,6 +102,53 @@ def test_approving_with_the_button_opens_the_dispute_and_says_so(bot):
     assert bot.messenger.sent[-1] == (
         CHAT,
         f"Aprobaste la disputa: quedó abierta con el número {dispute_id}.",
+    )
+
+
+SPECIALIST = Actor(role=Approver.SPECIALIST, identity="ana@bank", channel="backoffice")
+
+
+def approved_by_the_customer_then_waiting_for_a_specialist(bot: Bot):
+    request = request_for(linked(bot), approvers=(Approver.CUSTOMER, Approver.SPECIALIST))
+    present(bot, request.approval_id)
+    bot.press(approval_callback(request.approval_id, True))
+    assert bot.messenger.sent[-1] == (
+        CHAT,
+        "Recibimos tu aprobación. Un especialista del banco la revisará y te avisaremos por aquí.",
+    )
+    [review] = bot.container.approvals.list(ApprovalStatus.PENDING, Approver.SPECIALIST)
+    return review
+
+
+def test_the_specialists_approval_opens_the_dispute_and_tells_the_customer(bot):
+    review = approved_by_the_customer_then_waiting_for_a_specialist(bot)
+
+    decided = asyncio.run(
+        bot.container.decide_approval.execute(
+            review.approval_id, SPECIALIST, True, review.content_hash
+        )
+    )
+
+    dispute_id = (decided.result or {})["dispute_case_id"]
+    assert bot.container.cases.get_dispute(dispute_id) is not None
+    assert bot.messenger.sent[-1] == (
+        CHAT,
+        f"Un especialista del banco aprobó tu disputa: quedó abierta con el número {dispute_id}.",
+    )
+
+
+def test_the_specialists_rejection_opens_nothing_and_tells_the_customer(bot):
+    review = approved_by_the_customer_then_waiting_for_a_specialist(bot)
+
+    decided = asyncio.run(
+        bot.container.decide_approval.execute(review.approval_id, SPECIALIST, False)
+    )
+
+    assert (decided.status, decided.result) == ("rejected", None)
+    assert bot.messenger.sent[-1] == (
+        CHAT,
+        "Un especialista del banco revisó tu caso y no aprobó la solicitud. "
+        "No se hizo ningún cambio.",
     )
 
 

@@ -301,6 +301,19 @@ def test_a_changed_card_cannot_be_approved(settings, conversations):
     assert (response.status_code, response.json()["detail"]) == (409, "content_changed")
 
 
+def test_the_back_office_page_is_served_only_when_enabled(settings, conversations):
+    assert TestClient(create_app(settings, conversations=conversations)).get(
+        "/backoffice", headers=IAP_HEADER
+    ).status_code == 404
+    enabled = settings.model_copy(update={"backoffice_enabled": True})
+    client = TestClient(create_app(enabled, conversations=conversations))
+
+    assert client.get("/backoffice").status_code == 401
+    page = client.get("/backoffice", headers=IAP_HEADER)
+    assert page.status_code == 200 and page.headers["content-type"].startswith("text/html")
+    assert "/v1/approvals" in page.text
+
+
 def test_the_back_office_routes_need_a_verified_identity(settings, conversations):
     client, _, request = _approval_app(settings, conversations)
     review = f"/v1/approvals/{request.approval_id}/review"

@@ -102,7 +102,7 @@ def test_slack_asks_a_specialist_and_posts_the_decision(settings):
     assert (
         "APR-1" in pending
         and "<@U1>" in pending
-        and "https://lir.app/v1/approvals" in pending
+        and "https://lir.app/backoffice" in pending
     )
     assert "approved" in decided and "specialist" in decided
     assert all("CLI-DEMO-001" not in p["text"] for p in posts)

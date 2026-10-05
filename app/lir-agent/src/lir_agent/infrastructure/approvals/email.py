@@ -9,7 +9,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Protocol
 
-from lir_agent.domain.approvals import ApprovalRequest, ApprovalStatus, Approver
+from lir_agent.domain.approvals import ApprovalRequest
 from lir_agent.infrastructure.approvals.telegram import outcome_text
 
 logger = logging.getLogger(__name__)
@@ -46,15 +46,7 @@ class EmailApprovalSurface:
     async def report(self, request: ApprovalRequest) -> None:
         """Email the outcome; a failed message is logged and never undoes the decision."""
         labels = self._labels.get(request.language) or self._labels["es"]
-        if request.decided_role is Approver.SPECIALIST:
-            key = (
-                "specialist_rejected"
-                if request.status is ApprovalStatus.REJECTED
-                else "specialist_approved"
-            )
-            outcome = labels[key]
-        else:
-            outcome = outcome_text(request, labels)
+        outcome = outcome_text(request, labels)
         subject = labels["email_subject"].format(approval_id=request.approval_id)
         body = "\n\n".join([request.title, outcome, labels["email_footer"]])
         try:

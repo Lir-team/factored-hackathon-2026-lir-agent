@@ -14,7 +14,7 @@ from lir_agent.domain.approvals import ApprovalRequest, Approver
 
 logger = logging.getLogger(__name__)
 
-REVIEW_PATH = "/v1/approvals"
+REVIEW_PATH = "/backoffice"
 
 
 class SlackApprovalSurface:

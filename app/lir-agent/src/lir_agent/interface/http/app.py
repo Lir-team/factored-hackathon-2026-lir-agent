@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, field_validator
 
 from lir_agent.application.ports import (
@@ -409,6 +409,16 @@ def create_app(
             deps.handoff_report.markdown(packet, language),
             media_type="text/markdown; charset=utf-8",
         )
+
+    if settings.backoffice_enabled:
+        backoffice_page = deps.resources.load_text(settings.backoffice_path)
+
+        @app.get("/backoffice", response_class=HTMLResponse, include_in_schema=False)
+        async def backoffice(
+            caller: Annotated[str, Depends(operator)],  # noqa: ARG001 - identity required
+        ) -> HTMLResponse:
+            """The specialist back office: pending reviews, approved or rejected in place."""
+            return HTMLResponse(backoffice_page)
 
     @app.post(
         "/v1/cases",

@@ -19,14 +19,18 @@ type Labels = Mapping[str, Mapping[str, Any]]
 
 
 def outcome_text(request: ApprovalRequest, labels: Mapping[str, Any]) -> str:
-    """How a decided request reads for the customer (shared by every chat surface)."""
+    """How a decided request reads for the customer, whoever decided it."""
+    prefix = "specialist_" if request.decided_role is Approver.SPECIALIST else ""
     if request.status is ApprovalStatus.REJECTED:
-        return labels["rejected"]
-    template = labels.get(f"{request.action}_approved") or labels["approved"]
+        return labels[f"{prefix}rejected"]
+    if not request.is_last:
+        return labels["awaiting_next_approval"]
+    fallback = labels[f"{prefix}approved"]
+    template = labels.get(f"{request.action}_{prefix}approved") or fallback
     try:
         return template.format(**(request.result or {}))
     except KeyError:
-        return labels["approved"]
+        return fallback
 
 
 class TelegramApprovalSurface:
@@ -53,7 +57,7 @@ class TelegramApprovalSurface:
 
     def _chat(self, request: ApprovalRequest) -> int | None:
         """The chat linked to the request's case, if the customer linked one."""
-        if request.approver is not Approver.CUSTOMER or not request.case_id:
+        if not request.case_id:
             return None
         chat_id = self._store.get_case_chat(request.case_id)
         if chat_id is None:
@@ -66,7 +70,7 @@ class TelegramApprovalSurface:
 
     async def present(self, request: ApprovalRequest, link: str | None) -> bool:
         """Send the card with its buttons; False when there is no linked chat (yet)."""
-        chat_id = self._chat(request)
+        chat_id = self._chat(request) if request.approver is Approver.CUSTOMER else None
         if chat_id is None:
             return False
         labels = self._labels_for(request)
@@ -96,9 +100,9 @@ class TelegramApprovalSurface:
         return True
 
     async def report(self, request: ApprovalRequest) -> None:
-        """Tell the customer, in their chat, what their decision did (wherever they decided)."""
+        """Tell the customer, in their chat, how the request was decided (by whomever)."""
         chat_id = self._chat(request)
-        if chat_id is None or request.decided_role is not Approver.CUSTOMER:
+        if chat_id is None or request.decided_role is None:
             return
         try:
             await self._bot.send_buttons(chat_id, outcome_text(request, self._labels_for(request)), [])

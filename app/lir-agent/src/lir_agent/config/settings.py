@@ -122,6 +122,10 @@ class Settings(BaseSettings):
     # Return how each turn was decided (decision model, probabilities, lanes, tools, cost)
     # with the reply. Only for the operator API behind IAP, never for customer channels.
     expose_trace: bool = False
+    # Serve the specialist back office page (GET /backoffice). Only for the operator API
+    # behind IAP: the page calls the approval review routes with the IAP identity.
+    backoffice_enabled: bool = False
+    backoffice_path: Path = RESOURCES_DIR / "backoffice" / "index.html"
     # Team notice for each handoff (Slack incoming webhook); empty: no notice. The notice
     # carries the handoff id, rule and lane, never customer data.
     slack_webhook_url: SecretStr | None = None
@@ -201,6 +205,9 @@ class Settings(BaseSettings):
     # Disputes and handoffs: "memory" lives per instance; "firestore" is shared by the
     # operator and case flow services, so case files open from either.
     case_repository: Literal["memory", "firestore"] = "memory"
+    # Approval requests: "firestore" lets the operator service decide the requests the case
+    # flow service creates (specialist reviews in the back office).
+    approval_repository: Literal["memory", "firestore"] = "memory"
     firestore_database: str = "(default)"
     # Start of every collection name, to keep environments apart in one database.
     firestore_collection_prefix: str = "lir_"
