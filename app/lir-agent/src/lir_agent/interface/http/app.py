@@ -631,6 +631,7 @@ def create_app(
             deps.audit,
             max_message_chars=settings.max_message_chars,
             present_approvals=deps.present_approvals,
+            resolutions=deps.resolve_handoff,
             files=deps.chat_files,
             speech=deps.speech_to_text,
             max_voice_seconds=settings.voice_max_seconds,

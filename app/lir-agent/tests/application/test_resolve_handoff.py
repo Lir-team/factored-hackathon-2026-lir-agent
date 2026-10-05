@@ -126,3 +126,39 @@ def test_without_a_reachable_chat_the_decision_still_stands(settings, world_args
     assert world.cases.get_handoff("HND-ABC") == resolved
     [entry] = [e for e in world.audit.entries if e["event"] == "handoff_resolved"]
     assert entry["customer_told"] is False
+
+
+def test_an_outcome_decided_before_the_chat_linked_is_delivered_once_on_link(settings):
+    world = World(settings, linked=False)
+    world.run(accepted=True)
+    assert world.chat.sent == []
+
+    world.store.link_chat(CHAT, ChatLink(case_id=CASE_ID, folio="LB-1", language="es"))
+    asyncio.run(world.resolve.deliver_pending(CASE_ID))
+    asyncio.run(world.resolve.deliver_pending(CASE_ID))
+
+    [(chat, text)] = world.chat.sent
+    assert chat == CHAT and "aceptó tu reclamo" in text
+    stored = world.cases.get_handoff("HND-ABC")
+    assert stored is not None and stored.resolution is not None
+    assert stored.resolution.customer_notified is True
+    events = [e["event"] for e in world.audit.entries]
+    assert events.count("handoff_resolution_delivered") == 1
+
+
+def test_an_outcome_told_at_once_is_not_sent_again_on_link(settings):
+    world = World(settings)
+    world.run(accepted=False)
+
+    asyncio.run(world.resolve.deliver_pending(CASE_ID))
+
+    assert len(world.chat.sent) == 1
+
+
+def test_other_cases_are_left_alone_on_link(settings):
+    world = World(settings, linked=False)
+    world.run()
+
+    asyncio.run(world.resolve.deliver_pending("another-case"))
+
+    assert world.chat.sent == []

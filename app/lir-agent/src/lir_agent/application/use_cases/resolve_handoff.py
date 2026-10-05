@@ -80,6 +80,8 @@ class ResolveHandoff:
         )
         self._cases.submit_handoff(resolved)
         told = await self._tell_customer(resolved, accepted)
+        if told:
+            resolved = self._mark_notified(resolved)
         self._audit.record(
             "handoff_resolved",
             None,
@@ -90,6 +92,32 @@ class ResolveHandoff:
         )
         self._tell_team(resolved)
         return resolved
+
+    async def deliver_pending(self, case_id: str) -> None:
+        """Send outcomes decided before the customer linked their chat (called on link)."""
+        for packet in self._cases.list_handoffs():
+            resolution = packet.resolution
+            if (
+                resolution is None
+                or resolution.customer_notified
+                or not packet.case_report
+                or packet.case_report.case_id != case_id
+            ):
+                continue
+            if await self._tell_customer(packet, resolution.accepted):
+                self._mark_notified(packet)
+                self._audit.record(
+                    "handoff_resolution_delivered", None, handoff_id=packet.handoff_id
+                )
+
+    def _mark_notified(self, packet: HandoffPacket) -> HandoffPacket:
+        resolution = packet.resolution
+        assert resolution is not None
+        notified = packet.model_copy(
+            update={"resolution": resolution.model_copy(update={"customer_notified": True})}
+        )
+        self._cases.submit_handoff(notified)
+        return notified
 
     async def _tell_customer(self, packet: HandoffPacket, accepted: bool) -> bool:
         """Send the outcome to the case's chat; False when there is none or it failed."""
