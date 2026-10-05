@@ -9,6 +9,7 @@ import httpx
 from lir_agent.domain.models import HandoffPacket
 
 REPORT_PATH = "/v1/handoffs/{handoff_id}/report.md"
+BACKOFFICE_PATH = "/backoffice"
 
 
 class SlackHandoffNotifier:
@@ -36,6 +37,20 @@ class SlackHandoffNotifier:
         response = self._client.post(self._webhook_url, json=self.message(packet))
         response.raise_for_status()
 
+    def notify_resolution(self, packet: HandoffPacket) -> None:
+        """Post who resolved the case and how; raises on a network error or an error status."""
+        resolution = packet.resolution
+        if resolution is None:
+            return
+        t = self._labels
+        text = t["handoff_resolved"].format(
+            handoff_id=packet.handoff_id,
+            decision=t["claim_accepted" if resolution.accepted else "claim_rejected"],
+            by=resolution.resolved_by,
+        )
+        response = self._client.post(self._webhook_url, json={"text": text})
+        response.raise_for_status()
+
     def message(self, packet: HandoffPacket) -> dict:
         """The Slack payload: why the case was handed off, who takes it, and the link."""
         t = self._labels
@@ -46,6 +61,7 @@ class SlackHandoffNotifier:
         title = t["title"].format(handoff_id=packet.handoff_id)
         report_path = REPORT_PATH.format(handoff_id=packet.handoff_id)
         report_url = f"{self._base_url}{report_path}" if self._base_url else report_path
+        backoffice_url = f"{self._base_url}{BACKOFFICE_PATH}"
         assigned = t["assigned"].format(mention=self._mention(packet.handoff_id))
         return {
             "text": f"{title}: {explanation}",
@@ -78,7 +94,12 @@ class SlackHandoffNotifier:
                             "text": {"type": "plain_text", "text": t["open_report"]},
                             "url": report_url,
                             "style": "primary",
-                        }
+                        },
+                        {
+                            "type": "button",
+                            "text": {"type": "plain_text", "text": t["resolve"]},
+                            "url": backoffice_url,
+                        },
                     ],
                 },
             ],

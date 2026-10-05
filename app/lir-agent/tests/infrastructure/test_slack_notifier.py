@@ -40,6 +40,31 @@ def test_notice_explains_assigns_and_links_without_customer_data(settings):
         assert private not in text
 
 
+def test_notice_links_the_back_office_to_resolve_the_case(settings):
+    text = json.dumps(notifier(settings, ok).message(packet()), ensure_ascii=False)
+    assert "https://lir.example.run.app/backoffice" in text
+
+
+def test_resolution_notice_says_who_decided_and_how(settings):
+    from datetime import UTC, datetime
+
+    from lir_agent.domain.models import HandoffResolution
+
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200)
+
+    resolution = HandoffResolution(
+        accepted=False, resolved_by="ana@bank", resolved_at=datetime(2026, 10, 5, tzinfo=UTC)
+    )
+    notifier(settings, handler).notify_resolution(packet(resolution=resolution))
+    [body] = sent
+    assert "HND-ABC" in body["text"] and "ana@bank" in body["text"]
+    assert "reclamo rechazado" in body["text"]
+
+
 def test_same_case_always_goes_to_the_same_person(settings):
     assert notifier(settings, ok).message(packet()) == notifier(settings, ok).message(
         packet()

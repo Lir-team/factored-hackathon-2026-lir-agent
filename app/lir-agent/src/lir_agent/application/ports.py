@@ -66,6 +66,10 @@ class CaseRepository(Protocol):
         """Return a stored handoff packet, or None."""
         ...
 
+    def list_handoffs(self) -> list[HandoffPacket]:
+        """Every stored handoff packet, newest first."""
+        ...
+
 
 class AuditSink(Protocol):
     """Execution record (Bases §6): one structured entry per decision, rule, tool call or reply."""
@@ -304,6 +308,10 @@ class HandoffNotifier(Protocol):
 
     def notify(self, packet: HandoffPacket) -> None:
         """Announce the handoff; raises on failure (the handoff itself is already stored)."""
+        ...
+
+    def notify_resolution(self, packet: HandoffPacket) -> None:
+        """Announce how a specialist resolved the case; raises on failure."""
         ...
 
 

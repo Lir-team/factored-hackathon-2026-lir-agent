@@ -13,7 +13,7 @@ at once; the customer continues on Telegram (`POST /channels/telegram`, see `tel
 
 import re
 from datetime import timedelta
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
@@ -30,7 +30,11 @@ from lir_agent.application.ports import (
     Messenger,
     SigningError,
 )
-from lir_agent.application.use_cases import AnswerTelegramMessage, ProcessCase
+from lir_agent.application.use_cases import (
+    AnswerTelegramMessage,
+    HandoffResolutionError,
+    ProcessCase,
+)
 from lir_agent.config.settings import Settings
 from lir_agent.domain.case_intake import (
     ForeignCaseError,
@@ -38,6 +42,7 @@ from lir_agent.domain.case_intake import (
     UnknownTransactionError,
 )
 from lir_agent.domain.errors import DataUnavailableError
+from lir_agent.domain.models import HandoffPacket
 from lir_agent.interface.http.approvals import ApprovalView, approvals_router
 from lir_agent.interface.http.cases import customer_from_userinfo, schema_errors
 from lir_agent.interface.http.pubsub import (
@@ -92,6 +97,56 @@ class MyTransactionsResponse(BaseModel):
     first_name: str | None
     country: str | None
     transactions: list[TransactionView]
+
+
+class HandoffResolutionView(BaseModel):
+    """How a specialist resolved a case."""
+
+    accepted: bool
+    resolved_by: str
+    resolved_at: str
+    note: str | None
+
+
+class HandoffSummary(BaseModel):
+    """A handed-off case as the back office lists it; the full case file is report.md."""
+
+    handoff_id: str
+    created_at: str
+    rule_id: str | None
+    lane: str | None
+    reason: str | None
+    customer_request: str | None
+    resolution: HandoffResolutionView | None
+
+    @classmethod
+    def of(cls, packet: HandoffPacket) -> "HandoffSummary":
+        """The summary of a stored packet."""
+        outcome = packet.case_outcome or packet.turn_outcome
+        resolution = packet.resolution
+        return cls(
+            handoff_id=packet.handoff_id,
+            created_at=packet.created_at.isoformat(),
+            rule_id=outcome.rule_id if outcome else None,
+            lane=outcome.lane.value if outcome else None,
+            reason=outcome.reason if outcome else None,
+            customer_request=packet.customer_request,
+            resolution=HandoffResolutionView(
+                accepted=resolution.accepted,
+                resolved_by=resolution.resolved_by,
+                resolved_at=resolution.resolved_at.isoformat(),
+                note=resolution.note,
+            )
+            if resolution
+            else None,
+        )
+
+
+class HandoffDecision(BaseModel):
+    """Body of `POST /v1/handoffs/{id}/resolution`: the specialist's decision."""
+
+    decision: Literal["accept", "reject"]
+    note: str | None = Field(default=None, max_length=500, description="Internal.")
 
 
 class DemoSignInResponse(BaseModel):
@@ -444,6 +499,44 @@ def create_app(
             deps.handoff_report.markdown(packet, language),
             media_type="text/markdown; charset=utf-8",
         )
+
+    @app.get("/v1/handoffs", responses={**identity_error})
+    async def list_handoffs(
+        caller: Annotated[str, Depends(operator)],  # noqa: ARG001 - identity required
+        status_filter: Annotated[Literal["open", "all"], Query(alias="status")] = "open",
+    ) -> list[HandoffSummary]:
+        """Handed-off cases, newest first; `open` leaves out the resolved ones."""
+        packets = await run_in_threadpool(deps.cases.list_handoffs)
+        return [
+            HandoffSummary.of(p)
+            for p in packets
+            if status_filter == "all" or p.resolution is None
+        ]
+
+    @app.post(
+        "/v1/handoffs/{handoff_id}/resolution",
+        responses={
+            **identity_error,
+            404: {"description": "Handoff not found"},
+            409: {"description": "Already resolved"},
+        },
+    )
+    async def resolve_handoff(
+        handoff_id: str, body: HandoffDecision, caller: Annotated[str, Depends(operator)]
+    ) -> HandoffSummary:
+        """A specialist accepts or rejects the customer's claim; the customer is told."""
+        try:
+            resolved = await deps.resolve_handoff.execute(
+                handoff_id, caller, body.decision == "accept", body.note
+            )
+        except HandoffResolutionError as error:
+            code = (
+                status.HTTP_404_NOT_FOUND
+                if error.code == "not_found"
+                else status.HTTP_409_CONFLICT
+            )
+            raise HTTPException(code, error.code) from None
+        return HandoffSummary.of(resolved)
 
     if settings.backoffice_enabled:
         backoffice_page = deps.resources.load_text(settings.backoffice_path)
