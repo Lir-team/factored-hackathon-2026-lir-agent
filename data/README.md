@@ -1,105 +1,105 @@
 # data/
 
-Espacio de datos del proyecto. Sigue un flujo por capas (raw → staging → curated):
-cada capa se regenera desde la anterior con código versionado, nunca a mano.
+The project's data space. It follows a layered flow (raw → staging → curated):
+each layer is regenerated from the previous one with versioned code, never by hand.
 
 ```
 data/
-├── raw/             # Copia inmutable de S3 (bronze). Nunca se edita.       [gitignored]
-├── staging/         # Tipado, deduplicado, validado contra contratos (silver) [gitignored]
-├── curated/         # Tablas analíticas y features listas para modelar (gold) [gitignored]
-├── samples/         # Muestras chicas y deterministas para desarrollo/agentes [gitignored]
-├── contracts/       # Esquemas YAML por tabla + relaciones FK + changelog     [versionado]
-├── manifests/       # Linaje: qué se descargó/procesó, cuándo, checksums      [versionado]
-├── knowledge_base/  # Políticas bancarias sintéticas para grounding (RAG)     [versionado]
-├── eval/            # Casos held-out y etiquetas para evaluar el sistema      [versionado]
-└── fixtures/        # Fixtures chicos para tests (late arrivals, dups, etc.)  [versionado]
+├── raw/             # Immutable copy of S3 (bronze). Never edited.            [gitignored]
+├── staging/         # Typed, deduplicated, validated against contracts (silver) [gitignored]
+├── curated/         # Analytical tables and model-ready features (gold)       [gitignored]
+├── samples/         # Small, deterministic samples for development/agents     [gitignored]
+├── contracts/       # YAML schemas per table + FK relationships + changelog   [versioned]
+├── manifests/       # Lineage: what was downloaded/processed, when, checksums [versioned]
+├── knowledge_base/  # Synthetic banking policies for grounding (RAG)          [versioned]
+├── eval/            # Held-out cases and labels to evaluate the system        [versioned]
+└── fixtures/        # Small fixtures for tests (late arrivals, dups, etc.)    [versioned]
 ```
 
-Código Python y salidas:
+Python code and outputs:
 
 ```
-├── pipelines/       # Paquete Python del pipeline (ver abajo)
-├── reports/         # Reportes generados: data_quality.md, insights.md          [versionado]
-├── notebooks/       # Exploración. Lógica reutilizable → mover a pipelines/
+├── pipelines/       # Python package for the pipeline (see below)
+├── reports/         # Generated reports: data_quality.md, insights.md          [versioned]
+├── notebooks/       # Exploration. Reusable logic → move to pipelines/
 └── requirements.txt
 ```
 
-## Cómo correrlo
+## How to run it
 
 ```bash
 cd data
 python -m venv .venv && source .venv/Scripts/activate   # Windows Git Bash
 pip install -r requirements.txt
-cp .env.example .env                                     # completar credenciales S3 (ver diccionario de datos)
+cp .env.example .env                                     # fill in S3 credentials (see data dictionary)
 
-python -m pipelines --ingest    # todo: ingest -> staging -> quality -> curated -> insights (~4 min)
-python -m pipelines             # sin descargar (~1.5 min)
+python -m pipelines --ingest    # everything: ingest -> staging -> quality -> curated -> insights (~4 min)
+python -m pipelines             # without downloading (~1.5 min)
 ```
 
-| Paso | Módulo | Entrada → salida | Principio aplicado |
+| Step | Module | Input → output | Principle applied |
 |---|---|---|---|
-| Ingesta | `pipelines/ingest.py` | S3 → `raw/` + `manifests/ingest/` | Incremental por ETag (late arrivals), linaje |
-| Staging | `pipelines/staging.py` | `raw/` → `staging/` + `manifests/staging/` | Contratos (tipos), glosario (semántica), dedupe por PK, sin descartes silenciosos |
-| Calidad | `pipelines/quality.py` | `staging/` → `reports/data_quality.md` + `manifests/quality/` | 7 dimensiones, umbrales por uso (fitness for use), observabilidad histórica |
-| Curated | `pipelines/curated.py` | `staging/` → `curated/` + `manifests/curated/` | Datos como producto, linaje de entradas |
-| Evidencia | `pipelines/insights.py` + `figures.py` | `curated/` → `reports/insights.md` + `reports/figures/` | Números y gráficos calculados en código, significancia antes de afirmar disparidades, medido vs inferido separado |
+| Ingestion | `pipelines/ingest.py` | S3 → `raw/` + `manifests/ingest/` | Incremental by ETag (late arrivals), lineage |
+| Staging | `pipelines/staging.py` | `raw/` → `staging/` + `manifests/staging/` | Contracts (types), glossary (semantics), dedupe by PK, no silent drops |
+| Quality | `pipelines/quality.py` | `staging/` → `reports/data_quality.md` + `manifests/quality/` | 7 dimensions, thresholds by use (fitness for use), historical observability |
+| Curated | `pipelines/curated.py` | `staging/` → `curated/` + `manifests/curated/` | Data as a product, input lineage |
+| Evidence | `pipelines/insights.py` + `figures.py` | `curated/` → `reports/insights.md` + `reports/figures/` | Numbers and charts computed in code, significance before claiming disparities, measured kept separate from inferred |
 
-Contratos y semántica en `contracts/`: `<tabla>.yaml` (esquema), `relationships.yaml` (FKs),
-`glossary.yaml` (mapeos de valores + definiciones de negocio), `quality_rules.yaml` (reglas, umbrales, owners).
+Contracts and semantics in `contracts/`: `<table>.yaml` (schema), `relationships.yaml` (FKs),
+`glossary.yaml` (value mappings + business definitions), `quality_rules.yaml` (rules, thresholds, owners).
 
-## Capas
+## Layers
 
-| Capa | Contenido | Formato | Regla |
+| Layer | Content | Format | Rule |
 |---|---|---|---|
-| `raw/` | Archivos tal cual vienen de S3, misma estructura de particiones | CSV original | Solo escritura por el script de ingesta. Inmutable. |
-| `staging/` | Una tabla por fuente: tipos según contrato, valores canonicalizados, dedupe por PK, `_source_file` por fila | Parquet | Idempotente: re-ejecutar produce el mismo resultado. |
-| `curated/` | Joins, agregados, features y datasets de entrenamiento con split temporal | Parquet | Cada tabla documenta sus entradas en `manifests/`. |
-| `samples/` | Subconjuntos por `customer_id` (seed fija) coherentes entre tablas | Parquet/CSV | Lo que usan notebooks rápidos y agentes en desarrollo. |
+| `raw/` | Files exactly as they come from S3, same partition structure | Original CSV | Written only by the ingestion script. Immutable. |
+| `staging/` | One table per source: types per contract, canonicalized values, dedupe by PK, `_source_file` per row | Parquet | Idempotent: re-running produces the same result. |
+| `curated/` | Joins, aggregates, features and training datasets with a temporal split | Parquet | Each table documents its inputs in `manifests/`. |
+| `samples/` | Subsets by `customer_id` (fixed seed), consistent across tables | Parquet/CSV | What quick notebooks and agents use during development. |
 
-## Origen de los datos
+## Data origin
 
-Requisito del desafío: identificar qué es real, sintético o generado por el equipo.
+Challenge requirement: identify what is real, synthetic or generated by the team.
 
-| Carpeta | Origen |
+| Folder | Origin |
 |---|---|
-| `raw/`, `staging/`, `curated/`, `samples/` | **Sintético**: provisto por los organizadores (LATAM Bank v1.0.0) |
-| `knowledge_base/` | **Generado por el equipo** (políticas sintéticas, no reales) |
-| `eval/`, `fixtures/` | **Generado por el equipo** (incluye casos en portugués, que el dataset no tiene) |
+| `raw/`, `staging/`, `curated/`, `samples/` | **Synthetic**: provided by the organizers (LATAM Bank v1.0.0) |
+| `knowledge_base/` | **Generated by the team** (synthetic policies, not real) |
+| `eval/`, `fixtures/` | **Generated by the team** (includes cases in Portuguese, which the dataset lacks) |
 
-## Calidad de datos: declarada vs observada
+## Data quality: declared vs observed
 
-El proveedor declara problemas que en v1.0.0 **no aparecen**, y hay otros que no declara.
-Detalle y cifras en `reports/data_quality.md`.
+The provider declares issues that **do not appear** in v1.0.0, and there are others it does not declare.
+Details and figures in `reports/data_quality.md`.
 
-| Declarado por el proveedor | Observado |
+| Declared by the provider | Observed |
 |---|---|
-| ~2% duplicados | 0 duplicados por PK, por clave de negocio ni casi-duplicados. 6 `product_number` repetidos |
-| ~5% nulos | Sí, además de nulos estructurales (p. ej. `credit_limit` en productos no crediticios) |
-| Llegadas tardías | No: `process_date` siempre es el día del evento o el anterior |
-| Evolución de esquema | No: una sola cabecera por tabla en todas las particiones. Sí hay **drift semántico**: valores en español y no documentados (`Retención`, `Muy Positivo`) |
-| FKs huérfanas | 0 en todas las relaciones |
-| Filas: 800k interacciones, 80k quejas, 5M transacciones | ~14% menos: 686k / 67k / 4.4M |
+| ~2% duplicates | 0 duplicates by PK, by business key or near-duplicates. 6 repeated `product_number` |
+| ~5% nulls | Yes, plus structural nulls (e.g. `credit_limit` on non-credit products) |
+| Late arrivals | No: `process_date` is always the day of the event or the day before |
+| Schema evolution | No: a single header per table across all partitions. There is **semantic drift**: values in Spanish and undocumented (`Retención`, `Muy Positivo`) |
+| Orphan FKs | 0 in all relationships |
+| Rows: 800k interactions, 80k complaints, 5M transactions | ~14% fewer: 686k / 67k / 4.4M |
 
-No declarados y relevantes para el agente:
-- Transcripciones y descripciones de quejas son **plantillas** (42 frases de cliente en 171k transcripciones, 5 descripciones en 67k quejas) y no se relacionan con la categoría.
-- `detected_intents` es constante (`consulta_general`). **No sirve como etiqueta.**
-- Clientes de México: 100% con DNI y 0 productos en MXN.
-- `complaints.affected_product_id` nunca pertenece al cliente que reclama; `origin_interaction_id` siempre está vacío.
+Undeclared and relevant for the agent:
+- Transcripts and complaint descriptions are **templates** (42 customer phrases across 171k transcripts, 5 descriptions across 67k complaints) and are unrelated to the category.
+- `detected_intents` is constant (`consulta_general`). **It cannot be used as a label.**
+- Customers in Mexico: 100% with DNI and 0 products in MXN.
+- `complaints.affected_product_id` never belongs to the complaining customer; `origin_interaction_id` is always empty.
 
-## Política de frescura y actualización
+## Freshness and update policy
 
-- Los datos son estáticos (snapshot 2023-06-17 → 2026-06-17). La ingesta es **batch incremental por partición**.
-- Cada paso escribe un manifiesto en `manifests/<paso>/` (fuente, fecha, filas de entrada y salida, fallas de casteo, valores sin mapear y versión de contrato).
-- La corrección de las actualizaciones (late arrivals, upserts) se demuestra con `fixtures/`, que están etiquetados como datos de prueba.
+- The data is static (snapshot 2023-06-17 → 2026-06-17). Ingestion is **incremental batch by partition**.
+- Each step writes a manifest to `manifests/<step>/` (source, date, input and output rows, cast failures, unmapped values and contract version).
+- Correct handling of updates (late arrivals, upserts) is shown with `fixtures/`, which are labeled as test data.
 
-## Evaluación y fugas de información (leakage)
+## Evaluation and information leakage
 
-- Los splits de train/val/test son **temporales** (por `process_date`) y, cuando aplique, **agrupados por `customer_id`**.
-- Los casos de `eval/` son held-out: nunca se usan para ajustar prompts, umbrales ni modelos.
-- Campos generados por el sistema origen (`detected_intents`, `detected_sentiment`, `is_fraud`, etc.) se tratan como **etiquetas débiles** hasta validarlos manualmente con una muestra.
+- Train/val/test splits are **temporal** (by `process_date`) and, where applicable, **grouped by `customer_id`**.
+- `eval/` cases are held-out: they are never used to tune prompts, thresholds or models.
+- Fields generated by the source system (`detected_intents`, `detected_sentiment`, `is_fraud`, etc.) are treated as **weak labels** until validated manually on a sample.
 
-## Credenciales
+## Credentials
 
-Las credenciales de S3 están en el PDF del diccionario de datos, que **no se sube al repo**.
-Configurarlas localmente en `data/.env` (gitignored, plantilla en `.env.example`). Nunca escribirlas en código, notebooks ni prompts.
+The S3 credentials are in the data dictionary PDF, which **is not uploaded to the repo**.
+Set them locally in `data/.env` (gitignored, template in `.env.example`). Never write them in code, notebooks or prompts.

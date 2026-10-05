@@ -1,8 +1,8 @@
-"""Pipeline completo: [ingest] -> staging -> quality -> curated -> insights.
+"""Full pipeline: [ingest] -> staging -> quality -> curated -> insights.
 
-Uso:
-    python -m pipelines            # desde raw/ ya descargado
-    python -m pipelines --ingest   # descarga incremental desde S3 primero
+Usage:
+    python -m pipelines            # from the already downloaded raw/
+    python -m pipelines --ingest   # incremental download from S3 first
 """
 import sys
 

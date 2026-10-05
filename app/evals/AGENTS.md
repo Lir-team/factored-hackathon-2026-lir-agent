@@ -1,97 +1,97 @@
-# Reglas para agentes (Claude Code, Codex, etc.) dentro de app/evals/
+# Rules for agents (Claude Code, Codex, etc.) inside app/evals/
 
-Evals de escenarios del agente Lir. Cada escenario de `scenarios/*.yaml` corre contra el agente
-**real** (ADK + LiteLLM + capa de decisiones + política + tools) en un proceso aislado, y se
-califica por lo que logró: disputas y derivaciones escritas, reglas aplicadas y seguridad. El
-diseño y los conceptos están en [`README.md`](README.md).
+Scenario evals for the Lir agent. Each scenario in `scenarios/*.yaml` runs against the **real**
+agent (ADK + LiteLLM + decision layer + policy + tools) in an isolated process, and is
+graded on what it achieved: disputes and handoffs written, rules applied, and safety. The
+design and concepts are in [`README.md`](README.md).
 
-Todos los comandos se corren desde `app/evals/` con `uv run python run.py`. `run.py` lanza
-promptfoo con `npx`, apaga telemetría y sharing, y al final imprime el reporte. Todo argumento
-que `run.py` no conoce se le pasa a `promptfoo eval` tal cual.
+All commands are run from `app/evals/` with `uv run python run.py`. `run.py` launches
+promptfoo with `npx`, turns off telemetry and sharing, and prints the report at the end. Any argument
+that `run.py` does not know is passed to `promptfoo eval` as is.
 
-## 1. Antes de gastar llamadas al modelo
+## 1. Before spending model calls
 
 ```bash
-uv run pytest -q          # graders contra trials de referencia + forma de cada escenario (sin red)
-../../scripts/check.sh    # tests, lint y tipos de todo el repo (sin red, ~20 s)
+uv run pytest -q          # graders against reference trials + shape of each scenario (no network)
+../../scripts/check.sh    # tests, lint and types for the whole repo (no network, ~20 s)
 ```
 
-Si `pytest` falla, no corras evals: un escenario mal formado gasta llamadas y da resultados falsos.
+If `pytest` fails, do not run evals: a malformed scenario wastes calls and gives false results.
 
-## 2. Corridas completas
+## 2. Full runs
 
-| Para qué | Comando | Trials | Tiempo aprox. |
+| Purpose | Command | Trials | Approx. time |
 |---|---|---|---|
-| Una pasada rápida por todo | `uv run python run.py` | 27 | ~1 min |
-| Medir de verdad (pass^3) | `uv run python run.py --repeat 3` | 81 | ~4 min |
-| Gate de regresión (lo que usa `check.sh --live`) | `uv run python run.py --gate --repeat 3` | 27 | ~2 min |
-| Comparar otro modelo del agente | `uv run python run.py --repeat 3 --model openai/gpt-5.4-mini` | 81 | ~4 min |
-| Comparar decisiones LLM vs baseline | `DECISIONS=llm uv run python run.py --repeat 3` | 81 | ~7 min |
+| A quick pass over everything | `uv run python run.py` | 27 | ~1 min |
+| Measure for real (pass^3) | `uv run python run.py --repeat 3` | 81 | ~4 min |
+| Regression gate (what `check.sh --live` uses) | `uv run python run.py --gate --repeat 3` | 27 | ~2 min |
+| Compare another agent model | `uv run python run.py --repeat 3 --model openai/gpt-5.4-mini` | 81 | ~4 min |
+| Compare LLM decisions vs baseline | `DECISIONS=llm uv run python run.py --repeat 3` | 81 | ~7 min |
 
-El paralelismo por defecto es 4 (`-j 4`). Con `gpt-6-luna` cada trial cuesta ~US$0.0005, más el juez.
+The default parallelism is 4 (`-j 4`). With `gpt-6-luna` each trial costs ~US$0.0005, plus the judge.
 
-Para comparar dos configuraciones, guardá cada `out/results.json` con otro nombre antes de la
-siguiente corrida. El costo de cada trial suma el agente y el modelo de decisiones
-(`decision_calls`, `decision_cost_usd` en el metadata). Si el modelo de decisiones falla, la
-cadena cae al baseline y queda un evento `decision_fallback` en la auditoría: revisalo antes de
-concluir que "el LLM decide igual que el baseline".
+To compare two configurations, save each `out/results.json` under another name before the
+next run. The cost of each trial adds up the agent and the decision model
+(`decision_calls`, `decision_cost_usd` in the metadata). If the decision model fails, the
+chain falls back to the baseline and a `decision_fallback` event is left in the audit log: check it before
+concluding that "the LLM decides the same as the baseline".
 
-## 3. Corridas acotadas (lo normal mientras se desarrolla)
+## 3. Narrowed runs (the norm during development)
 
-Después de un cambio, corré **solo los escenarios afectados** con varios trials, y la corrida
-completa una sola vez al final.
+After a change, run **only the affected scenarios** with several trials, and the full
+run just once at the end.
 
 ```bash
-# Un escenario, 5 trials (el filtro es una regex sobre `description`, que es el id)
+# One scenario, 5 trials (the filter is a regex over `description`, which is the id)
 uv run python run.py --repeat 5 --filter-pattern c2-dispute-simulated-es
 
-# Varios escenarios: alternativas con |. Siempre entre comillas.
+# Several scenarios: alternatives with |. Always in quotes.
 uv run python run.py --repeat 5 --filter-pattern "c2-dispute|c5-refund-pressure|c3-portunol"
 
-# Un grupo por prefijo (c1 = identificar y explicar, c2 = disputas, c4 = derivar, c5 = seguridad)
+# A group by prefix (c1 = identify and explain, c2 = disputes, c4 = hand off, c5 = safety)
 uv run python run.py --repeat 3 --filter-pattern "^c5-"
 
-# Solo regresión o solo capacidad
+# Only regression or only capability
 uv run python run.py --repeat 3 --filter-metadata kind=capability
 
-# Volver a correr solo lo que falló en la corrida anterior (run.py la guarda en out/previous.json)
+# Re-run only what failed in the previous run (run.py saves it in out/previous.json)
 uv run python run.py --repeat 5 --filter-failing out/previous.json
 
-# Una muestra al azar, reproducible
+# A random, reproducible sample
 uv run python run.py --filter-sample 5 --filter-sample-seed 42
 ```
 
-- En Windows, `run.py` escapa el `|` para `npx.cmd`. No lo escapes a mano.
-- Al acotar, incluí los **vecinos** del cambio, sobre todo los escenarios donde algo **no** debe
-  pasar. Si tocás la confirmación de disputas, corré también `c2-duplicate-no-confirm-es` y
+- On Windows, `run.py` escapes the `|` for `npx.cmd`. Do not escape it by hand.
+- When narrowing, include the **neighbors** of the change, especially the scenarios where something must **not**
+  happen. If you touch dispute confirmation, also run `c2-duplicate-no-confirm-es` and
   `c5-fake-system-confirmation`.
-- Para ver qué falla en una tarea intermitente, usá `--repeat 5` o más: con 1 trial no se ve.
+- To see what fails in a flaky task, use `--repeat 5` or more: with 1 trial you cannot see it.
 
-## 4. Leer los resultados
+## 4. Reading the results
 
 ```bash
-npx promptfoo@0 view                          # visor web: transcript, tools y razón de cada grader
-uv run python report.py out/results.json      # re-imprimir el reporte sin volver a correr
-uv run python report.py out/previous.json     # el reporte de la corrida anterior
+npx promptfoo@0 view                          # web viewer: transcript, tools and reason for each grader
+uv run python report.py out/results.json      # re-print the report without re-running
+uv run python report.py out/previous.json     # the report from the previous run
 ```
 
-- **Leé el transcript antes de culpar al agente.** En este repo, varias "fallas" fueron un grader
-  demasiado estricto o un escenario mal especificado, no el agente.
-- `pass` y `pass^k` usan solo los graders de código (`outcome`, `safety`, `grounding`,
-  `language`). La rúbrica `calidad` (juez LLM) se reporta aparte, **no está calibrada** y no es
-  consistente: nunca la uses para decidir sola.
-- Las tareas `regression` tienen que estar al 100%. Las de `capability` miden qué falta construir.
-- Un `safety` en 0 es lo más grave: leé ese transcript primero.
+- **Read the transcript before blaming the agent.** In this repo, several "failures" were an overly
+  strict grader or a poorly specified scenario, not the agent.
+- `pass` and `pass^k` use only the code graders (`outcome`, `safety`, `grounding`,
+  `language`). The `calidad` rubric (LLM judge) is reported separately, **is not calibrated** and is not
+  consistent: never use it alone to decide.
+- `regression` tasks must be at 100%. `capability` tasks measure what is left to build.
+- A `safety` at 0 is the most serious: read that transcript first.
 
-## 5. Reglas al cambiar escenarios o graders
+## 5. Rules when changing scenarios or graders
 
-1. **El resultado esperado sale de `policy.yaml`**, no de lo que el agente hace hoy.
-2. **Nunca pongas una lista directo en `vars`**: promptfoo la convierte en un test por elemento.
-   Los mensajes del cliente van en `script: {turns: [...]}`. `tests/test_scenarios.py` lo valida.
-3. Balanceá: si agregás "debe abrir disputa", agregá un vecino "no debe".
-4. Cada grader nuevo o arreglado lleva un test en `tests/test_graders.py` que falle sin el arreglo.
-5. La definición de "promesa de reembolso" es el `OutputGuard` del agente. No la copies en el
+1. **The expected result comes from `policy.yaml`**, not from what the agent does today.
+2. **Never put a list directly in `vars`**: promptfoo turns it into one test per element.
+   Customer messages go in `script: {turns: [...]}`. `tests/test_scenarios.py` validates this.
+3. Balance: if you add "must open a dispute", add a "must not" neighbor.
+4. Each new or fixed grader comes with a test in `tests/test_graders.py` that fails without the fix.
+5. The definition of "refund promise" is the agent's `OutputGuard`. Do not copy it into the
    grader.
-6. No toques `data/eval/`: es el held-out (`data/AGENTS.md`, regla 5). Estos escenarios son de
-   desarrollo y se puede iterar contra ellos.
-7. No escribas en `out/` a mano ni lo commitees (está en `.gitignore`).
+6. Do not touch `data/eval/`: it is the held-out set (`data/AGENTS.md`, rule 5). These scenarios are for
+   development and you can iterate against them.
+7. Do not write to `out/` by hand or commit it (it is in `.gitignore`).

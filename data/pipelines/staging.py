@@ -1,17 +1,17 @@
-"""raw/ -> staging/ : tipado por contrato, canonicalización por glosario, dedupe, linaje.
+"""raw/ -> staging/ : contract-based typing, glossary canonicalization, dedupe, lineage.
 
-Principios aplicados:
-- Contratos: el tipo de cada columna sale de contracts/<tabla>.yaml, no del código.
-- Semántica compartida: valores crudos -> códigos canónicos vía contracts/glossary.yaml.
-- Idempotencia + late arrivals: dedupe por PK quedándose con la versión de
-  process_date más reciente, así re-procesar particiones tardías no duplica.
-- Transparencia: nunca se descartan valores en silencio. Fallas de casteo, valores
-  sin mapear y filas deduplicadas quedan contadas en el manifiesto.
-- Linaje: cada fila conserva `_source_file`; cada corrida escribe manifests/staging/.
+Principles applied:
+- Contracts: each column's type comes from contracts/<table>.yaml, not from code.
+- Shared semantics: raw values -> canonical codes via contracts/glossary.yaml.
+- Idempotency + late arrivals: dedupe by PK keeping the version with the most
+  recent process_date, so reprocessing late partitions does not duplicate rows.
+- Transparency: values are never dropped silently. Cast failures, unmapped
+  values and deduplicated rows are counted in the manifest.
+- Lineage: every row keeps `_source_file`; every run writes manifests/staging/.
 
-Uso:
-    python -m pipelines.staging                  # todas las tablas descargadas
-    python -m pipelines.staging complaints       # una tabla
+Usage:
+    python -m pipelines.staging                  # all downloaded tables
+    python -m pipelines.staging complaints       # a single table
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ TABLES = [
     "complaints", "transactions",
 ]
 
-# Columnas derivadas por tabla (SQL sobre la tabla ya tipada y canonicalizada `t`).
+# Derived columns per table (SQL over the already typed and canonicalized table `t`).
 DERIVED = {
     "call_center_interactions": {
         "process_lag_days": "datediff('day', process_date, interaction_date::date)",
@@ -121,8 +121,8 @@ def stage(con: duckdb.DuckDBPyConnection, table: str, maps: dict) -> dict:
     con.execute(f"create or replace temp table t as select {', '.join(selects)}, _source_file from r")
 
     if table == "transactions":
-        # amount_usd: USD -> el mismo monto; faltante -> última tasa disponible <= fecha
-        # (asof). Hay transacciones posteriores al fin de daily_exchange_rates.
+        # amount_usd: USD -> the same amount; missing -> latest available rate <= date
+        # (asof). Some transactions are later than the end of daily_exchange_rates.
         con.execute("""create or replace temp table t as
             select t.* replace (
                 coalesce(t.amount_usd,

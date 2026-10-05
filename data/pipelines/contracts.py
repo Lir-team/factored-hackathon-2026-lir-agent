@@ -1,7 +1,7 @@
-"""Carga de contratos YAML y validación de DataFrames contra ellos.
+"""Loading of YAML contracts and validation of DataFrames against them.
 
-La validación devuelve un reporte en vez de lanzar excepciones: el dataset trae
-duplicados, nulos y huérfanos a propósito, y lo que interesa es medirlos.
+Validation returns a report instead of raising exceptions: the dataset contains
+duplicates, nulls and orphans on purpose, and the goal is to measure them.
 """
 from __future__ import annotations
 

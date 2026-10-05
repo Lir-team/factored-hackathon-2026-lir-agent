@@ -117,6 +117,6 @@ def test_the_report_renders_and_derives_its_conclusions():
     results = {"keywords": [evaluate_run(items, _fake(items, {i.item_id for i in items[:200]}))],
                "llm": [evaluate_run(items, _fake(items))]}
     text = render(items, results, {"status": "pending", "sample": 40})
-    assert "## Qué dicen los resultados" in text
-    assert "usar `DECISIONS=llm`" in text
-    assert "quedan respaldados" in text
+    assert "## What the results say" in text
+    assert "use `DECISIONS=llm`" in text
+    assert "are backed by this evaluation" in text

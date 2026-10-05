@@ -1,4 +1,4 @@
-"""Rutas centrales del workspace de datos. Importar desde aquí; no hardcodear rutas."""
+"""Central paths of the data workspace. Import from here; do not hardcode paths."""
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parents[1]
