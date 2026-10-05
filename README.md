@@ -16,10 +16,6 @@ the LLM or Jev by configuration), and deterministic code authorizes. The agent a
 (`app/lir-agent/`) implements this flow end to end and runs on Google Cloud over the
 organizers' data (infrastructure as code in [`Lir-team/lir-infra`](https://github.com/Lir-team/lir-infra)).
 
-**Live demo:** [lir-web](https://lir-web-244524731492.us-east1.run.app), the bank page where a
-signed-in customer sees their statement and reports a charge. The operator API and the
-specialist back office are behind IAP (team accounts only).
-
 **What runs today.** Decisions: the keyword baseline unless `DECISIONS=llm`;
 Jev is integrated but off (no AI Gateway balance), and its probabilities are not measured.
 The decision layer is evaluated against labels in
