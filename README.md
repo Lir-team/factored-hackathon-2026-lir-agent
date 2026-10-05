@@ -48,7 +48,7 @@ Every number below is produced by code in this repository; each row links to its
 | **Decision models** | Jev **97.1%** and LLM **97.5%** intent accuracy vs **44.4%** for the keyword baseline, with no significant gap between Spanish, Portuguese and portuñol | [`decision_eval.md`](data/reports/decision_eval.md) |
 | **Agent quality** | 479 automated tests; 35 scenario tasks graded on outcome, safety, grounding and language | [`app/evals/`](app/evals/README.md) |
 | **Human in the loop** | Every dispute needs the customer and a specialist; every escalated case is accepted or rejected by a specialist; the customer hears every outcome | [`how-it-works.md`](docs/agent/how-it-works.md) |
-| **Infrastructure** | 125 Terraform-managed resources: 3 Cloud Run services, a Cloud Run job, API Gateway, Pub/Sub with dead-letter, Firestore, BigQuery; keyless CI | [`lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) |
+| **Infrastructure** | 137 Terraform-managed resources: 3 Cloud Run services, a Cloud Run job, API Gateway, Pub/Sub with dead-letter, Firestore, BigQuery, Cloud Monitoring alerts and an uptime check, Cloud Trace; keyless CI | [`lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) |
 | **Live pilot** (team testing since 2026-10-04) | 13 cases, 16 conversations, 12 escalations, 3 claims resolved by a specialist; US$0.022 of LLM cost per conversation; 1.8 s median per turn | [`looker-studio.md`](docs/analytics/looker-studio.md) |
 
 ![Unresolved contacts by contact reason](data/reports/figures/01_unresolved_by_reason.png)
@@ -91,7 +91,7 @@ everything outside is an external system or provider. The diagram source is
 | Agent runtime | One image (Google ADK, LiteLLM with pseudonymized data, ADK callbacks, versioned policy, DuckDB) on two Cloud Run services: `lir-agent` and `lir-agent-cases` | `lir-agent`, behind IAP: operator API (`/v1/sessions`, `/v1/handoffs`), specialist reviews (`GET /v1/approvals`, `/v1/approvals/{id}/review`) and `/backoffice`. `lir-agent-cases`, behind API Gateway and Pub/Sub: `/v1/cases`, `/v1/me/transactions`, the customer's approval card (`/v1/approvals/{id}`, `/decision`), `/pubsub/push`, `/channels/telegram` |
 | Data | Data pipeline (Cloud Run job), Cloud Storage (`<project>-data`, mounted at `/mnt/data` with GCS FUSE), Firestore | Parquet read by the tools; cases, case files and approval requests shared by both services |
 | Bank operations | Slack, back office (IAP) | Ticket with the reason and a rotating assignee; the specialist approves or rejects disputes |
-| Audit, observability & analytics | Cloud Logging, BigQuery (`lir_analytics` views), Looker Studio | Audit receipt for every step, KPIs per day, session and turn ([setup](docs/analytics/looker-studio.md)) |
+| Audit, observability & analytics | Cloud Logging, BigQuery (`lir_analytics` views), Looker Studio, Cloud Trace, Cloud Monitoring | Audit receipt for every step, KPIs per day, session and turn ([setup](docs/analytics/looker-studio.md)); a trace per turn (agent, LLM call, each tool); email alerts for lost cases, server errors and lir-web downtime |
 | Platform security & delivery | Secret Manager, Cloud IAM, Cloud Build, Artifact Registry, Workload Identity Federation | Keys, least-privilege service accounts, keyless GitHub deploys of the agent and lir-web |
 
 How a case flows:
