@@ -206,6 +206,21 @@ def test_handoff_report_is_markdown_and_its_reading_is_audited(settings, convers
     assert entry["operator"] == "tester@example.com"
 
 
+def test_the_case_file_page_needs_identity_and_an_existing_handoff(settings, conversations):
+    from lir_agent.container import build_container
+    from tests.application.test_handoff_report import packet
+
+    container = build_container(settings)
+    container.cases.submit_handoff(packet())
+    client = TestClient(create_app(settings, conversations=conversations, container=container))
+
+    assert client.get("/v1/handoffs/HND-ABC/report").status_code == 401
+    page = client.get("/v1/handoffs/HND-ABC/report", headers=IAP_HEADER)
+    assert page.status_code == 200 and page.headers["content-type"].startswith("text/html")
+    assert "HND-ABC" in page.text
+    assert client.get("/v1/handoffs/HND-NOPE/report", headers=IAP_HEADER).status_code == 404
+
+
 def test_handoff_report_needs_identity_and_an_existing_handoff(client):
     assert client.get("/v1/handoffs/HND-ABC/report.md").status_code == 401
     missing = client.get("/v1/handoffs/HND-NOPE/report.md", headers=IAP_HEADER)

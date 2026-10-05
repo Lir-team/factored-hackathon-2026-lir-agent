@@ -500,6 +500,25 @@ def create_app(
             media_type="text/markdown; charset=utf-8",
         )
 
+    @app.get(
+        "/v1/handoffs/{handoff_id}/report",
+        response_class=HTMLResponse,
+        responses={**identity_error, 404: {"description": "Handoff not found"}},
+    )
+    async def case_file(
+        handoff_id: str,
+        caller: Annotated[str, Depends(operator)],
+        language: str | None = None,
+    ) -> HTMLResponse:
+        """The case file for the bank specialist as a page: summary, risk charts, evidence."""
+        packet = deps.cases.get_handoff(handoff_id)
+        if packet is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Handoff not found")
+        deps.audit.record(
+            "handoff_report_viewed", None, handoff_id=handoff_id, operator=caller, format="html"
+        )
+        return HTMLResponse(deps.case_file.html(packet, language))
+
     @app.get("/v1/handoffs", responses={**identity_error})
     async def list_handoffs(
         caller: Annotated[str, Depends(operator)],  # noqa: ARG001 - identity required

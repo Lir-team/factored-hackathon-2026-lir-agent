@@ -35,7 +35,7 @@ def test_notice_explains_assigns_and_links_without_customer_data(settings):
     assert "HND-ABC" in body["text"]
     assert "<@U1>" in text or "<@U2>" in text
     assert "score de fraude" in text and "fuera del país del cliente" in text
-    assert "https://lir.example.run.app/v1/handoffs/HND-ABC/report.md" in text
+    assert "https://lir.example.run.app/v1/handoffs/HND-ABC/report" in text
     for private in ("CLI-DEMO-001", "TIENDA", "38,900", "38900"):
         assert private not in text
 

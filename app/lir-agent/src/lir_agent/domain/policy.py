@@ -182,6 +182,14 @@ class PolicyConfig(BaseModel):
             raise ValueError(f"handoff_open_questions names unknown rules: {unknown}")
         return self
 
+    def condition(self, rule_id: str, fact: str) -> tuple[str, float] | None:
+        """How a rule compares `fact` (operator and value, e.g. C1: gte 70), or None."""
+        for rule in (*self.turn_rules, *self.case_rules):
+            if rule.id == rule_id and fact in rule.when:
+                op, value = next(iter(rule.when[fact].items()))
+                return (op, float(value)) if isinstance(value, int | float) else None
+        return None
+
     def open_questions_for(self, *outcomes: Outcome | None) -> list[str]:
         """The policy's open questions for the rules that sent the case to a human."""
         return [

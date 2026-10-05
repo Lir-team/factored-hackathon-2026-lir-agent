@@ -1,0 +1,171 @@
+# The HTML case file a bank specialist reads (GET /v1/handoffs/{id}/report).
+# Thresholds are read from policy.yaml (the rule and fact named here), never repeated.
+
+priority:
+  default: medium
+  rules:
+    T0_decisions_unavailable: medium
+    T0b_card_freeze_requested: high
+    T0c_fraud_reported: high
+    T1_wants_human: medium
+    T3_theft_suspected: high
+    T6_other_complaint: low
+    C1_high_fraud_score: high
+    C2_foreign_relevant_amount: high
+    C2b_country_unverified: medium
+    C6_duplicate_high_amount: high
+    C8_high_amount: high
+    C10_no_conclusive_rule: medium
+
+# Risk gauges: the highest value among the verified transactions against the policy limit.
+gauges:
+  - {label: fraud_score, field: fraud_score, rule: C1_high_fraud_score, fact: fraud_score, max: 100}
+  - {label: amount_usd, field: amount_usd, rule: C8_high_amount, fact: amount_usd}
+
+# Typed decisions of the last turn, each against the threshold the policy acts on.
+decisions:
+  - {key: intencion, label: intent, rule: T4_uncertain_intent, fact: intent_p}
+  - {key: pide_humano, label: wants_human, rule: T1_wants_human, fact: wants_human_p}
+  - {key: sospecha_robo, label: theft, rule: T3_theft_suspected, fact: theft_suspected_p}
+
+es:
+  title: "Expediente"
+  status_open: "Abierto: esperando a un especialista"
+  status_accepted: "Resuelto: reclamo aceptado por {by}"
+  status_rejected: "Resuelto: reclamo rechazado por {by}"
+  priority: {high: "Prioridad alta", medium: "Prioridad media", low: "Prioridad baja"}
+  created: "Creado"
+  customer: "Cliente"
+  why: "Por qué se derivó"
+  action: "Acción sugerida"
+  reported: "Lo que reportó el cliente"
+  request: "En sus palabras"
+  risk: "Indicadores de riesgo"
+  limit: "límite de la política"
+  no_value: "sin dato"
+  gauge_labels: {fraud_score: "Score de fraude (máximo)", amount_usd: "Monto en USD (máximo)"}
+  decisions: "Decisiones del último turno"
+  decision_labels: {intent: "Intención", wants_human: "Pide una persona", theft: "Sospecha de robo"}
+  threshold: "umbral"
+  evidence: "Evidencia verificada"
+  evidence_columns: ["Fecha", "Monto", "Comercio", "Estado", "País", "Score fraude"]
+  no_evidence: "Sin transacción identificada todavía."
+  open_questions: "Preguntas abiertas"
+  actions_taken: "Acciones realizadas"
+  summary: "Resumen del modelo (generado por IA, no verificado)"
+  resolve: "Resolver en el back office"
+  markdown: "Ver en Markdown"
+  form:
+    category: "Motivo"
+    fraud_suspected: "Reporta fraude o un uso que no hizo"
+    freeze_card_requested: "Pide bloquear la tarjeta"
+    card_in_possession: "Tiene la tarjeta"
+    shared_credentials: "Compartió un código o su clave"
+  answers: {"true": "Sí", "false": "No", "yes": "Sí", "no": "No", "unsure": "No está seguro"}
+  categories:
+    unrecognized_charge: "No reconoce un cargo"
+    card_lost_stolen: "Tarjeta perdida o robada"
+    improper_fee: "Comisión indebida"
+    transaction_inquiry: "Duda sobre un movimiento"
+    app_issue: "Problema con la app"
+    service_complaint: "Queja de atención"
+    other_request: "Otra solicitud"
+  explanations:
+    default: "La política exige revisión humana para este caso."
+    T0_decisions_unavailable: "No se pudo clasificar el mensaje con confianza; por seguridad, lo revisa una persona."
+    T0b_card_freeze_requested: "El cliente pidió bloquear su tarjeta."
+    T0c_fraud_reported: "El cliente reportó fraude, pérdida o robo de tarjeta en el formulario."
+    T1_wants_human: "El cliente pidió hablar con una persona."
+    T3_theft_suspected: "El mensaje indica posible robo o clonación de tarjeta."
+    T6_other_complaint: "Es una queja fuera del flujo de cargos no reconocidos."
+    C1_high_fraud_score: "El score de fraude del cargo supera el umbral de la política."
+    C2_foreign_relevant_amount: "Monto relevante en un país distinto al del cliente."
+    C2b_country_unverified: "Monto relevante cuyo país no se pudo verificar."
+    C6_duplicate_high_amount: "Posible cargo duplicado con un monto alto."
+    C8_high_amount: "El monto supera el límite de automatización."
+    C10_no_conclusive_rule: "Ninguna regla es concluyente; un especialista decide."
+  actions:
+    default: "Revisar el expediente y decidir."
+    T0_decisions_unavailable: "Leer la conversación y clasificar el caso a mano."
+    T0b_card_freeze_requested: "Bloquear la tarjeta ahora y confirmar con el cliente por un canal verificado."
+    T0c_fraud_reported: "Confirmar con el cliente si reconoce los cargos y evaluar el bloqueo de la tarjeta."
+    T1_wants_human: "Contactar al cliente: pidió hablar con una persona."
+    T3_theft_suspected: "Tratarlo como posible robo: bloquear la tarjeta y revisar los movimientos recientes."
+    T6_other_complaint: "Derivar al área de reclamos que corresponda."
+    C1_high_fraud_score: "Revisar la transacción con el equipo de fraude antes de responder."
+    C2_foreign_relevant_amount: "Validar con el cliente la compra en el extranjero."
+    C2b_country_unverified: "Verificar el país de la transacción antes de decidir."
+    C6_duplicate_high_amount: "Confirmar el duplicado con el comercio; el monto exige aprobación."
+    C8_high_amount: "Revisar el cargo: supera el límite de automatización."
+    C10_no_conclusive_rule: "Revisar la propuesta del agente y decidir."
+
+pt:
+  title: "Processo"
+  status_open: "Aberto: aguardando um especialista"
+  status_accepted: "Resolvido: reclamação aceita por {by}"
+  status_rejected: "Resolvido: reclamação recusada por {by}"
+  priority: {high: "Prioridade alta", medium: "Prioridade média", low: "Prioridade baixa"}
+  created: "Criado"
+  customer: "Cliente"
+  why: "Por que foi encaminhado"
+  action: "Ação sugerida"
+  reported: "O que o cliente relatou"
+  request: "Nas palavras dele"
+  risk: "Indicadores de risco"
+  limit: "limite da política"
+  no_value: "sem dado"
+  gauge_labels: {fraud_score: "Score de fraude (máximo)", amount_usd: "Valor em USD (máximo)"}
+  decisions: "Decisões do último turno"
+  decision_labels: {intent: "Intenção", wants_human: "Pede uma pessoa", theft: "Suspeita de roubo"}
+  threshold: "limite"
+  evidence: "Evidência verificada"
+  evidence_columns: ["Data", "Valor", "Estabelecimento", "Status", "País", "Score fraude"]
+  no_evidence: "Nenhuma transação identificada ainda."
+  open_questions: "Perguntas em aberto"
+  actions_taken: "Ações realizadas"
+  summary: "Resumo do modelo (gerado por IA, não verificado)"
+  resolve: "Resolver no back office"
+  markdown: "Ver em Markdown"
+  form:
+    category: "Motivo"
+    fraud_suspected: "Relata fraude ou um uso que não fez"
+    freeze_card_requested: "Pede bloquear o cartão"
+    card_in_possession: "Está com o cartão"
+    shared_credentials: "Compartilhou um código ou senha"
+  answers: {"true": "Sim", "false": "Não", "yes": "Sim", "no": "Não", "unsure": "Não tem certeza"}
+  categories:
+    unrecognized_charge: "Não reconhece uma cobrança"
+    card_lost_stolen: "Cartão perdido ou roubado"
+    improper_fee: "Tarifa indevida"
+    transaction_inquiry: "Dúvida sobre uma transação"
+    app_issue: "Problema no app"
+    service_complaint: "Reclamação do atendimento"
+    other_request: "Outra solicitação"
+  explanations:
+    default: "A política exige revisão humana para este caso."
+    T0_decisions_unavailable: "Não foi possível classificar a mensagem com confiança; por segurança, uma pessoa revisa."
+    T0b_card_freeze_requested: "O cliente pediu para bloquear o cartão."
+    T0c_fraud_reported: "O cliente relatou fraude, perda ou roubo do cartão no formulário."
+    T1_wants_human: "O cliente pediu para falar com uma pessoa."
+    T3_theft_suspected: "A mensagem indica possível roubo ou clonagem do cartão."
+    T6_other_complaint: "É uma reclamação fora do fluxo de cobranças não reconhecidas."
+    C1_high_fraud_score: "O score de fraude da cobrança supera o limite da política."
+    C2_foreign_relevant_amount: "Valor relevante em um país diferente do cliente."
+    C2b_country_unverified: "Valor relevante cujo país não foi possível verificar."
+    C6_duplicate_high_amount: "Possível cobrança duplicada com valor alto."
+    C8_high_amount: "O valor supera o limite de automação."
+    C10_no_conclusive_rule: "Nenhuma regra é conclusiva; um especialista decide."
+  actions:
+    default: "Revisar o processo e decidir."
+    T0_decisions_unavailable: "Ler a conversa e classificar o caso manualmente."
+    T0b_card_freeze_requested: "Bloquear o cartão agora e confirmar com o cliente por um canal verificado."
+    T0c_fraud_reported: "Confirmar com o cliente se reconhece as cobranças e avaliar o bloqueio do cartão."
+    T1_wants_human: "Contatar o cliente: ele pediu para falar com uma pessoa."
+    T3_theft_suspected: "Tratar como possível roubo: bloquear o cartão e revisar as transações recentes."
+    T6_other_complaint: "Encaminhar à área de reclamações correspondente."
+    C1_high_fraud_score: "Revisar a transação com a equipe de fraude antes de responder."
+    C2_foreign_relevant_amount: "Validar com o cliente a compra no exterior."
+    C2b_country_unverified: "Verificar o país da transação antes de decidir."
+    C6_duplicate_high_amount: "Confirmar a duplicidade com o estabelecimento; o valor exige aprovação."
+    C8_high_amount: "Revisar a cobrança: supera o limite de automação."
+    C10_no_conclusive_rule: "Revisar a proposta do agente e decidir."
