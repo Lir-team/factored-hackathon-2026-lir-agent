@@ -2,6 +2,7 @@
 
     uv run python -m decision_eval.run --model keywords
     uv run python -m decision_eval.run --model llm --repeat 3
+    uv run python -m decision_eval.run --model jev --repeat 3   # Jev on OpenRouter (OPENROUTER_API_KEY)
 
 Results go to data/reports/decision_eval_runs/<model>-<run>.json (versioned: the report is
 recomputed from them). The model sees only the
@@ -25,10 +26,12 @@ from decision_eval.dataset import Item, load
 # Versioned next to the report, so every number in it can be recomputed (decision_eval.report).
 OUT = Path(__file__).resolve().parents[3] / "data" / "reports" / "decision_eval_runs"
 AGENT_ENV = Path(__file__).resolve().parents[2] / "lir-agent" / ".env"
+# Jev (TypeSafe AI) through OpenRouter: the same structured-output adapter as the LLM.
+JEV_MODEL = "openrouter/typesafe/jev-router"
 
 
-def _llm() -> tuple[DecisionModel, dict]:
-    """The agent's LLM as a decision model, alone (no fallback), with metered cost."""
+def _llm(jev: bool = False) -> tuple[DecisionModel, dict]:
+    """The agent's LLM (or Jev) as a decision model, alone (no fallback), with metered cost."""
     import litellm
     from lir_agent.config.settings import Settings
     from lir_agent.infrastructure.decisions import LlmDecisionModel
@@ -37,7 +40,7 @@ def _llm() -> tuple[DecisionModel, dict]:
     load_dotenv(AGENT_ENV)
     settings = Settings()
     meter = {"cost_usd": 0.0, "unpriced": 0}
-    model_name = settings.decision_llm_model or settings.llm_model
+    model_name = JEV_MODEL if jev else settings.decision_llm_model or settings.llm_model
 
     def metered(**kwargs):
         response = litellm.completion(**kwargs)
@@ -54,10 +57,12 @@ def _llm() -> tuple[DecisionModel, dict]:
         return response
 
     key = settings.decision_llm_api_key or settings.llm_api_key
+    if jev:
+        key = None  # LiteLLM reads OPENROUTER_API_KEY from the environment
     model = LlmDecisionModel(
         model_name,
         api_key=key.get_secret_value() if key else None,
-        api_base=settings.llm_api_base or None,
+        api_base=None if jev else settings.llm_api_base or None,
         reasoning_effort=settings.decision_llm_reasoning_effort,
         completion=metered,
     )
@@ -93,7 +98,7 @@ def run(model_kind: str, repeat: int, workers: int) -> list[Path]:
         if model_kind == "keywords":
             model, meter = KeywordDecisionModel(), {"cost_usd": 0.0, "unpriced": 0}
         else:
-            model, meter = _llm()
+            model, meter = _llm(jev=model_kind == "jev")
         started = time.perf_counter()
         with ThreadPoolExecutor(max_workers=workers) as pool:
             answers = list(pool.map(partial(_decide, model), items))
@@ -125,7 +130,7 @@ def run(model_kind: str, repeat: int, workers: int) -> list[Path]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", choices=["keywords", "llm"], required=True)
+    parser.add_argument("--model", choices=["keywords", "llm", "jev"], required=True)
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()

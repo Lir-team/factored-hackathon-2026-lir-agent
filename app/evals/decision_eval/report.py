@@ -226,6 +226,10 @@ def _mean_sd(values: Sequence[float]) -> str:
     return f"{statistics.mean(values):.3f} ± {statistics.stdev(values):.3f}"
 
 
+# Candidates in report order; a candidate without runs is left out.
+KINDS = ("keywords", "llm", "jev")
+
+
 def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) -> str:
     val = sum(i.split == VALIDATION for i in items)
     test = len(items) - val
@@ -249,7 +253,11 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
         "|---|---|",
         "| Baseline | Reglas por palabras clave ES/PT (`decision_layer.keywords`) |",
         f"| LLM | El mismo modelo del agente con salida estructurada (`{results['llm'][0]['model'] if results.get('llm') else '-'}`), sin fallback |",
-        "| Jev | **No evaluado:** sin credenciales de Cloudflare en este entorno (y la cuenta respondía 402) |",
+        (
+            f"| Jev | TypeSafe AI a través de OpenRouter (`{results['jev'][0]['model']}`), con el mismo adaptador de salida estructurada que el LLM, sin fallback |"
+            if results.get("jev")
+            else "| Jev | **No evaluado:** sin credenciales en este entorno |"
+        ),
         "",
         "## Datos, etiquetas y fuga",
         "",
@@ -281,7 +289,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
     lines += ["## Resultados en test", "", "### D1 intención", "",
               "| Candidato | Corridas | Exactitud [IC 95%] | Macro-F1 | ECE | Umbral elegido en validación | Cobertura / exactitud en test con ese umbral |",
               "|---|---|---|---|---|---|---|"]
-    for kind in ("keywords", "llm"):
+    for kind in KINDS:
         rows = model_rows(kind)
         if not rows:
             continue
@@ -303,7 +311,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
               "con **una observación por semilla**, no por mensaje: las 4 paráfrasis de una semilla no son "
               "independientes, así que el intervalo es conservador.", ""]
 
-    for kind in ("keywords", "llm"):
+    for kind in KINDS:
         rows = model_rows(kind)
         if not rows:
             continue
@@ -323,7 +331,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
               "| Decisión | Candidato | Umbrales válidos en validación | Política | ¿Dentro? | Recall en test [IC 95%] | Precisión en test | ECE |",
               "|---|---|---|---|---|---|---|---|"]
     for key, name in (("human", "D2 pide persona"), ("theft", "D3 robo")):
-        for kind in ("keywords", "llm"):
+        for kind in KINDS:
             rows = model_rows(kind)
             if not rows:
                 continue
@@ -339,7 +347,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
 
     lines += ["### Equidad por idioma (D1, test)", "",
               "| Candidato | Español | Portugués | Portuñol |", "|---|---|---|---|"]
-    for kind in ("keywords", "llm"):
+    for kind in KINDS:
         rows = model_rows(kind)
         if not rows:
             continue
@@ -353,17 +361,18 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
               "(`data/AGENTS.md` regla 10).", ""]
 
     lines += ["### Latencia y costo", "", "| Candidato | p50 | p95 | Costo por 1.000 mensajes (D1+D2+D3 en una llamada) |", "|---|---|---|---|"]
-    for kind in ("keywords", "llm"):
+    for kind in KINDS:
         rows = model_rows(kind)
         if rows:
+            cost = statistics.mean(r["cost_per_1000_messages_usd"] for r in rows)
             lines.append(
                 f"| {kind} | {_mean_sd([r['latency_p50_ms'] for r in rows])} ms | {_mean_sd([r['latency_p95_ms'] for r in rows])} ms "
-                f"| US${statistics.mean(r['cost_per_1000_messages_usd'] for r in rows):.3f} |"
+                f"| {f'US${cost:.3f}' if cost or kind == 'keywords' else 'sin precio en LiteLLM'} |"
             )
     lines += ["", "Costo con los precios de LiteLLM para el modelo; latencia medida con 8 llamadas concurrentes.", ""]
 
     lines += ["## Análisis de errores (test, corrida 1)", ""]
-    for kind in ("keywords", "llm"):
+    for kind in KINDS:
         rows = model_rows(kind)
         if not rows:
             continue
@@ -390,7 +399,7 @@ def render(items: list[Item], results: dict[str, list[dict]], labeling: dict) ->
               "- Un solo anotador hasta completar la segunda anotación; las etiquetas pueden tener sesgo del autor.",
               "- Texto sintético: no reemplaza mensajes reales de clientes; el portuñol y la jerga son una aproximación.",
               "- n pequeño en D3 (robo) y en portuñol: los intervalos son anchos.",
-              "- Jev no se pudo evaluar en este entorno.",
+              "- Jev se evalúa a través de OpenRouter, no de Cloudflare Workers AI; su costo no aparece porque LiteLLM no tiene su precio.",
               "- Las probabilidades del LLM son las que el modelo declara; la ECE mide cuánto se puede confiar en ellas.",
               ""]
     return "\n".join(lines)
@@ -440,6 +449,31 @@ def _recommendation(results: dict[str, list[dict]]) -> list[str]:
         ),
         "",
     ]
+    jev = results.get("jev")
+    if jev:
+        jev0 = jev[0]["intent"]
+        jev_acc = statistics.mean(r["intent"]["accuracy"] for r in jev)
+        jev_p50 = statistics.mean(r["latency_p50_ms"] for r in jev) / 1000
+        apart_from_llm = (
+            jev0["accuracy_ci"][1] < llm0["accuracy_ci"][0]
+            or llm0["accuracy_ci"][1] < jev0["accuracy_ci"][0]
+        )
+        lines[-1:-1] = [
+            f"5. **Jev:** {_pct(jev_acc)} de exactitud en promedio {_ci(jev0['accuracy_ci'])}, ~{jev_p50:.1f} s "
+            f"(p50); con el umbral de la política decide el {_pct(jev0['policy']['coverage'])} y acierta el "
+            f"{_pct(jev0['policy']['accuracy'])}. Frente al LLM: "
+            + (
+                "los intervalos no se solapan, así que la diferencia es significativa."
+                if apart_from_llm
+                else "los intervalos se solapan, así que con estos datos son equivalentes."
+            )
+            + " Umbrales de la política con Jev: "
+            + "; ".join(
+                f"{name} {'dentro' if jev[0][key]['policy_in_range'] else 'FUERA'}"
+                for key, name in (("human", "pide persona"), ("theft", "robo"))
+            )
+            + ".",
+        ]
     return lines
 
 
@@ -458,7 +492,7 @@ def _language_gap(by_language: dict) -> str:
 
 def main() -> None:
     items = load()
-    results = {kind: [evaluate_run(items, r) for r in _runs(kind)] for kind in ("keywords", "llm")}
+    results = {kind: [evaluate_run(items, r) for r in _runs(kind)] for kind in KINDS}
     labeling = _second_labeling(items)
     REPORT_MD.write_text(render(items, results, labeling), encoding="utf-8")
     print(f"wrote {REPORT_MD.relative_to(REPO)}")
