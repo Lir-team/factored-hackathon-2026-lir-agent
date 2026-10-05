@@ -14,7 +14,15 @@ customer's and a specialist's approval only when it is eligible, or hands off to
 The LLM converses, a typed decision layer classifies (the ES/PT keyword baseline by default;
 the LLM or Jev by configuration), and deterministic code authorizes. The agent app
 (`app/lir-agent/`) implements this flow end to end and runs on Google Cloud over the
-organizers' data (infrastructure as code in [`Lir-team/lir-infra`](https://github.com/Lir-team/lir-infra)).
+organizers' data.
+
+The solution spans three repositories:
+
+| Repository | What it holds |
+|---|---|
+| [`factored-hackathon-2026-lir-agent`](https://github.com/Lir-team/factored-hackathon-2026-lir-agent) (this one) | The agent, the decision layer, the evals and the data pipeline |
+| [`factored-hackathon-2026-lir-web`](https://github.com/Lir-team/factored-hackathon-2026-lir-web) | The bank's web page: the customer's statement and the case form |
+| [`factored-hackathon-2026-lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) | Terraform for the Google Cloud project |
 
 **What runs today.** Decisions: the keyword baseline unless `DECISIONS=llm`;
 Jev is integrated but off (no AI Gateway balance), and its probabilities are not measured.
@@ -184,7 +192,7 @@ One container image (`app/lir-agent/Dockerfile`) runs as two Cloud Run services 
 
 Everything around the services (accounts, secrets, buckets, Firestore, Pub/Sub, API
 Gateway, IAM, the CI identity) is Terraform in the
-[`lir-infra`](https://github.com/Lir-team/lir-infra) repository. Order:
+[`lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) repository. Order:
 
 1. **Infrastructure, first apply** in `lir-infra` (`agent_service_deployed = false`,
    `cases_service_url = ""`), then add the secret values with
@@ -280,3 +288,7 @@ git config core.hooksPath .githooks
 - [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
 - [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow (Spanish)
 - [`data/reports/data_quality.md`](data/reports/data_quality.md): data-quality scorecard (Spanish)
+
+## License
+
+[MIT](LICENSE).
