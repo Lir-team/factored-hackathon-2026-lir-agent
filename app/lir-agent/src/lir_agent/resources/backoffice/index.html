@@ -158,7 +158,7 @@
       const accept = el("button", { className: "approve", type: "button", textContent: "Accept claim" });
       const reject = el("button", { className: "reject", type: "button", textContent: "Reject claim" });
       const report = el("a", {
-        href: `${CASES_API}/${encodeURIComponent(item.handoff_id)}/report.md`,
+        href: `${CASES_API}/${encodeURIComponent(item.handoff_id)}/report`,
         target: "_blank",
         rel: "noopener",
         textContent: "Open the case file",

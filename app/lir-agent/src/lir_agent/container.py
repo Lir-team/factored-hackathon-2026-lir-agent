@@ -16,6 +16,7 @@ from decision_layer import (
 )
 from google.cloud import firestore
 
+from lir_agent.application.case_file import CaseFileRenderer
 from lir_agent.application.handoff_report import HandoffReportRenderer
 from lir_agent.application.ports import (
     ApprovalRepository,
@@ -90,6 +91,7 @@ class Container:
     cases: CaseRepository
     audit: AuditSink
     handoff_report: HandoffReportRenderer
+    case_file: CaseFileRenderer
     decisions: DecisionModel
     policy: PolicyEngine
     dispute_guard: DisputeGuard
@@ -385,6 +387,11 @@ def build_container(
         audit=audit,
         handoff_report=HandoffReportRenderer(
             resources.load_labels(settings.handoff_report_path),
+            settings.report_default_language,
+        ),
+        case_file=CaseFileRenderer(
+            resources.load_mapping(settings.case_file_path),
+            policy.config,
             settings.report_default_language,
         ),
         decisions=decisions,

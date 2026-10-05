@@ -8,7 +8,7 @@ import httpx
 
 from lir_agent.domain.models import HandoffPacket
 
-REPORT_PATH = "/v1/handoffs/{handoff_id}/report.md"
+REPORT_PATH = "/v1/handoffs/{handoff_id}/report"
 BACKOFFICE_PATH = "/backoffice"
 
 

@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     turn_guidance_path: Path = RESOURCES_DIR / "prompts" / "turn_guidance.yaml"
     customer_messages_path: Path = RESOURCES_DIR / "prompts" / "customer_messages.yaml"
     handoff_report_path: Path = RESOURCES_DIR / "reports" / "handoff_report.yaml"
+    case_file_path: Path = RESOURCES_DIR / "reports" / "case_file.yaml"
     approval_labels_path: Path = RESOURCES_DIR / "approvals.yaml"
     # Web link to an approval card, e.g. "https://lir-web.example/aprobar.html?id={approval_id}&t={token}".
     # Unset: no web link is issued (surfaces such as Telegram still present the request).
