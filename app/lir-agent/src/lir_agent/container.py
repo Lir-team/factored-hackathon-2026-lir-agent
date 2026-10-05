@@ -3,7 +3,7 @@
 Tests pass overrides instead of patching globals.
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
@@ -161,6 +161,39 @@ def build_messenger(settings: Settings) -> ChatChannel | None:
     return TelegramBotMessenger(token.get_secret_value())
 
 
+def build_notice_surfaces(
+    settings: Settings, approval_labels: Mapping[str, Mapping[str, Any]]
+) -> list[ApprovalSurface]:
+    """Slack (specialist reviews) and email (customer outcomes), when configured."""
+    surfaces: list[ApprovalSurface] = []
+    if settings.slack_webhook_url:
+        from lir_agent.infrastructure.approvals import SlackApprovalSurface
+
+        assignees = [a.strip() for a in settings.slack_assignees.split(",") if a.strip()]
+        surfaces.append(
+            SlackApprovalSurface(
+                settings.slack_webhook_url.get_secret_value(),
+                ResourceLoader().load_mapping(settings.slack_notice_path),
+                settings.public_base_url,
+                " ".join(f"<@{a}>" for a in assignees) or settings.slack_fallback_mention,
+            )
+        )
+    if settings.smtp_app_password and settings.smtp_user and settings.customer_email_override:
+        from lir_agent.infrastructure.approvals import EmailApprovalSurface
+        from lir_agent.infrastructure.messaging.email import SmtpEmailSender
+
+        sender = SmtpEmailSender(
+            settings.smtp_host,
+            settings.smtp_port,
+            settings.smtp_user,
+            settings.smtp_app_password.get_secret_value(),
+        )
+        surfaces.append(
+            EmailApprovalSurface(sender, approval_labels, settings.customer_email_override)
+        )
+    return surfaces
+
+
 def build_notifier(settings: Settings) -> HandoffNotifier | None:
     """The Slack handoff notice when SLACK_WEBHOOK_URL is set."""
     if not settings.slack_webhook_url:
@@ -248,7 +281,7 @@ def build_container(
     approvals = approvals or InMemoryApprovalRepository()
     approval_labels = resources.load_labels(settings.approval_labels_path)
     messenger = messenger or build_messenger(settings)
-    surfaces = list(approval_surfaces)
+    surfaces = [*approval_surfaces, *build_notice_surfaces(settings, approval_labels)]
     if messenger is not None:
         surfaces.append(
             TelegramApprovalSurface(

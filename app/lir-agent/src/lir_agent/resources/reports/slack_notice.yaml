@@ -11,6 +11,8 @@ transactions: "{count} transacción(es) revisada(s)"
 no_facts: "sin transacción identificada todavía"
 assigned: "Asignado a {mention} · reacciona con :eyes: al tomarlo y :white_check_mark: al cerrarlo"
 open_report: "Ver expediente"
+approval_pending: ":hourglass_flowing_sand: Aprobación pendiente {approval_id} ({action}) · {mention} revísala en {review_url}"
+approval_decided: ":white_check_mark: {approval_id} ({action}): {status} por {role} ({by})"
 default_explanation: "La política exige revisión humana para este caso."
 rule_explanations:
   T0_decisions_unavailable: "No se pudo clasificar el mensaje con confianza; por seguridad, lo revisa una persona."
