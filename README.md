@@ -36,6 +36,29 @@ outcome email is sent only when SMTP is configured. Telegram voice notes are tra
 Speech-to-Text only when `SPEECH_TO_TEXT=google` (off by default; `lir-infra` must enable
 `speech.googleapis.com` and grant `roles/speech.client` first).
 
+## How it works and why
+
+The full explanation, with every number linked to the report that produced it, is in
+[`docs/how-it-works.md`](docs/how-it-works.md). In short:
+
+- **Why disputes:** complaints are 41.2% of unresolved contacts and charge disputes are 40.6% of
+  formal claims, measured separately ([`insights.md`](data/reports/insights.md)).
+- **Three roles kept apart:** the LLM (`gpt-4o`) converses, a typed decision layer classifies
+  with probabilities, and a versioned policy decides what the agent may do. No model moves money.
+- **Decision models, measured against labels** on 320 ES/PT/portuñol messages split by seed
+  ([`decision_eval.md`](data/reports/decision_eval.md)):
+
+  | Candidate | Intent accuracy [95% CI] | Decides / right at the policy threshold |
+  |---|---|---|
+  | Keyword baseline | 44.4% [30-60] | 31.2% / 94.0% |
+  | LLM | 97.5% [86-99] | 100% / 96.9% |
+  | Jev | 97.1% [88-100] | 100% / 98.1% |
+
+- **People approve everything that matters:** disputes need the customer and a specialist;
+  escalated cases are accepted or rejected by a specialist; the customer hears every outcome.
+- **Tested at every level:** 479 tests, 35 scenario tasks graded on outcome and safety, 48 data
+  quality rules, and an audit trail in BigQuery and Looker Studio.
+
 ## Architecture
 
 ![Lir serverless architecture on Google Cloud](docs/architecture/architecture-lir-agent.gif)
@@ -285,6 +308,7 @@ git config core.hooksPath .githooks
 - [`docs/architecture/case-flow.md`](docs/architecture/case-flow.md): case flow wiring (web form, Pub/Sub, agent, Telegram), routes and local run
 - [`docs/analytics/looker-studio.md`](docs/analytics/looker-studio.md): audit trail and evaluation runs in BigQuery, Looker Studio dashboards
 - [`docs/propuesta-opcion-1-disputas.md`](docs/propuesta-opcion-1-disputas.md): product proposal (Spanish)
+- [`docs/how-it-works.md`](docs/how-it-works.md): how the agent decides, why each model, and how it is measured
 - [`docs/privacy.md`](docs/privacy.md): what leaves the perimeter, to whom, and the residual risk
 - [`docs/backlog-evaluacion.md`](docs/backlog-evaluacion.md): tickets from the critical review against the Bases (Spanish)
 - [`data/reports/insights.md`](data/reports/insights.md): evidence for choosing the workflow (Spanish)
