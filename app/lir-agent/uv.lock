@@ -869,6 +869,22 @@ wheels = [
 ]
 
 [[package]]
+name = "google-cloud-speech"
+version = "2.41.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/f6/1af146975bb5d9a2a411b47b61bc6321c3947f388dd7921c9b455fe89da1/google_cloud_speech-2.41.0.tar.gz", hash = "sha256:f1abf0c3260fbf3a4c3df9ede8a8013bb42bdd583cbbfeeba752c7a4f781d261", size = 400610, upload-time = "2026-10-01T18:18:15.542Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/66/ca9258847c8215a17fd58c82a7e7b04f04ed7cd2689a8d704786ae9fdb0b/google_cloud_speech-2.41.0-py3-none-any.whl", hash = "sha256:a4939b5afdc9038ce8f49ffe523532057fe647280e323a2031c76043a867301a", size = 343423, upload-time = "2026-10-01T18:12:28.404Z" },
+]
+
+[[package]]
 name = "google-cloud-storage"
 version = "3.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1331,6 +1347,7 @@ dependencies = [
     { name = "google-adk" },
     { name = "google-cloud-firestore" },
     { name = "google-cloud-pubsub" },
+    { name = "google-cloud-speech" },
     { name = "google-cloud-storage" },
     { name = "httpx" },
     { name = "jsonschema" },
@@ -1357,6 +1374,7 @@ requires-dist = [
     { name = "google-adk", specifier = ">=2.11.0" },
     { name = "google-cloud-firestore", specifier = ">=2.34.0" },
     { name = "google-cloud-pubsub", specifier = ">=2.42.0" },
+    { name = "google-cloud-speech", specifier = ">=2.41.0" },
     { name = "google-cloud-storage", specifier = ">=3.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jsonschema", specifier = ">=4.26.0" },

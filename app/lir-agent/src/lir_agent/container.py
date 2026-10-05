@@ -27,6 +27,7 @@ from lir_agent.application.ports import (
     CaseStore,
     ChatChannel,
     HandoffNotifier,
+    SpeechToText,
     TransactionRepository,
 )
 from lir_agent.application.presenter import LlmPresenter
@@ -96,6 +97,8 @@ class Container:
     # The customer chat (Telegram) when configured, and its approval buttons.
     messenger: ChatChannel | None
     answer_approval_button: AnswerApprovalButton | None
+    # Transcribes voice notes; None when SPEECH_TO_TEXT is off.
+    speech_to_text: SpeechToText | None
     request_handoff: RequestHandoff
     route_turn: RouteTurn
     case_store: CaseStore
@@ -150,6 +153,15 @@ def build_case_store(settings: Settings) -> CaseStore:
         )
         return FirestoreCaseStore(client, settings.firestore_collection_prefix)
     return InMemoryCaseStore()
+
+
+def build_speech_to_text(settings: Settings) -> SpeechToText | None:
+    """The voice-note transcriber chosen by `SPEECH_TO_TEXT`; None when off."""
+    if settings.speech_to_text == "google":
+        from lir_agent.infrastructure.speech import GoogleSpeechToText
+
+        return GoogleSpeechToText()
+    return None
 
 
 def build_messenger(settings: Settings) -> ChatChannel | None:
@@ -261,6 +273,7 @@ def build_container(
     approvals: ApprovalRepository | None = None,
     approval_surfaces: Iterable[ApprovalSurface] = (),
     messenger: ChatChannel | None = None,
+    speech_to_text: SpeechToText | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
     resources = ResourceLoader()
@@ -346,6 +359,7 @@ def build_container(
         )
         if messenger is not None
         else None,
+        speech_to_text=speech_to_text or build_speech_to_text(settings),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),
         case_store=case_store,
