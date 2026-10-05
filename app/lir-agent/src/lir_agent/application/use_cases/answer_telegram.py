@@ -7,10 +7,14 @@ from datetime import UTC, datetime
 from lir_agent.application.ports import (
     AuditSink,
     CaseStore,
+    ChatFiles,
     ConversationNotFoundError,
     Conversations,
+    FileNotDownloadedError,
     MessageNotSentError,
     Messenger,
+    SpeechToText,
+    TranscriptionError,
 )
 from lir_agent.application.use_cases.approvals import PresentApprovals
 from lir_agent.application.use_cases.process_case import deliver_replies
@@ -32,6 +36,9 @@ class AnswerTelegramMessage:
     Sending never fails the update: Telegram would retry it, and a `/start` token is
     already burned. Notices are best effort; an agent reply that could not be sent is
     queued and goes out, with any other waiting reply, before the chat's next answer.
+
+    Voice notes are transcribed and answered like typed text, never as a command. A voice
+    note that cannot be fetched or understood is answered, not retried.
     """
 
     def __init__(
@@ -44,8 +51,14 @@ class AnswerTelegramMessage:
         max_message_chars: int,
         now: Callable[[], datetime] | None = None,
         present_approvals: PresentApprovals | None = None,
+        files: ChatFiles | None = None,
+        speech: SpeechToText | None = None,
+        max_voice_seconds: int = 60,
     ) -> None:
-        """Keep the adapters, the message size cap and the approval presenter."""
+        """Keep the adapters, the size caps, the approval presenter and the voice path.
+
+        Voice notes are declined politely unless both `files` and `speech` are given.
+        """
         self._conversations = conversations
         self._store = store
         self._messenger = messenger
@@ -53,6 +66,9 @@ class AnswerTelegramMessage:
         self._max_chars = max_message_chars
         self._now = now or (lambda: datetime.now(UTC))
         self._present_approvals = present_approvals
+        self._files = files
+        self._speech = speech
+        self._max_voice_seconds = max_voice_seconds
 
     async def execute(self, chat_id: int, text: str) -> None:
         """Answer `text` from a private chat. Never logs or audits tokens or chat text."""
@@ -68,6 +84,42 @@ class AnswerTelegramMessage:
             await self._say(chat_id, link.language, "too_long", limit=self._max_chars)
         else:
             await self._ask(chat_id, link, text.strip())
+
+    async def execute_voice(self, chat_id: int, file_id: str, duration: int) -> None:
+        """Answer a voice note of `duration` seconds as the text it says.
+
+        Never logs or audits the audio or its transcript.
+        """
+        link = self._store.get_chat_link(chat_id)
+        if link is None:
+            await self._say(chat_id, DEFAULT_LANGUAGE, "use_form")
+        elif self._files is None or self._speech is None:
+            await self._say(chat_id, link.language, "voice_off")
+        elif duration > self._max_voice_seconds:
+            await self._say(
+                chat_id, link.language, "voice_too_long", limit=self._max_voice_seconds
+            )
+        else:
+            text = await self._transcribe(self._files, self._speech, file_id, link)
+            if not text:
+                await self._say(chat_id, link.language, "voice_not_understood")
+            elif len(text) > self._max_chars:
+                await self._say(
+                    chat_id, link.language, "too_long", limit=self._max_chars
+                )
+            else:
+                await self._ask(chat_id, link, text)
+
+    @staticmethod
+    async def _transcribe(
+        files: ChatFiles, speech: SpeechToText, file_id: str, link: ChatLink
+    ) -> str:
+        """The voice note's transcript, `""` when it could not be fetched or understood."""
+        try:
+            audio = await files.download_file(file_id)
+            return (await speech.transcribe(audio, link.language)).strip()
+        except (FileNotDownloadedError, TranscriptionError):  # the adapters logged it
+            return ""
 
     async def _link(self, chat_id: int, token: str, current: ChatLink | None) -> None:
         start = self._store.consume_start_token(token, self._now())

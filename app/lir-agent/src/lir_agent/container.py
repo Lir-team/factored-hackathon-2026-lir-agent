@@ -6,7 +6,7 @@ Tests pass overrides instead of patching globals.
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from decision_layer import (
     ChainDecisionModel,
@@ -26,6 +26,7 @@ from lir_agent.application.ports import (
     CaseRepository,
     CaseStore,
     ChatChannel,
+    ChatFiles,
     HandoffNotifier,
     SpeechToText,
     TransactionRepository,
@@ -70,6 +71,9 @@ from lir_agent.infrastructure.publishing import (
 )
 from lir_agent.infrastructure.resources import ResourceLoader
 
+if TYPE_CHECKING:
+    from lir_agent.infrastructure.messaging import TelegramBotMessenger
+
 STAGED_TRANSACTIONS = "transactions.parquet"
 
 
@@ -97,7 +101,8 @@ class Container:
     # The customer chat (Telegram) when configured, and its approval buttons.
     messenger: ChatChannel | None
     answer_approval_button: AnswerApprovalButton | None
-    # Transcribes voice notes; None when SPEECH_TO_TEXT is off.
+    # Voice notes: the chat's files and their transcriber (None when SPEECH_TO_TEXT is off).
+    chat_files: ChatFiles | None
     speech_to_text: SpeechToText | None
     request_handoff: RequestHandoff
     route_turn: RouteTurn
@@ -164,7 +169,7 @@ def build_speech_to_text(settings: Settings) -> SpeechToText | None:
     return None
 
 
-def build_messenger(settings: Settings) -> ChatChannel | None:
+def build_messenger(settings: Settings) -> "TelegramBotMessenger | None":
     """The Telegram bot when its token and webhook secret are set."""
     token, secret = settings.telegram_bot_token, settings.telegram_webhook_secret
     if not (token and secret and token.get_secret_value() and secret.get_secret_value()):
@@ -273,6 +278,7 @@ def build_container(
     approvals: ApprovalRepository | None = None,
     approval_surfaces: Iterable[ApprovalSurface] = (),
     messenger: ChatChannel | None = None,
+    chat_files: ChatFiles | None = None,
     speech_to_text: SpeechToText | None = None,
 ) -> Container:
     """Build the container; keyword overrides replace real adapters in tests."""
@@ -295,7 +301,9 @@ def build_container(
     case_store = case_store or build_case_store(settings)
     approvals = approvals or InMemoryApprovalRepository()
     approval_labels = resources.load_labels(settings.approval_labels_path)
-    messenger = messenger or build_messenger(settings)
+    bot = None if messenger else build_messenger(settings)
+    messenger = messenger or bot
+    chat_files = chat_files or bot  # the bot fetches what customers send to it
     surfaces = [*approval_surfaces, *build_notice_surfaces(settings, approval_labels)]
     if messenger is not None:
         surfaces.append(
@@ -359,6 +367,7 @@ def build_container(
         )
         if messenger is not None
         else None,
+        chat_files=chat_files,
         speech_to_text=speech_to_text or build_speech_to_text(settings),
         request_handoff=request_handoff,
         route_turn=RouteTurn(decisions, policy, request_handoff, audit),

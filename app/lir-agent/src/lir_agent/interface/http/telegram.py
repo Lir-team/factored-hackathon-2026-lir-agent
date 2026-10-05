@@ -24,9 +24,17 @@ class _Chat(BaseModel):
     type: str
 
 
+class _Voice(BaseModel):
+    """A voice note (OGG/Opus); its bytes are fetched by `file_id`."""
+
+    file_id: str
+    duration: int
+
+
 class _Message(BaseModel):
     chat: _Chat
     text: str | None = None
+    voice: _Voice | None = None
 
 
 class _CallbackQuery(BaseModel):
@@ -91,14 +99,15 @@ def telegram_router(
             recent.remember(update.update_id)
             return Response()
         message = update.message
-        if (
-            recent.seen(update.update_id)
-            or message is None
-            or message.chat.type != "private"
-            or not message.text
-        ):
+        if message is None or message.chat.type != "private":
             return Response()
-        await answer.execute(message.chat.id, message.text)
+        if message.text:
+            await answer.execute(message.chat.id, message.text)
+        elif message.voice:
+            voice = message.voice
+            await answer.execute_voice(message.chat.id, voice.file_id, voice.duration)
+        else:
+            return Response()
         recent.remember(update.update_id)  # only once handled: a failure is retried
         return Response()
 

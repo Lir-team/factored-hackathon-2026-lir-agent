@@ -39,6 +39,18 @@ _MESSAGES: dict[str, dict[Language, str]] = {
         "es": "Tu mensaje es muy largo. Envíalo en partes de hasta {limit} caracteres.",
         "pt": "Sua mensagem é muito longa. Envie em partes de até {limit} caracteres.",
     },
+    "voice_off": {
+        "es": "Por ahora no puedo escuchar notas de voz. Escríbeme tu mensaje como texto, por favor.",
+        "pt": "Por enquanto não consigo ouvir mensagens de voz. Escreva sua mensagem em texto, por favor.",
+    },
+    "voice_too_long": {
+        "es": "Tu nota de voz es muy larga. Envía notas de hasta {limit} segundos o escríbeme como texto.",
+        "pt": "Sua mensagem de voz é muito longa. Envie mensagens de até {limit} segundos ou escreva em texto.",
+    },
+    "voice_not_understood": {
+        "es": "No pude entender tu nota de voz. ¿Puedes enviarla de nuevo o escribirme como texto?",
+        "pt": "Não consegui entender sua mensagem de voz. Pode enviá-la de novo ou escrever em texto?",
+    },
 }
 
 
