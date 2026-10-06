@@ -29,7 +29,7 @@ written to an audit log.
    refunds or ask for credentials. `before_tool` resolves the placeholders the model passes
    to a tool, so tools and the handoff packet work on real values.
 
-### Human in the loop: important actions need the customer's approval
+### Human in the loop: important actions need the customer's and a specialist's approval
 
 The agent never takes an important action on the customer's behalf from the conversation.
 Which tools are important actions, and who approves them, is declared in the policy:
@@ -38,8 +38,13 @@ Which tools are important actions, and who approves them, is declared in the pol
 approvals:
   ttl_minutes: 60
   actions:
-    open_dispute: [customer]   # approvers in order; only the last approval runs the action
+    open_dispute: [customer, specialist]   # approvers in order; only the last approval runs the action
 ```
+
+For a dispute, the customer approves first (Telegram button or the signed-in web card). That
+approval creates a follow-up request for a specialist, who approves or rejects it in the back
+office (`GET /backoffice`, behind IAP). Only then is the dispute opened. A rejection at either
+step opens nothing.
 
 1. `before_tool` intercepts a call to a listed tool. The action's adapter (`ApprovalAction`:
    `describe` + `execute`, e.g. `OpenDisputeAction`) builds what the approver reads (merchant,
@@ -53,7 +58,8 @@ approvals:
 3. A person decides on a surface. Every surface authenticates the actor its own way (a web
    link token, a linked Telegram chat, IAP) and calls the same `DecideApproval`: right role,
    their own request, the content they saw, still pending, not expired, one decision only.
-   Approval runs the action and reads it back; rejection runs nothing. Who, when, through
+   An approval that is not the last one passes the request to the next approver; the last
+   approval runs the action and reads it back; rejection runs nothing. Who, when, through
    which surface, what they saw and the result go to the audit log (`approval_decided`).
 4. A typed "yes" never approves anything: the agent points the customer to the buttons.
 5. Step-up (`APPROVAL_REQUIRES_SIGN_IN=true`, with API Gateway validating the customer's JWT):
@@ -90,7 +96,7 @@ surface (Telegram buttons, the `lir-web` card, a back-office page) is an `Approv
 | `get_my_customer_profile` | Minimal profile of the signed-in customer (no arguments, allowlisted fields) |
 | `find_candidate_transactions` | Matches the customer's description (amount, dates, merchant) |
 | `get_transaction_evidence` | Verifiable facts and the policy lane: explain, dispute, propose or escalate |
-| `open_dispute` | Never opens a dispute: the tool guard turns the call into a request for the customer's approval. Only with a ground: the `dispute` case lane, or an explained charge the customer still rejects |
+| `open_dispute` | Never opens a dispute: the tool guard turns the call into an approval request (the customer, then a specialist). Only with a ground: the `dispute` case lane, or an explained charge the customer still rejects |
 | `request_human_handoff` | Case file built from session state, not from model prose |
 
 ## Layout
@@ -102,8 +108,12 @@ infrastructure implements the application ports.
 src/lir_agent/
 ├── domain/            # policy engine, evidence, session state, dispute guard, models
 ├── application/       # ports, presenter (data minimization), one use case per action
+│                      # (use_cases/, e.g. resolve_handoff.py, demo_sign_in.py),
+│                      # handoff_report.py (Markdown) and case_file.py (HTML case file)
 ├── infrastructure/    # DuckDB and fixture repositories, audit sinks, case and approval stores
-│                      # (memory, Firestore), Pub/Sub, Telegram, Slack, email, speech, LLM decisions
+│                      # (memory, Firestore), Pub/Sub, Telegram, Slack, email, speech, LLM decisions,
+│                      # cases_inbox/ (local or Cloud Storage), identity/ (IAM JWT signer for the
+│                      # demo sign-in), observability/ (Cloud Trace)
 ├── interface/adk/     # toolkit (tools as methods), callbacks, guidance, agent factory
 ├── interface/http/    # FastAPI app: sessions, approvals, cases, Pub/Sub push, Telegram webhook
 ├── config/settings.py # typed settings
@@ -113,7 +123,8 @@ src/lir_agent/
 ├── server.py          # HTTP API entry point (`lir-agent-api`, uvicorn)
 └── resources/         # policy.yaml, reference.yaml, approvals.yaml (approval labels),
                        # prompts/, fixtures/demo.json, backoffice/ (back office page),
-                       # schemas/ (case schema), reports/ (handoff report, Slack notice)
+                       # schemas/ (case schema), reports/ (handoff report,
+                       # case_file.yaml, Slack notice)
 apps/lir/agent.py      # ADK entry point for `adk web` / `adk run`
 ```
 
@@ -142,7 +153,7 @@ uv run adk web apps                       # browser dev UI (needs DEV_CUSTOMER_I
 uv run adk run apps/lir                   # ADK terminal chat (needs DEV_CUSTOMER_ID)
 uv run lir-agent-api                      # HTTP API on PORT (default 8080)
 uv run pytest                             # tests (offline: scripted decisions, fixture data)
-uv run ruff check . && uv run ruff format --check .
+uv run ruff check .                       # lint
 uv run pyright                            # type check
 ```
 
@@ -162,10 +173,14 @@ session is created, standing in for the bank's identity check (biometric KYC, mo
 | `POST` | `/v1/sessions` | `{"customer_id": "CLI-DEMO-001"}` | `201 {"session_id", "expires_at"}`; `404` if the customer does not exist |
 | `POST` | `/v1/sessions/{session_id}/messages` | `{"text": "No reconozco un cargo de 245.50"}` | `{"reply": "...", "trace": {...}, "approvals": [...]}` (`trace` only with `EXPOSE_TRACE=true`; `approvals` lists requests waiting for the customer's approval) |
 | `GET` | `/v1/me/transactions?limit=20` | - | The signed-in customer's latest transactions, newest first (`limit` up to `TRANSACTIONS_MAX_LIMIT`). The customer comes from the API Gateway JWT claims, never a local fallback: `401` without them, `404` if the customer is not in the data |
+| `POST` | `/v1/demo/sign-in` | - | `{"token", "expires_at"}`: the demo bank sign-in, a short-lived customer JWT for `DEMO_SIGN_IN_CUSTOMER_ID`, signed through IAM by the `DEMO_SIGN_IN_ISSUER` service account (`503` if signing failed). No caller identity; the route exists only when both variables are set |
+| `GET` | `/v1/handoffs?status=open` | - | Handed-off case files, newest first; `open` (default) leaves out resolved ones, `all` lists every one. Needs the caller identity like `/v1/sessions` |
+| `GET` | `/v1/handoffs/{handoff_id}/report?language=es` | - | HTML case file for the bank specialist: summary, risk charts and evidence. Caller identity required; each read is audited |
 | `GET` | `/v1/handoffs/{handoff_id}/report.md?language=es` | - | Markdown case file for the bank specialist; each read is audited |
+| `POST` | `/v1/handoffs/{handoff_id}/resolution` | `{"decision": "accept" \| "reject", "note": "..."}` | A specialist accepts or rejects an escalated claim; the customer is told in Telegram when the case has a linked chat, and the team in Slack when configured. Caller identity required. `404` unknown handoff, `409` already resolved |
 | `GET` | `/v1/approvals/{approval_id}` | header `X-Approval-Token` | The approval card behind a customer's single-use link (web surface). The token travels in a header so no proxy logs it; failed attempts are audited (`approval_link_refused`) |
 | `POST` | `/v1/approvals/{approval_id}/decision` | `{"decision": "approve" \| "reject", "token": "...", "content_hash": "..."}` | The customer decides from the web card. `404` wrong or spent link, `409` already decided or content changed, `410` expired |
-| `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required) |
+| `GET` | `/v1/approvals` | - | Requests waiting for a specialist (IAP identity required, never a local fallback) |
 | `GET` | `/backoffice` | - | The specialist back office page: pending reviews, approved or rejected in place. Only with `BACKOFFICE_ENABLED=true`; needs the caller identity like `/v1/sessions` |
 | `POST` | `/v1/approvals/{approval_id}/review` | `{"decision": ..., "content_hash": ..., "note": ...}` | A specialist decides a request that waits for one (IAP identity required, never a local fallback) |
 | `POST` | `/v1/cases` | a `lir-web` case (schema 1.1), header `Idempotency-Key: <case_id>` | `202 {"case_id", "folio", "status", "telegram_start_url"}` (`409` same key in flight, `503` retry) |
@@ -310,7 +325,7 @@ for demos and operators; it is never sent to customer channels.
 
 | Message | Expected behavior |
 |---|---|
-| "No reconozco un cargo de 245.50 en OXXO", then "Confirmo, abre la disputa" | detects the duplicate and puts the dispute to the customer's approval; a typed "yes" opens nothing, the approval button or web card does |
+| "No reconozco un cargo de 245.50 en OXXO", then "Confirmo, abre la disputa" | detects the duplicate and puts the dispute to the customer's approval; a typed "yes" opens nothing. The customer approves with the button or web card, then a specialist approves in the back office, and only then is the dispute opened |
 | "¿Qué es un cargo de 179 de Spotify?" | explains it: recurring payment, previous charges |
 | "No reconozco un cobro de PAYPAL STEAMGAMES" | explains it as a pending authorization |
 | "Veo una compra de 38900 en Argentina" | hands off to a specialist without revealing why |
@@ -350,6 +365,18 @@ To build by hand, see the command at the top of `cloudbuild.yaml`.
 Settings come from the environment, then `.env` (see `.env.example`). Thresholds, rules,
 tool permissions per lane, LLM-facing fields and the output guard live in
 `src/lir_agent/resources/policy.yaml`, a synthetic, versioned team policy.
+
+Some settings worth knowing (`.env.example` has the full list):
+
+- `TRACE_TO_CLOUD=true` exports Google ADK's spans (each turn, LLM call and tool) to Cloud
+  Trace in `GOOGLE_CLOUD_PROJECT`; `TRACE_SERVICE_NAME` names the service (default Cloud
+  Run's `K_SERVICE`, else `lir-agent`).
+- `CASE_REPOSITORY=firestore` (disputes and handoffs), `APPROVAL_REPOSITORY=firestore`
+  (approval requests) and `CASE_STORE=firestore` (case state) keep their data in Firestore,
+  shared by both Cloud Run services. The default `memory` is per instance.
+- `DEMO_SIGN_IN_CUSTOMER_ID` and `DEMO_SIGN_IN_ISSUER` turn on `POST /v1/demo/sign-in`
+  (`DEMO_SIGN_IN_AUDIENCE`, `DEMO_SIGN_IN_TTL_MINUTES` tune the token).
+- `BACKOFFICE_ENABLED=true` serves the specialist back office at `GET /backoffice`.
 
 ## Dependencies
 
