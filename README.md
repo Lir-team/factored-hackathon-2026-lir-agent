@@ -24,7 +24,8 @@ The solution spans three repositories:
 | [`factored-hackathon-2026-lir-web`](https://github.com/Lir-team/factored-hackathon-2026-lir-web) | The bank's web page: the customer's statement and the case form |
 | [`factored-hackathon-2026-lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) | Terraform for the Google Cloud project |
 
-**What runs today.** Decisions: the keyword baseline unless `DECISIONS=llm`;
+**What runs today.** Decisions: the deployed services run the keyword baseline
+(`DECISIONS=default`); `DECISIONS=llm` with `DECISION_LLM_MODEL` switches to an LLM or Jev.
 Jev is measured through OpenRouter (`openrouter/typesafe/jev-router`): 97.1% intent accuracy on
 the held-out set, equivalent to the LLM (97.5%) and far above the keyword baseline (44.4%).
 The decision layer is evaluated against labels in
@@ -46,7 +47,7 @@ Every number below is produced by code in this repository; each row links to its
 | **Why this workflow** | Complaints are **41.2%** of unresolved contacts (17.1% of volume); charge disputes are **40.6%** of formal claims, and 74.9% of them are still open | [`insights.md`](data/reports/insights.md) |
 | **Data quality** | 31 of 48 rules pass. Integrity and timeliness: 100%. Free-text fields fail accuracy (they are templates), so they are never used for training | [`data_quality.md`](data/reports/data_quality.md) |
 | **Decision models** | Jev **97.1%** and LLM **97.5%** intent accuracy vs **44.4%** for the keyword baseline, with no significant gap between Spanish, Portuguese and portuñol | [`decision_eval.md`](data/reports/decision_eval.md) |
-| **Agent quality** | 479 automated tests; 35 scenario tasks graded on outcome, safety, grounding and language | [`app/evals/`](app/evals/README.md) |
+| **Agent quality** | 631 automated tests (agent 493, decision layer 41, evals 97), run with lint and type checks on every pull request and before every deploy; 35 scenario tasks graded on outcome, safety, grounding and language | [`app/evals/`](app/evals/README.md) |
 | **Human in the loop** | Every dispute needs the customer and a specialist; every escalated case is accepted or rejected by a specialist; the customer hears every outcome | [`how-it-works.md`](docs/agent/how-it-works.md) |
 | **Infrastructure** | 137 Terraform-managed resources: 3 Cloud Run services, a Cloud Run job, API Gateway, Pub/Sub with dead-letter, Firestore, BigQuery, Cloud Monitoring alerts and an uptime check, Cloud Trace; keyless CI | [`lir-infra`](https://github.com/Lir-team/factored-hackathon-2026-lir-infra) |
 | **Live pilot** (team testing since 2026-10-04) | 13 cases, 16 conversations, 12 escalations, 3 claims resolved by a specialist; US$0.022 of LLM cost per conversation; 1.8 s median per turn | [`looker-studio.md`](docs/analytics/looker-studio.md) |
@@ -88,7 +89,7 @@ everything outside is an external system or provider. The diagram source is
 | Customer channels | `lir-web` (Cloud Run), Telegram, Gmail (SMTP) | Statement and case form; the conversation; the outcome email |
 | Security edge | API Gateway (identity provider mocked with a service account), IAP | Customer JWT and API key on the customer routes, Telegram webhook secret; IAP in front of the operator service |
 | Ingestion | Pub/Sub (`lir-cases`), dead-letter topic (`lir-cases-dead-letter`), Cloud Storage (`<project>-cases`) | Carries each accepted case to the agent, buffers spikes and retries failures; the bucket archives every case |
-| Agent runtime | One image (Google ADK, LiteLLM with pseudonymized data, ADK callbacks, versioned policy, DuckDB) on two Cloud Run services: `lir-agent` and `lir-agent-cases` | `lir-agent`, behind IAP: operator API (`/v1/sessions`, `/v1/handoffs`), specialist reviews (`GET /v1/approvals`, `/v1/approvals/{id}/review`) and `/backoffice`. `lir-agent-cases`, behind API Gateway and Pub/Sub: `/v1/cases`, `/v1/me/transactions`, the customer's approval card (`/v1/approvals/{id}`, `/decision`), `/pubsub/push`, `/channels/telegram` |
+| Agent runtime | One image (Google ADK, LiteLLM with pseudonymized data, ADK callbacks, versioned policy, DuckDB) on two Cloud Run services: `lir-agent` and `lir-agent-cases` | `lir-agent`, behind IAP: operator API (`/v1/sessions`, `/v1/handoffs`), the HTML case file (`/v1/handoffs/{id}/report`), specialist decisions (`GET /v1/approvals`, `/v1/approvals/{id}/review`, `/v1/handoffs/{id}/resolution`) and `/backoffice`. `lir-agent-cases`, behind API Gateway and Pub/Sub: `/v1/cases`, `/v1/me/transactions`, the demo bank sign-in (`/v1/demo/sign-in`), the customer's approval card (`/v1/approvals/{id}`, `/decision`), `/pubsub/push`, `/channels/telegram` |
 | Data | Data pipeline (Cloud Run job), Cloud Storage (`<project>-data`, mounted at `/mnt/data` with GCS FUSE), Firestore | Parquet read by the tools; cases, case files and approval requests shared by both services |
 | Bank operations | Slack, back office (IAP) | Ticket with the reason and a rotating assignee; the specialist approves or rejects disputes |
 | Audit, observability & analytics | Cloud Logging, BigQuery (`lir_analytics` views), Looker Studio, Cloud Trace, Cloud Monitoring | Audit receipt for every step, KPIs per day, session and turn ([setup](docs/analytics/looker-studio.md)); a trace per turn (agent, LLM call, each tool); email alerts for lost cases, server errors and lir-web downtime |
@@ -131,7 +132,7 @@ before any model reads them.
 │   └── evals/           # Scenario evals from the jobs to be done (promptfoo runner, code graders)
 ├── data/         # Data lake, pipeline (raw -> staging -> curated), contracts, reports
 ├── docs/         # How it works (agent/), proposal and backlog (product/), privacy (security/), architecture, analytics
-├── .github/      # deploy-agent.yml: build and roll out the agent image (see Deploy)
+├── .github/      # ci.yml: lint, types and tests on every PR; deploy-agent.yml: CI, then build and roll out (see Deploy)
 ├── scripts/      # check.sh: does everything still work?
 └── .githooks/    # Git hooks: secret scan on commit, no direct push to main
 ```
@@ -164,7 +165,7 @@ python -m pipelines               # skips the download (~1.5 min)
 
 - `.env` variable names: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`.
 - `raw/`, `staging/`, `curated/` and `samples/` are gitignored; `contracts/`,
-  `manifests/`, `knowledge_base/`, `eval/`, `fixtures/` and `reports/` are versioned.
+  `manifests/`, `eval/` and `reports/` are versioned.
 - Contracts live in `data/contracts/`: one `<table>.yaml` schema per table
   (customers, products, transactions, complaints, call_center_interactions,
   call_transcripts, digital_events, and others), plus `relationships.yaml` (FKs),
@@ -243,8 +244,8 @@ Gateway, IAM, the CI identity) is Terraform in the
 3. **Infrastructure, second apply** with `agent_service_deployed = true` and
    `cases_service_url` set: IAP users, `run.invoker`, API Gateway, Pub/Sub push.
 4. **Every later release** is automatic: a push to `main` that touches `app/lir-agent/` or
-   `app/decision-layer/` runs `.github/workflows/deploy-agent.yml`, which builds the
-   image with Cloud Build and rolls out the new image only. The services keep their env
+   `app/decision-layer/` runs `.github/workflows/deploy-agent.yml`, which runs CI first,
+   builds the image with Cloud Build and rolls out the new image only. The services keep their env
    vars and secrets, so a release needs no `terraform apply`.
 
 ### Deploy-time variables (GitHub)
@@ -273,11 +274,12 @@ Set on the services at creation (step 2). The image already sets `ENVIRONMENT=pr
 | Variable | Service | Value |
 |---|---|---|
 | `LLM_MODEL`, `LLM_API_BASE` | both | LiteLLM model (e.g. `openai/gpt-4o`); `LLM_API_BASE` empty for a hosted provider |
-| `STORE`, `DECISIONS`, `JEV_ENABLED` | both | Data source and decision model (`lir-infra` variables) |
+| `STORE`, `DECISIONS`, `DECISION_LLM_MODEL`, `JEV_ENABLED` | both | Data source and decision model (`lir-infra` variables) |
 | `GOOGLE_CLOUD_PROJECT` | both | Project id |
 | `CASE_STORE`, `CASE_REPOSITORY`, `APPROVAL_REPOSITORY` | both | `firestore`, shared by both services |
 | `FIRESTORE_DATABASE`, `FIRESTORE_COLLECTION_PREFIX` | both | `(default)`, `lir_` |
 | `BACKOFFICE_ENABLED` | both | `true` on `lir-agent`, `false` on `lir-agent-cases` |
+| `TRACE_TO_CLOUD`, `TRACE_SERVICE_NAME` | both | `true` exports a trace per turn to Cloud Trace; the name defaults to the service's |
 | `CASES_INBOX`, `CASES_BUCKET` | cases | `gcs`, `<project>-cases` |
 | `CASES_PUBLISHER`, `CASES_TOPIC` | cases | `pubsub`, `lir-cases` |
 | `PUBSUB_PUSH_AUDIENCE`, `PUBSUB_PUSH_SERVICE_ACCOUNT` | cases | `lir-agent-cases-pubsub-push`, the `lir-pubsub-push` account |
@@ -286,6 +288,7 @@ Set on the services at creation (step 2). The image already sets `ENVIRONMENT=pr
 | `TELEGRAM_BOT_USERNAME` | cases | Bot username, without `@`; empty means no start link |
 | `SPEECH_TO_TEXT` | cases | Optional: `google` transcribes voice notes |
 | `APPROVAL_LINK_TEMPLATE` | cases | Optional: https link to the approval card in lir-web |
+| `DEMO_SIGN_IN_CUSTOMER_ID`, `DEMO_SIGN_IN_ISSUER`, `DEMO_SIGN_IN_AUDIENCE`, `DEMO_SIGN_IN_TTL_MINUTES` | cases | Demo bank sign-in for lir-web: short-lived JWTs for one demo customer; unset, the route is absent |
 | `REFERENCE_DATE`, `EXPOSE_TRACE`, `PUBLIC_BASE_URL`, `SLACK_ASSIGNEES` | optional | See `.env.example` |
 | `SMTP_USER`, `SMTP_APP_PASSWORD`, `CUSTOMER_EMAIL_OVERRIDE` | optional | Approval-outcome email; `lir-infra` sets none of them, so it is off when deployed |
 
