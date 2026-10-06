@@ -51,5 +51,7 @@ class EmailApprovalSurface:
         body = "\n\n".join([request.title, outcome, labels["email_footer"]])
         try:
             await asyncio.to_thread(self._sender.send, self._recipient, subject, body)
-        except Exception:
-            logger.warning("Outcome of approval %s not emailed", request.approval_id)
+        except Exception as exc:
+            logger.warning(
+                "Outcome of approval %s not emailed (%s)", request.approval_id, type(exc).__name__
+            )
