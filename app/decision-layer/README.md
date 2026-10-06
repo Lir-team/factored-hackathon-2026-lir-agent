@@ -15,9 +15,9 @@ It targets the "unrecognized charge → explain, dispute or hand off" workflow. 
 the customer, this layer decides, and deterministic code authorizes. It provides:
 
 - A `DecisionModel` contract (`Noul` yes/no and `Choice` questions → `Answer` with probability),
-  so Jev, Laya, an LLM or keyword rules are interchangeable without touching the agent. The LLM
-  implementation lives in the agent (`app/lir-agent/src/lir_agent/infrastructure/decisions/llm.py`),
-  not in this package.
+  so Jev, an LLM or keyword rules are interchangeable without touching the agent (Laya would fit
+  the same contract but is not implemented). The LLM implementation lives in the agent
+  (`app/lir-agent/src/lir_agent/infrastructure/decisions/llm.py`), not in this package.
 - Decisions D1–D4 (`questions.py`): intent, wants a human, theft suspected, which merchant.
 - A **Jev** client ([TypeSafe AI](https://developers.cloudflare.com/ai/models/typesafe/jev/)
   through Cloudflare Workers AI) with bounded retries on 429/5xx. 402 (billing) and 401/403
@@ -28,9 +28,13 @@ the customer, this layer decides, and deterministic code authorizes. It provides
 
 Facts and caveats to keep in mind:
 
-- **Jev is currently off.** The credentials work, but Cloudflare answers
+- **Jev runs through OpenRouter, not through this package.** The agent's LLM decision adapter
+  reaches it as `openrouter/typesafe/jev-router` (`DECISIONS=llm`, `DECISION_LLM_MODEL`). On the
+  labeled ES/PT set it scored 97.1% intent accuracy, equivalent to the LLM (97.5%); the keyword
+  baseline scored 44.4% (`data/reports/decision_eval.md`).
+- **The Cloudflare client in this package is off.** The credentials work, but Cloudflare answers
   `402 Insufficient balance` because Jev is billed from the AI Gateway balance (it is not covered
-  by the Workers AI free allocation). Until then, the chain uses the baseline.
+  by the Workers AI free allocation). With `JEV_ENABLED=0`, the default chain uses the baseline.
 - Jev's own docs say it is not good with numbers, dates or adversarial content. Amounts and dates
   are filtered by code, and prompt-injection defense lives in the tool layer, never in a classifier.
 - Only customer text leaves the machine (plus merchant names for D4). Never IDs, documents,
@@ -91,6 +95,15 @@ See [`.env.example`](.env.example).
 | `CLOUDFLARE_API_TOKEN`  | —       | Token with the Account → Workers AI permission                 |
 | `JEV_ENABLED`           | `0`     | `1` puts Jev first in the default chain; requires AI Gateway balance |
 
+The OpenRouter route to Jev is configured in the agent's settings
+(`app/lir-agent/.env.example`), not here:
+
+| Variable             | Default      | Purpose                                                        |
+|----------------------|--------------|----------------------------------------------------------------|
+| `DECISIONS`          | `default`    | `llm` decides with an LLM (structured output), falling back to the keyword baseline |
+| `DECISION_LLM_MODEL` | `LLM_MODEL`  | LiteLLM model for `llm` decisions, e.g. `openrouter/typesafe/jev-router` |
+| `OPENROUTER_API_KEY` | —            | Read by LiteLLM for `openrouter/` models                       |
+
 ## Connecting Jev
 
 1. Top up the balance: Cloudflare dashboard → **AI → AI Gateway → Credits Available → Manage →
@@ -101,6 +114,5 @@ See [`.env.example`](.env.example).
 
 ## Next steps
 
-- Jev and Laya against the labelled ES/PT set. The baseline and the LLM are already compared
-  there (`data/reports/decision_eval.md`): macro-F1, calibration (ECE), coverage/accuracy
-  curve, thresholds chosen on validation, p50/p95 latency and cost.
+- Laya: implement a client and run it on the labelled ES/PT set, where the baseline, the LLM
+  and Jev are already compared (`data/reports/decision_eval.md`).
