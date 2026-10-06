@@ -1,0 +1,40 @@
+# Lint, type check and tests for the Python packages. Runs on pull requests and branches,
+# and before every deploy (deploy-agent.yml calls it).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [lir-agent, decision-layer, evals]
+    defaults:
+      run:
+        working-directory: app/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run --frozen ruff check .
+
+      - name: Type check
+        if: matrix.package == 'lir-agent'
+        run: uv run --frozen pyright
+
+      - name: Run tests
+        run: uv run --frozen pytest -q
