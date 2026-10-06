@@ -1,4 +1,4 @@
-# Solo se versionan código, contratos, manifiestos, KB, eval y fixtures.
+# The lake folders stay local: only code, contracts, manifests and reports are versioned.
 raw/*
 staging/*
 curated/*

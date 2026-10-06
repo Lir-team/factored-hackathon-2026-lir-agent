@@ -54,8 +54,13 @@ class RequestHandoff:
     def _notify(self, packet: HandoffPacket) -> None:
         try:
             self._notifier.notify(packet)  # type: ignore[union-attr]
-        except Exception:
-            logger.warning("Handoff %s stored but the team notice failed", packet.handoff_id)
+        except Exception as exc:
+            # The type only: an HTTP error message carries the webhook URL, which is a secret.
+            logger.warning(
+                "Handoff %s stored but the team notice failed (%s)",
+                packet.handoff_id,
+                type(exc).__name__,
+            )
 
     def attach_evidence(self, session: SessionState) -> None:
         """Add evidence gathered after the handoff (e.g. the charge a theft victim describes).

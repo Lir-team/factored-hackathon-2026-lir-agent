@@ -1,9 +1,9 @@
-# Global del monorepo. Cada dominio (data/, ...) tiene su propio .gitignore.
+# Monorepo-wide rules. Each area (data/, ...) has its own .gitignore.
 
-# Documentos de organizadores (el diccionario contiene credenciales de S3)
+# Organizer documents (the data dictionary contains S3 credentials)
 *.pdf
 
-# Secretos
+# Secrets
 .env
 .env.*
 !.env.example

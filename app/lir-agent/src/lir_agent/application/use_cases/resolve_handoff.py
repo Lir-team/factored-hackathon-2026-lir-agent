@@ -140,5 +140,10 @@ class ResolveHandoff:
             return
         try:
             self._notifier.notify_resolution(packet)
-        except Exception:
-            logger.warning("Resolution of %s stored but the team notice failed", packet.handoff_id)
+        except Exception as exc:
+            # The type only: an HTTP error message carries the webhook URL, which is a secret.
+            logger.warning(
+                "Resolution of %s stored but the team notice failed (%s)",
+                packet.handoff_id,
+                type(exc).__name__,
+            )

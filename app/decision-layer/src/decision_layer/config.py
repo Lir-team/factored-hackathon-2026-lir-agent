@@ -6,9 +6,10 @@ Values are never printed. Both .env files are gitignored.
 import os
 from pathlib import Path
 
-# config.py -> decision_layer -> src -> decision-layer -> <repo root>
-_POC_ROOT = Path(__file__).resolve().parents[2]
-ENV_FILES = (_POC_ROOT / ".env", _POC_ROOT.parent / "data" / ".env")
+# config.py -> decision_layer -> src -> decision-layer -> app -> <repo root>
+_PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+ENV_FILES = (_PACKAGE_ROOT / ".env", _REPO_ROOT / "data" / ".env")
 
 
 def _read_env_file(path: Path) -> dict[str, str]:
